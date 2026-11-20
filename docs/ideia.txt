@@ -1,0 +1,164 @@
+Crie um app que inclua funcionalidades dos seguintes apps:
+
+- StartAllBack (para modificar o Menu Iniciar)
+- AutoHotKey (para permitir criar/personalizar atalhos para funções no PC)
+- Raycast (para permitir gravar snippets e habilitar uma janela de busca de "alto nível")
+
+1. Personalização do Menu Iniciar (alternativa ao StartAllBack)
+
+Personalização visual e de comportamento.
+- Organização de atalhos e pastas.
+- Ajustes na barra de tarefas.
+- Modificação de elementos do Menu Iniciar.
+
+2. Gerenciador de atalhos e automações (alternativa ao AutoHotKey)
+
+Atalhos globais de teclado.
+- Combinações personalizadas.
+- Execução de programas e comandos.
+- Automação de tarefas.
+- Macros e sequências de ações.
+
+A ideia aqui é implementar um frontend moderno com uma lista de comandos que permita adicionar novos comandos de forma fácil, e não através de script escrito manualmente.
+
+3. Launcher, busca e snippets (alternativa ao Raycast)
+
+Janela de busca acionada por atalho global.
+- Busca de aplicativos, arquivos e pastas.
+- Pesquisa de configurações do Windows.
+- Snippets de texto.
+- Histórico e favoritos.
+- Comandos rápidos e extensões.
+
+É provavelmente o módulo mais simples de implementar e também o que pode proporcionar uma experiência de uso mais interessante.
+
+O nome provisório do projeto é: Apparatus.
+
+## 2. Como eu construiria esse aplicativo
+
+### Módulo A — Shell & Start
+
+Aqui eu tomaria uma decisão estratégica: não tentaria reproduzir inicialmente todas as modificações profundas do StartAllBack.
+
+Dividiria o módulo em duas camadas:
+
+Camada 1 — Personalização segura
+
+- Menu Iniciar alternativo, com interface própria.
+- Painel de atalhos para aplicativos.
+- Personalização de cores e aparência.
+- Organização de aplicativos e pastas.
+- Atalhos para configurações do Windows.
+- Inicialização automática do aplicativo.
+
+Camada 2 — Integração profunda com o Windows
+
+- Modificações na barra de tarefas.
+- Ajustes no comportamento do Menu Iniciar original.
+- Integrações com o Explorer.
+- Personalizações avançadas do shell.
+
+A segunda camada pode exigir técnicas específicas de integração com o Windows, algumas delas não documentadas ou sujeitas a mudanças entre versões.
+
+Eu deixaria essas funcionalidades para uma segunda fase.
+
+### Módulo B — Hotkeys & Actions
+
+Este módulo seria um dos pilares do projeto.
+
+Imagine uma interface na qual você pudesse cadastrar uma ação sem precisar programar:
+
+Criar novo atalho
+
+Nome da açãoAbrir Photoshop
+
+Combinação de teclasCtrl
+
+Alt
+
+P
+
+Tipo de açãoAbrir aplicativo
+
+Caminho do aplicativoC:\\Program Files\\Adobe\\...
+
+Exemplo ilustrativo de interface
+
+Além disso, permitiria ações mais avançadas:
+
+- Abrir aplicativos com parâmetros específicos.
+- Executar comandos PowerShell.
+- Abrir sites.
+- Controlar volume e brilho.
+- Gerenciar janelas.
+- Executar sequências de comandos.
+- Criar macros com múltiplas etapas.
+- Executar ações condicionais.
+
+Tecnicamente, o Windows oferece APIs como `RegisterHotKey`, que permitem registrar atalhos globais.
+
+### Módulo C — Universal Search
+
+Esse seria o coração da experiência de utilização.
+
+A ideia é pressionar `Alt + Space`, por exemplo, e abrir uma janela centralizada, rápida e minimalista.
+
+Funcionalidades que eu implementaria:
+
+- Pesquisa instantânea de aplicativos.
+- Pesquisa de arquivos e pastas.
+- Pesquisa de configurações do Windows.
+- Pesquisa na web.
+- Calculadora integrada.
+- Conversões de unidades.
+- Execução de comandos.
+- Histórico de pesquisas.
+- Favoritos.
+- Sistema de plugins.
+
+Um detalhe importante: eu criaria um sistema de indexação e cache para não precisar pesquisar todo o computador a cada tecla digitada.
+
+### Módulo D — Snippets
+
+Aqui podemos reproduzir uma das funcionalidades mais úteis do Raycast.
+
+Por exemplo:
+
+| Atalho | Resultado |
+| --- | --- |
+| `;email` | Seu endereço de e-mail |
+| `;end` | Seu endereço completo |
+| `;ass` | Assinatura profissional |
+| `;pix` | Chave Pix |
+| `;tel` | Número de telefone |
+
+Também adicionaria:
+
+- Categorias e tags.
+- Favoritos.
+- Variáveis dinâmicas.
+- Data e hora automáticas.
+- Campos preenchíveis.
+- Expansão automática ao digitar.
+- Sincronização e backup, futuramente.
+
+## 3. Qual tecnologia utilizaria?
+
+Minha recomendação seria priorizar tecnologias nativas do Windows.
+
+| Tecnologia | Utilização |
+| --- | --- |
+| C# + .NET | Núcleo do aplicativo |
+| WinUI 3 | Interface gráfica |
+| Windows API / Win32 | Atalhos globais e integração com o sistema |
+| SQLite | Banco de dados local |
+| PowerShell | Execução de automações |
+
+C# oferece uma boa combinação de produtividade, acesso às APIs nativas, gerenciamento de processos, notificações, inicialização automática e integração com o sistema operacional.
+
+Obs.: O Raycast possui inúmeras funcionalidades, mas inicialmente, podemos começar implementando funções mais báiscas como a busca de arquivos e programas, e os snippets.
+
+Crie o projeto no diretório abaixo:
+D:\Disco E - Backup\Programacao\Apparatus
+
+No arquivo .gitignore configure a pasta "bin" para não ser versionada.
