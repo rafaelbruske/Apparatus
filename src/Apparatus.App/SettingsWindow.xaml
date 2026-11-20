@@ -104,6 +104,37 @@
                 </StackPanel>
             </Border>
 
+            <!-- snippets -->
+            <TextBlock Text="Snippets" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <ToggleSwitch
+                        x:Name="ExpansionSwitch"
+                        Header="Expandir gatilhos ao digitar, em qualquer aplicativo"
+                        OnContent="Ativado"
+                        OffContent="Desativado"
+                        Toggled="OnExpansionToggled" />
+                    <TextBox
+                        x:Name="ExcludedProcessesBox"
+                        Header="Aplicativos onde nunca expandir (nome do processo, um por linha)"
+                        AcceptsReturn="True"
+                        TextWrapping="NoWrap"
+                        Height="100"
+                        LostFocus="OnExcludedProcessesLostFocus" />
+                    <TextBlock
+                        Text="Campos de senha do Windows e o próprio Apparatus são sempre ignorados. Aplicativos em modo administrador não recebem a expansão."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <Button Content="Gerenciar snippets…" Click="OnOpenSnippets" />
+                </StackPanel>
+            </Border>
+
             <!-- files -->
             <TextBlock Text="Arquivos e pastas" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border

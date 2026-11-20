@@ -59,6 +59,7 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
         ResultKind.Web or ResultKind.Url => "",
         ResultKind.Calculator => "",
         ResultKind.Command => "",
+        ResultKind.Snippet => "",
         _ => "",
     };
 
@@ -71,6 +72,7 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
         ResultKind.Web or ResultKind.Url => "Web",
         ResultKind.Calculator => "Cálculo",
         ResultKind.Command => "Comando",
+        ResultKind.Snippet => "Snippet",
         _ => "",
     };
 }

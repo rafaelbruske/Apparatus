@@ -4,6 +4,7 @@ using Apparatus.Core.Input;
 using Apparatus.Core.Search;
 using Apparatus.Core.Search.Providers;
 using Apparatus.Core.Settings;
+using Apparatus.Core.Snippets;
 using Apparatus.Core.Storage;
 using Apparatus.Native;
 
@@ -27,9 +28,12 @@ public sealed class AppServices : IDisposable
         Usage = new UsageStore(AppPaths.DatabaseFile);
         Index = new FileIndex(AppPaths.IndexDirectory);
         Apps = new AppsProvider();
+        Snippets = new SnippetStore(AppPaths.SnippetsFile);
+        Snippets.SeedExamplesOnce();
         Search = new SearchEngine(new ISearchProvider[]
         {
             Apps,
+            new SnippetsProvider(Snippets),
             new FilesProvider(Index, () => Settings.Current),
             new WindowsSettingsProvider(),
             new CalculatorProvider(),
@@ -45,6 +49,10 @@ public sealed class AppServices : IDisposable
     public UsageStore Usage { get; }
     public FileIndex Index { get; }
     public AppsProvider Apps { get; }
+    public SnippetStore Snippets { get; }
+
+    /// <summary>Set once the UI thread exists; expands triggers and inserts snippets.</summary>
+    public SnippetService? Expander { get; set; }
     public SearchEngine Search { get; }
 
     /// <summary>The hotkey that is actually registered (it may differ from the setting if registration failed).</summary>
@@ -176,6 +184,8 @@ public sealed class AppServices : IDisposable
     public void Dispose()
     {
         _rescanTimer.Dispose();
+        Expander?.Dispose();
+        Snippets.Dispose();
         Index.Dispose();
         Usage.Dispose();
     }

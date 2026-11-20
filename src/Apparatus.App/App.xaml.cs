@@ -8,7 +8,7 @@ namespace Apparatus.App;
 
 public partial class App : Application
 {
-    private const int CmdOpen = 1, CmdSettings = 2, CmdAutostart = 3, CmdReindex = 4, CmdQuit = 5;
+    private const int CmdOpen = 1, CmdSettings = 2, CmdAutostart = 3, CmdReindex = 4, CmdQuit = 5, CmdSnippets = 6, CmdExpansion = 7;
 
     private readonly SingleInstance _instance;
     private readonly string[] _args;
@@ -17,6 +17,7 @@ public partial class App : Application
     private AppServices? _services;
     private LauncherWindow? _launcher;
     private SettingsWindow? _settings;
+    private SnippetsWindow? _snippetsWindow;
 
     public App(SingleInstance instance, string[] args)
     {
@@ -38,7 +39,8 @@ public partial class App : Application
 
         _host = new MessageHost();
         _services = new AppServices(_host);
-        var executor = new ResultExecutor(_services, OpenSettings, Quit);
+        _services.Expander = new SnippetService(_services, _ui);
+        var executor = new ResultExecutor(_services, OpenSettings, Quit, newSnippet => OpenSnippets(newSnippet));
         _launcher = new LauncherWindow(_services, executor);
 
         _host.TrayMenuProvider = BuildTrayMenu;
@@ -65,6 +67,10 @@ public partial class App : Application
             {
                 OpenSettings();
             }
+            else if (_args.Contains("--snippets", StringComparer.OrdinalIgnoreCase))
+            {
+                OpenSnippets();
+            }
             else if (!background || _args.Contains("--show", StringComparer.OrdinalIgnoreCase))
             {
                 _launcher.ShowLauncher(ArgValue("--query"));
@@ -85,8 +91,10 @@ public partial class App : Application
         return new[]
         {
             new TrayMenuItem(CmdOpen, hotkey.Length > 0 ? $"Abrir Apparatus\t{hotkey}" : "Abrir Apparatus"),
+            new TrayMenuItem(CmdSnippets, "Snippets…"),
             new TrayMenuItem(CmdSettings, "Configurações"),
             TrayMenuItem.Divider,
+            new TrayMenuItem(CmdExpansion, "Expandir snippets ao digitar", Checked: _services?.Settings.Current.SnippetExpansion == true),
             new TrayMenuItem(CmdAutostart, "Iniciar com o Windows", Checked: _services?.Settings.Current.RunAtStartup == true),
             new TrayMenuItem(CmdReindex, "Reindexar arquivos"),
             TrayMenuItem.Divider,
@@ -100,6 +108,10 @@ public partial class App : Application
         {
             case CmdOpen: _launcher?.ShowLauncher(); break;
             case CmdSettings: OpenSettings(); break;
+            case CmdSnippets: OpenSnippets(); break;
+            case CmdExpansion:
+                _services?.ApplySettings(s => s.SnippetExpansion = !s.SnippetExpansion);
+                break;
             case CmdAutostart:
                 _services?.ApplySettings(s => s.RunAtStartup = !s.RunAtStartup);
                 break;
@@ -121,11 +133,26 @@ public partial class App : Application
         WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_settings));
     }
 
+    public void OpenSnippets(bool startNew = false)
+    {
+        if (_services is null) return;
+        _launcher?.HideLauncher();
+        if (_snippetsWindow is null)
+        {
+            _snippetsWindow = new SnippetsWindow(_services);
+            _snippetsWindow.Closed += (_, _) => _snippetsWindow = null;
+        }
+        _snippetsWindow.Activate();
+        WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_snippetsWindow));
+        if (startNew && _snippetsWindow is not null) _snippetsWindow.StartNewSnippet();
+    }
+
     private void Quit()
     {
         AppLog.Info("Apparatus exiting");
         _launcher?.AllowClose();
         _settings?.Close();
+        _snippetsWindow?.Close();
         _launcher?.Close();
         _host?.Dispose();
         _services?.Dispose();

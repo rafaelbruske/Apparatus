@@ -10,6 +10,7 @@ public enum ResultKind
     Url = 5,
     Calculator = 6,
     Command = 7,
+    Snippet = 8,
 }
 
 /// <summary>

@@ -108,6 +108,7 @@
             SelectionMode="Single"
             IsItemClickEnabled="True"
             ItemClick="OnItemClick"
+            SelectionChanged="OnSelectionChanged"
             Visibility="Collapsed" />
 
         <Grid

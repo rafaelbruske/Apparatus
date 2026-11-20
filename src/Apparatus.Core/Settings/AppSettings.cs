@@ -35,6 +35,15 @@ public sealed class AppSettings
     /// <summary>Safety valve so a huge drive cannot exhaust memory.</summary>
     public int MaxEntriesPerRoot { get; set; } = 3_000_000;
 
+    /// <summary>Expand snippet triggers while typing, in any application.</summary>
+    public bool SnippetExpansion { get; set; } = true;
+
+    /// <summary>Process names (without .exe) in which snippets never expand: password managers, remote desktop...</summary>
+    public List<string> SnippetExcludedProcesses { get; set; } = new()
+    {
+        "KeePass", "KeePassXC", "1Password", "Bitwarden", "Dashlane", "LastPass", "mstsc", "vmconnect",
+    };
+
     /// <summary>Keyword of the engine used when nothing matches (see <see cref="SearchEngines"/>).</summary>
     public string DefaultSearchEngine { get; set; } = "g";
 

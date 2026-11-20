@@ -12,12 +12,14 @@ public sealed class ResultExecutor
     private readonly AppServices _services;
     private readonly Action _openSettings;
     private readonly Action _quit;
+    private readonly Action<bool> _openSnippets;   // true = start a new snippet
 
-    public ResultExecutor(AppServices services, Action openSettings, Action quit)
+    public ResultExecutor(AppServices services, Action openSettings, Action quit, Action<bool> openSnippets)
     {
         _services = services;
         _openSettings = openSettings;
         _quit = quit;
+        _openSnippets = openSnippets;
     }
 
     /// <param name="secondary">Ctrl+Enter: the alternative action (for files, reveal in Explorer).</param>
@@ -32,6 +34,10 @@ public sealed class ResultExecutor
                     break;
                 case ResultKind.Calculator:
                     CopyToClipboard(result.Payload);
+                    break;
+                case ResultKind.Snippet:
+                    // Enter inserts into the app that was focused before the launcher; Ctrl+Enter only copies.
+                    _services.Expander?.RunFromLauncher(long.Parse(result.Payload), copyOnly: secondary);
                     break;
                 case ResultKind.Command:
                     RunCommand(result.Payload);
@@ -60,6 +66,8 @@ public sealed class ResultExecutor
             case InternalCommands.ClearHistory: _services.Usage.ClearHistory(); break;
             case InternalCommands.OpenDataFolder: ShellLauncher.Open(AppPaths.DataDirectory); break;
             case InternalCommands.Quit: _quit(); break;
+            case InternalCommands.ManageSnippets: _openSnippets(false); break;
+            case InternalCommands.NewSnippet: _openSnippets(true); break;
         }
     }
 

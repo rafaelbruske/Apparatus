@@ -66,6 +66,19 @@ public class FuzzyMatcherTests
         Assert.Equal(FuzzyMatcher.NoMatch, Score(text, query));
 
     [Theory]
+    [InlineData("ola", "Metro Last Light Redux")]      // o inside "Metro", then "la" of "Last": not anchored
+    [InlineData("ola", "Rockstar Games Launcher")]       // same shape: o in "Rockstar", then "La" of "Launcher"
+    public void UnanchoredMatches_AreRejected_ForThreeLettersOrMore(string query, string text) =>
+        Assert.Equal(FuzzyMatcher.NoMatch, Score(text, query));
+
+    [Theory]
+    [InlineData("ola", "Resposta com campos Olá")]      // starts a word
+    [InlineData("etr", "Metro")]                         // unbroken run in the middle of a word
+    [InlineData("sh", "Photoshop")]                      // two letters keep the old, looser rule
+    public void AnchoredMatches_AreKept(string query, string text) =>
+        Assert.NotEqual(FuzzyMatcher.NoMatch, Score(text, query));
+
+    [Theory]
     [InlineData("wifi", "Wi-Fi")]
     [InlineData("wifi", "WiFi-22.140.0-Driver64-Win10-Win11.exe")]
     [InlineData("vsc", "Visual Studio Code")]                           // initials stay allowed

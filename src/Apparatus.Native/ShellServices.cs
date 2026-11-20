@@ -191,5 +191,28 @@ public static class WindowHelpers
         PInvoke.DwmSetWindowAttribute(new HWND(hwnd), DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, &pref, sizeof(DWM_WINDOW_CORNER_PREFERENCE));
     }
 
-    public static void BringToForeground(nint hwnd) => PInvoke.SetForegroundWindow(new HWND(hwnd));
+    /// <summary>
+    /// Brings a window to the front even when this process did not receive the last input. Windows only lets the
+    /// process that owns the foreground window (or received the last keystroke) call SetForegroundWindow; attaching
+    /// our input queue to the foreground thread's lifts that restriction for the duration of the call.
+    /// </summary>
+    public static unsafe void BringToForeground(nint hwnd)
+    {
+        var target = new HWND(hwnd);
+        var current = PInvoke.GetForegroundWindow();
+        if (current == target) return;
+
+        uint currentThread = current == HWND.Null ? 0 : PInvoke.GetWindowThreadProcessId(current, null);
+        uint thisThread = PInvoke.GetCurrentThreadId();
+        bool attached = currentThread != 0 && currentThread != thisThread && PInvoke.AttachThreadInput(thisThread, currentThread, true);
+        try
+        {
+            PInvoke.BringWindowToTop(target);
+            PInvoke.SetForegroundWindow(target);
+        }
+        finally
+        {
+            if (attached) PInvoke.AttachThreadInput(thisThread, currentThread, false);
+        }
+    }
 }

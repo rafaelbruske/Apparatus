@@ -52,6 +52,8 @@ public sealed partial class SettingsWindow : Window
         MaxResultsBox.Value = s.MaxResults;
         EngineBox.ItemsSource = s.SearchEngines;
         EngineBox.SelectedItem = s.SearchEngines.FirstOrDefault(e => e.Keyword == s.DefaultSearchEngine) ?? s.SearchEngines.FirstOrDefault();
+        ExpansionSwitch.IsOn = s.SnippetExpansion;
+        ExcludedProcessesBox.Text = string.Join("\r", s.SnippetExcludedProcesses);
         IndexSwitch.IsOn = s.IndexFiles;
         RootsMode.SelectedIndex = s.IndexRoots is null ? 0 : 1;
         _roots.Clear();
@@ -168,6 +170,28 @@ public sealed partial class SettingsWindow : Window
         if (_loading || EngineBox.SelectedItem is not Core.Settings.WebSearchEngine engine) return;
         _services.ApplySettings(s => s.DefaultSearchEngine = engine.Keyword);
     }
+
+    // ---------------------------------------------------------- snippets
+
+    private void OnExpansionToggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _services.ApplySettings(s => s.SnippetExpansion = ExpansionSwitch.IsOn);
+    }
+
+    private void OnExcludedProcessesLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        var names = ExcludedProcessesBox.Text
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(n => n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? n[..^4] : n)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (names.SequenceEqual(_services.Settings.Current.SnippetExcludedProcesses, StringComparer.OrdinalIgnoreCase)) return;
+        _services.ApplySettings(s => s.SnippetExcludedProcesses = names);
+    }
+
+    private void OnOpenSnippets(object sender, RoutedEventArgs e) => ((App)Application.Current).OpenSnippets();
 
     // ------------------------------------------------------------- files
 

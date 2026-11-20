@@ -59,7 +59,7 @@ SQLite, com exportar e importar para backup.
 
 ## 5. Fases
 
-Status: **Fase 0 concluída** ([resultados](FASE0-RESULTADOS.md)); **Fase 1 concluída** ([detalhes](FASE1.md)).
+Status: **Fase 0 concluída** ([resultados](FASE0-RESULTADOS.md)); **Fase 1 concluída** ([detalhes](FASE1.md)); **Fase 2 concluída** ([detalhes](FASE2.md)).
 
 | Fase | Entrega | Critério de saída |
 |---|---|---|

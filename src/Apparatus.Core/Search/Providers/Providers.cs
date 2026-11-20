@@ -211,6 +211,8 @@ public static class InternalCommands
     public const string ClearHistory = "apparatus:clear-history";
     public const string OpenDataFolder = "apparatus:data-folder";
     public const string Quit = "apparatus:quit";
+    public const string ManageSnippets = "apparatus:snippets";
+    public const string NewSnippet = "apparatus:snippet-new";
 }
 
 public sealed class InternalCommandsProvider : ISearchProvider
@@ -219,6 +221,8 @@ public sealed class InternalCommandsProvider : ISearchProvider
 
     private static readonly Command[] Commands =
     {
+        new(InternalCommands.ManageSnippets, "Gerenciar snippets", "Criar, editar, importar e exportar", "apparatus snippets textos atalhos expansão"),
+        new(InternalCommands.NewSnippet, "Novo snippet", "Cria um texto reutilizável", "apparatus snippet criar adicionar texto"),
         new(InternalCommands.OpenSettings, "Configurações do Apparatus", "Atalho, indexação e preferências", "apparatus preferências opções settings atalho hotkey"),
         new(InternalCommands.Reindex, "Reindexar arquivos", "Atualiza o índice de arquivos e pastas agora", "apparatus indexar atualizar scan arquivos"),
         new(InternalCommands.ClearHistory, "Limpar histórico do launcher", "Esquece os itens usados com frequência", "apparatus histórico apagar recentes"),

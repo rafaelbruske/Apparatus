@@ -102,6 +102,8 @@ public sealed partial class LauncherWindow : Window
         if (_prewarming) AppWindow.Hide();
         _ = _services.RefreshAppsAsync();
 
+        // Remember who had the focus: a snippet picked here is inserted there.
+        _services.Expander?.RememberLauncherTarget(Native.KeyTranslator.ForegroundWindow());
         IsLauncherVisible = true;
         _shownAtUtc = DateTime.UtcNow;
         SearchBox.Text = initialQuery ?? "";   // TextChanged runs the search when the text is not empty
@@ -212,6 +214,22 @@ public sealed partial class LauncherWindow : Window
         ResultsList.SelectedIndex = any ? 0 : -1;
         if (any) ResultsList.ScrollIntoView(Items[0]);
         ResizeToContent();
+        UpdateHints();
+    }
+
+    private void OnSelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateHints();
+
+    /// <summary>The footer explains what Enter and Ctrl+Enter will do for the selected result.</summary>
+    private void UpdateHints()
+    {
+        HintsText.Text = (ResultsList.SelectedItem as ResultItemViewModel)?.Result.Kind switch
+        {
+            Core.Search.ResultKind.File or Core.Search.ResultKind.Folder => "↵ Abrir     Ctrl+↵ Mostrar na pasta     Esc Fechar",
+            Core.Search.ResultKind.Calculator => "↵ Copiar o resultado     Esc Fechar",
+            Core.Search.ResultKind.Snippet => "↵ Inserir     Ctrl+↵ Copiar     Esc Fechar",
+            Core.Search.ResultKind.Command => "↵ Executar     Esc Fechar",
+            _ => "↵ Abrir     Esc Fechar",
+        };
     }
 
     private async Task LoadIconAsync(ResultItemViewModel vm, string key)

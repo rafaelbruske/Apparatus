@@ -133,10 +133,14 @@ public static class FuzzyMatcher
     {
         int n = text.Length, m = term.Length;
         int score = 0, prev = -2, chain = 0, k = 0;
+        int firstBonus = 0;
+        bool contiguous = true;
         for (int i = start; i < n && k < m; i++)
         {
             if (TextFold.Fold(text[i]) != term[k]) continue;
             int bonus = BonusAt(text, i);
+            if (k == 0) firstBonus = bonus;
+            else if (i != prev + 1) contiguous = false;
             if (i == prev + 1)
             {
                 chain = Math.Max(Math.Max(chain, bonus), BonusConsecutive);
@@ -153,6 +157,11 @@ public static class FuzzyMatcher
             k++;
         }
         if (k < m) return;
+
+        // From three letters up, a match must be anchored: it starts a word, or it is one unbroken run.
+        // Otherwise "ola" would match "Metro Last Light" (o in Metro, then la in Last).
+        if (m >= 3 && firstBonus == 0 && !contiguous) return;
+
         if (start == 0 && prev == m - 1 && n == m) score += BonusExactName;
         if (score <= best) return;
         best = score;

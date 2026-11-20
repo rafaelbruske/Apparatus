@@ -1,0 +1,145 @@
+<Window
+    x:Class="Apparatus.App.SnippetsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Apparatus.App"
+    Title="Snippets — Apparatus">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="Root">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="340" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- list -->
+        <Grid Grid.Column="0" Padding="16,12,8,16" RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBox x:Name="SearchBox" PlaceholderText="Buscar por nome, gatilho ou texto…" TextChanged="OnFilterChanged" />
+            <ComboBox x:Name="CategoryFilter" Grid.Row="1" HorizontalAlignment="Stretch" SelectionChanged="OnFilterChanged" />
+
+            <ListView
+                x:Name="SnippetList"
+                Grid.Row="2"
+                ItemsSource="{x:Bind Items}"
+                SelectionMode="Single"
+                SelectionChanged="OnSelectionChanged">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:SnippetListItem">
+                        <Grid Height="52" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind Subtitle}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <FontIcon Grid.Column="1" Glyph="&#xE735;" FontSize="14" VerticalAlignment="Center"
+                                      Visibility="{x:Bind FavoriteVisibility}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
+                <Button Content="Novo" Click="OnNew" Style="{StaticResource AccentButtonStyle}" />
+                <Button Content="Duplicar" Click="OnDuplicate" />
+                <Button Content="Excluir" Click="OnDelete" />
+            </StackPanel>
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8">
+                <Button Content="Importar…" Click="OnImport" />
+                <Button Content="Exportar…" Click="OnExport" />
+            </StackPanel>
+        </Grid>
+
+        <!-- editor -->
+        <ScrollViewer Grid.Column="1">
+            <StackPanel x:Name="EditorPanel" Padding="16,12,28,24" Spacing="14">
+                <InfoBar x:Name="Status" IsOpen="False" IsClosable="True" />
+
+                <TextBox x:Name="NameBox" Header="Nome" TextChanged="OnEdited" />
+
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="4">
+                        <TextBox x:Name="TriggerBox" Header="Gatilho (opcional) — por exemplo ;email" FontFamily="Consolas" TextChanged="OnEdited" />
+                        <TextBlock x:Name="TriggerHelp" FontSize="12" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="AutoExpandSwitch" Grid.Column="1" Header="Expandir ao digitar" Toggled="OnEdited" />
+                </Grid>
+
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="CategoryBox" Header="Categoria" IsEditable="True" HorizontalAlignment="Stretch" TextSubmitted="OnCategorySubmitted" SelectionChanged="OnEdited" />
+                    <TextBox x:Name="TagsBox" Grid.Column="1" Header="Tags (separadas por vírgula)" TextChanged="OnEdited" />
+                </Grid>
+
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="ModeBox" Header="Como inserir" HorizontalAlignment="Stretch" SelectionChanged="OnEdited">
+                        <ComboBoxItem Content="Automático (digita o curto, cola o longo)" />
+                        <ComboBoxItem Content="Sempre digitar" />
+                        <ComboBoxItem Content="Sempre colar" />
+                    </ComboBox>
+                    <ToggleSwitch x:Name="FavoriteSwitch" Grid.Column="1" Header="Favorito" Toggled="OnEdited" />
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Conteúdo" VerticalAlignment="Center" />
+                    <DropDownButton Grid.Column="1" Content="Inserir variável">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout x:Name="VariablesFlyout" />
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
+                <TextBox
+                    x:Name="ContentBox"
+                    AcceptsReturn="True"
+                    TextWrapping="Wrap"
+                    MinHeight="200"
+                    FontFamily="Consolas"
+                    IsSpellCheckEnabled="False"
+                    TextChanged="OnEdited" />
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Prévia (com a data e a hora de agora)" FontSize="12" Opacity="0.65" />
+                    <Border Padding="12" CornerRadius="6"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <TextBlock x:Name="PreviewText" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                    </Border>
+                    <TextBlock x:Name="FieldsText" FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="SaveButton" Content="Salvar" Click="OnSave" Style="{StaticResource AccentButtonStyle}" />
+                    <Button x:Name="DiscardButton" Content="Descartar alterações" Click="OnDiscard" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
