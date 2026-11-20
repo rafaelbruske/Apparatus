@@ -1,0 +1,182 @@
+using Apparatus.Core;
+using Apparatus.Core.Indexing;
+using Apparatus.Core.Input;
+using Apparatus.Core.Search;
+using Apparatus.Core.Search.Providers;
+using Apparatus.Core.Settings;
+using Apparatus.Core.Storage;
+using Apparatus.Native;
+
+namespace Apparatus.App;
+
+/// <summary>Composition root: owns the long-lived services and the operations that span several of them.</summary>
+public sealed class AppServices : IDisposable
+{
+    private static readonly TimeSpan RescanInterval = TimeSpan.FromHours(6);
+    private static readonly TimeSpan AppsRefreshInterval = TimeSpan.FromMinutes(15);
+
+    private readonly ShellAppCatalog _catalog = new();
+    private readonly Timer _rescanTimer;
+    private DateTime _appsLoadedAt = DateTime.MinValue;
+    private int _appsRefreshing;
+
+    public AppServices(MessageHost host)
+    {
+        Host = host;
+        Settings = new SettingsStore(AppPaths.SettingsFile);
+        Usage = new UsageStore(AppPaths.DatabaseFile);
+        Index = new FileIndex(AppPaths.IndexDirectory);
+        Apps = new AppsProvider();
+        Search = new SearchEngine(new ISearchProvider[]
+        {
+            Apps,
+            new FilesProvider(Index, () => Settings.Current),
+            new WindowsSettingsProvider(),
+            new CalculatorProvider(),
+            new WebSearchProvider(() => Settings.Current),
+            new InternalCommandsProvider(),
+        }, Usage);
+
+        _rescanTimer = new Timer(_ => ReindexIfStale(), null, RescanInterval, RescanInterval);
+    }
+
+    public MessageHost Host { get; }
+    public SettingsStore Settings { get; }
+    public UsageStore Usage { get; }
+    public FileIndex Index { get; }
+    public AppsProvider Apps { get; }
+    public SearchEngine Search { get; }
+
+    /// <summary>The hotkey that is actually registered (it may differ from the setting if registration failed).</summary>
+    public HotkeySpec? ActiveHotkey { get; private set; }
+
+    // ------------------------------------------------------------ startup
+
+    public HotkeyRegistration RegisterConfiguredHotkey()
+    {
+        if (!HotkeySpec.TryParse(Settings.Current.Hotkey, out var spec)) spec = HotkeySpec.Default;
+        var result = Host.RegisterHotkey(spec);
+        ActiveHotkey = result.Success ? spec : null;
+        return result;
+    }
+
+    /// <summary>Loads the cached app list instantly, then refreshes it from the shell in the background.</summary>
+    public void StartBackgroundWork()
+    {
+        var cached = Usage.LoadAppsCache();
+        if (cached.Count > 0) Apps.SetApps(cached.Select(c => new AppEntry(c.Id, c.Name, c.ParsingName)));
+        _ = RefreshAppsAsync(force: true);
+
+        var settings = Settings.Current;
+        if (settings.IndexFiles)
+        {
+            var roots = FileIndex.ResolveRoots(settings);
+            Index.LoadSnapshots(roots);
+            if (Index.NeedsRescan(roots, RescanInterval)) ReindexNow();
+            else Index.WatchOnly(roots, settings);   // snapshots are fresh: just watch for changes until the next scan
+        }
+    }
+
+    public async Task RefreshAppsAsync(bool force = false)
+    {
+        if (!force && DateTime.UtcNow - _appsLoadedAt < AppsRefreshInterval) return;
+        if (Interlocked.Exchange(ref _appsRefreshing, 1) == 1) return;
+        try
+        {
+            var apps = await _catalog.LoadAsync(CancellationToken.None).ConfigureAwait(false);
+            if (apps.Count == 0) return;
+            Apps.SetApps(apps);
+            Usage.SaveAppsCache(apps.Select(a => (a.Id, a.Name, a.ParsingName)));
+            _appsLoadedAt = DateTime.UtcNow;
+            AppLog.Info($"Apps refreshed: {apps.Count}");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Refreshing the app list failed", ex);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _appsRefreshing, 0);
+        }
+    }
+
+    // ------------------------------------------------------------- index
+
+    public void ReindexNow()
+    {
+        var settings = Settings.Current;
+        if (!settings.IndexFiles) return;
+        _ = Index.RebuildAsync(FileIndex.ResolveRoots(settings), settings);
+    }
+
+    private void ReindexIfStale()
+    {
+        var settings = Settings.Current;
+        if (settings.IndexFiles && Index.NeedsRescan(FileIndex.ResolveRoots(settings), RescanInterval)) ReindexNow();
+    }
+
+    // ---------------------------------------------------------- settings
+
+    /// <summary>Applies a settings change and reacts to what changed (autostart, indexing).</summary>
+    public void ApplySettings(Action<AppSettings> mutate)
+    {
+        var old = Settings.Current;
+        var next = old.Clone();
+        mutate(next);
+        Settings.Update(next);
+
+        if (old.RunAtStartup != next.RunAtStartup)
+        {
+            try { AutoStart.Set(next.RunAtStartup); }
+            catch (Exception ex) { AppLog.Error("Changing autostart failed", ex); }
+        }
+
+        bool indexingChanged = old.IndexFiles != next.IndexFiles
+            || !(old.IndexRoots ?? new()).SequenceEqual(next.IndexRoots ?? new(), StringComparer.OrdinalIgnoreCase)
+            || (old.IndexRoots is null) != (next.IndexRoots is null)
+            || !old.ExcludedNames.SequenceEqual(next.ExcludedNames, StringComparer.OrdinalIgnoreCase)
+            || old.MaxEntriesPerRoot != next.MaxEntriesPerRoot;
+        if (indexingChanged)
+        {
+            if (next.IndexFiles) ReindexNow();
+            else Index.CancelScan();
+        }
+    }
+
+    // ----------------------------------------------------------- hotkey
+
+    /// <summary>Tries a new hotkey; on failure the previous one is restored. Persists it on success.</summary>
+    public HotkeyRegistration TryChangeHotkey(HotkeySpec spec)
+    {
+        var previous = ActiveHotkey;
+        var result = Host.RegisterHotkey(spec);
+        if (result.Success)
+        {
+            ActiveHotkey = spec;
+            ApplySettings(s => s.Hotkey = spec.ToString());
+        }
+        else if (previous is { } p)
+        {
+            ActiveHotkey = Host.RegisterHotkey(p).Success ? p : null;
+        }
+        return result;
+    }
+
+    /// <summary>Frees the hotkey temporarily (e.g. while the user is recording a new one).</summary>
+    public void SuspendHotkey()
+    {
+        Host.UnregisterHotkey();
+    }
+
+    public void ResumeHotkey()
+    {
+        if (ActiveHotkey is { } spec) Host.RegisterHotkey(spec);
+    }
+
+    public void Dispose()
+    {
+        _rescanTimer.Dispose();
+        Index.Dispose();
+        Usage.Dispose();
+    }
+}

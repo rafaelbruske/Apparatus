@@ -59,6 +59,8 @@ SQLite, com exportar e importar para backup.
 
 ## 5. Fases
 
+Status: **Fase 0 concluída** ([resultados](FASE0-RESULTADOS.md)); **Fase 1 concluída** ([detalhes](FASE1.md)).
+
 | Fase | Entrega | Critério de saída |
 |---|---|---|
 | **0. Fundação e spikes** | Solução, `.gitignore`, spikes: latência da janela WinUI, `Alt+Space`, supressão da tecla Win, consulta ao Windows Search | WinUI < ~50 ms ou troca por WPF; spikes aprovados |

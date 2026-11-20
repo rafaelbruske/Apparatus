@@ -1,0 +1,133 @@
+<Window
+    x:Class="Apparatus.App.LauncherWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Apparatus.App">
+
+    <Window.SystemBackdrop>
+        <DesktopAcrylicBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="Root">
+        <Grid.Resources>
+            <Style x:Key="ResultItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                <Setter Property="MinHeight" Value="56" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Margin" Value="0,0,0,0" />
+            </Style>
+
+            <DataTemplate x:Key="ResultTemplate" x:DataType="local:ResultItemViewModel">
+                <Grid Height="56" ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Width="32" Height="32">
+                        <FontIcon
+                            Glyph="{x:Bind Glyph}"
+                            FontSize="22"
+                            Opacity="0.8"
+                            Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
+                        <Image Source="{x:Bind Icon, Mode=OneWay}" Width="32" Height="32" />
+                    </Grid>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                        <TextBlock
+                            FontSize="15"
+                            TextTrimming="CharacterEllipsis"
+                            local:Highlight.Item="{x:Bind}" />
+                        <TextBlock
+                            Text="{x:Bind Subtitle}"
+                            FontSize="12"
+                            Opacity="0.65"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <TextBlock
+                        Grid.Column="2"
+                        Text="{x:Bind KindLabel}"
+                        FontSize="11"
+                        Opacity="0.5"
+                        VerticalAlignment="Center" />
+                </Grid>
+            </DataTemplate>
+        </Grid.Resources>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="64" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Padding="22,0,18,0" ColumnSpacing="14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <FontIcon Glyph="&#xE721;" FontSize="18" Opacity="0.6" VerticalAlignment="Center" />
+            <TextBox
+                x:Name="SearchBox"
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                FontSize="22"
+                PlaceholderText="Pesquisar apps, arquivos, configurações…"
+                BorderThickness="0"
+                Background="Transparent"
+                TextChanged="OnTextChanged"
+                PreviewKeyDown="OnSearchPreviewKeyDown">
+                <TextBox.Resources>
+                    <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                    <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                    <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
+                    <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                </TextBox.Resources>
+            </TextBox>
+        </Grid>
+
+        <Rectangle
+            x:Name="Divider"
+            Grid.Row="1"
+            Height="1"
+            Fill="{ThemeResource DividerStrokeColorDefaultBrush}"
+            Visibility="Collapsed" />
+
+        <ListView
+            x:Name="ResultsList"
+            Grid.Row="2"
+            Padding="8,6,8,6"
+            ItemsSource="{x:Bind Items}"
+            ItemTemplate="{StaticResource ResultTemplate}"
+            ItemContainerStyle="{StaticResource ResultItemStyle}"
+            SelectionMode="Single"
+            IsItemClickEnabled="True"
+            ItemClick="OnItemClick"
+            Visibility="Collapsed" />
+
+        <Grid
+            x:Name="Footer"
+            Grid.Row="3"
+            Height="36"
+            Padding="22,0"
+            Visibility="Collapsed">
+            <TextBlock
+                x:Name="HintsText"
+                Text="↵ Abrir     Ctrl+↵ Mostrar na pasta     Esc Fechar"
+                FontSize="11"
+                Opacity="0.55"
+                VerticalAlignment="Center" />
+            <TextBlock
+                x:Name="StatusText"
+                FontSize="11"
+                Opacity="0.55"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center" />
+        </Grid>
+    </Grid>
+</Window>
