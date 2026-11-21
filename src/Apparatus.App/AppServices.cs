@@ -1,5 +1,7 @@
 using Apparatus.Core;
 using Apparatus.Core.Actions;
+using Apparatus.Core.Clipboard;
+using Apparatus.Core.Extensions;
 using Apparatus.Core.Indexing;
 using Apparatus.Core.Input;
 using Apparatus.Core.Search;
@@ -33,11 +35,17 @@ public sealed class AppServices : IDisposable
         Snippets.SeedExamplesOnce();
         Actions = new ActionStore(AppPaths.ActionsFile);
         Actions.SeedExamplesOnce();
+        ClipboardStore = new ClipboardHistoryStore(AppPaths.ClipboardFile);
+        Extensions = new ExtensionHost(AppPaths.ExtensionsDirectory,
+            () => Settings.Current.EnabledExtensions, () => Settings.Current.GlobalExtensions,
+            (title, message) => host.ShowBalloon(title, message));
         Search = new SearchEngine(new ISearchProvider[]
         {
             Apps,
             new SnippetsProvider(Snippets),
             new ActionsProvider(Actions),
+            new ClipboardProvider(ClipboardStore, () => Settings.Current),
+            new ExtensionsProvider(Extensions),
             new FilesProvider(Index, () => Settings.Current),
             new WindowsSettingsProvider(),
             new CalculatorProvider(),
@@ -55,6 +63,17 @@ public sealed class AppServices : IDisposable
     public AppsProvider Apps { get; }
     public SnippetStore Snippets { get; }
     public ActionStore Actions { get; }
+    public ClipboardHistoryStore ClipboardStore { get; }
+    public ExtensionHost Extensions { get; }
+
+    /// <summary>Records and pastes clipboard history; set once the UI thread exists.</summary>
+    public ClipboardService? ClipboardHost { get; set; }
+
+    /// <summary>Carries out extension results; set once the UI thread exists.</summary>
+    public ExtensionRunner? ExtensionRunner { get; set; }
+
+    /// <summary>Shows the launcher with some text typed in (null for none). Set by the app once the launcher exists.</summary>
+    public Action<string?>? ShowLauncher { get; set; }
 
     /// <summary>Runs actions and keeps their hotkeys registered; set once the UI thread exists.</summary>
     public ActionService? ActionHost { get; set; }
@@ -141,6 +160,9 @@ public sealed class AppServices : IDisposable
         mutate(next);
         Settings.Update(next);
 
+        // Switching an extension off must also stop its process.
+        foreach (var gone in old.EnabledExtensions.Except(next.EnabledExtensions, StringComparer.OrdinalIgnoreCase)) Extensions.Stop(gone);
+
         if (old.RunAtStartup != next.RunAtStartup)
         {
             try { AutoStart.Set(next.RunAtStartup); }
@@ -197,6 +219,9 @@ public sealed class AppServices : IDisposable
     public void Dispose()
     {
         _rescanTimer.Dispose();
+        ClipboardHost?.Dispose();
+        Extensions.Dispose();
+        ClipboardStore.Dispose();
         ActionHost?.Dispose();
         Expander?.Dispose();
         Actions.Dispose();

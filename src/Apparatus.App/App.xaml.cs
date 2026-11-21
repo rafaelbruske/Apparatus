@@ -8,7 +8,7 @@ namespace Apparatus.App;
 
 public partial class App : Application
 {
-    private const int CmdOpen = 1, CmdSettings = 2, CmdAutostart = 3, CmdReindex = 4, CmdQuit = 5, CmdSnippets = 6, CmdExpansion = 7, CmdActions = 8;
+    private const int CmdOpen = 1, CmdSettings = 2, CmdAutostart = 3, CmdReindex = 4, CmdQuit = 5, CmdSnippets = 6, CmdExpansion = 7, CmdActions = 8, CmdClipboard = 9;
 
     private readonly SingleInstance _instance;
     private readonly string[] _args;
@@ -42,8 +42,11 @@ public partial class App : Application
         _services = new AppServices(_host);
         _services.Expander = new SnippetService(_services, _ui);
         _services.ActionHost = new ActionService(_services, _ui);
+        _services.ExtensionRunner = new ExtensionRunner(_services, _ui);
+        _services.ClipboardHost = new ClipboardService(_services);
         var executor = new ResultExecutor(_services, OpenSettings, Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction));
         _launcher = new LauncherWindow(_services, executor);
+        _services.ShowLauncher = query => _ui.TryEnqueue(() => _launcher.ShowLauncher(string.IsNullOrEmpty(query) ? null : query));
 
         _host.TrayMenuProvider = BuildTrayMenu;
         _host.TrayClicked += () => _launcher.ShowLauncher();
@@ -53,6 +56,7 @@ public partial class App : Application
 
         var registration = _services.RegisterConfiguredHotkey();
         _services.StartBackgroundWork();
+        ExtensionRunner.InstallSampleOnce(_services);
         _instance.Listen(() => _ui.TryEnqueue(() => _launcher.ShowLauncher()));
 
         bool background = _args.Contains("--background", StringComparer.OrdinalIgnoreCase);
@@ -102,6 +106,7 @@ public partial class App : Application
             new TrayMenuItem(CmdSettings, "Configurações"),
             TrayMenuItem.Divider,
             new TrayMenuItem(CmdExpansion, "Expandir snippets ao digitar", Checked: _services?.Settings.Current.SnippetExpansion == true),
+            new TrayMenuItem(CmdClipboard, "Guardar histórico da área de transferência", Checked: _services?.Settings.Current.ClipboardHistory == true),
             new TrayMenuItem(CmdAutostart, "Iniciar com o Windows", Checked: _services?.Settings.Current.RunAtStartup == true),
             new TrayMenuItem(CmdReindex, "Reindexar arquivos"),
             TrayMenuItem.Divider,
@@ -117,6 +122,7 @@ public partial class App : Application
             case CmdSettings: OpenSettings(); break;
             case CmdSnippets: OpenSnippets(); break;
             case CmdActions: OpenActions(); break;
+            case CmdClipboard: _services?.ApplySettings(s => s.ClipboardHistory = !s.ClipboardHistory); break;
             case CmdExpansion:
                 _services?.ApplySettings(s => s.SnippetExpansion = !s.SnippetExpansion);
                 break;

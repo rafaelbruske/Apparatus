@@ -41,6 +41,12 @@ public sealed class ResultExecutor
                     // Enter inserts into the app that was focused before the launcher; Ctrl+Enter only copies.
                     _services.Expander?.RunFromLauncher(long.Parse(result.Payload), copyOnly: secondary);
                     break;
+                case ResultKind.Extension:
+                    _services.ExtensionRunner?.Run(result.Payload, secondary, _services.Expander?.LauncherTarget ?? 0);
+                    break;
+                case ResultKind.Clipboard:
+                    _services.ClipboardHost?.Activate(long.Parse(result.Payload), secondary, _services.Expander?.LauncherTarget ?? 0);
+                    break;
                 case ResultKind.Action:
                     // Run in the application that had the focus before the launcher opened.
                     _services.ActionHost?.Run(long.Parse(result.Payload), _services.Expander?.LauncherTarget ?? 0);
@@ -54,7 +60,7 @@ public sealed class ResultExecutor
             }
 
             // Calculations and web searches would only pollute the history.
-            if (result.Kind is not (ResultKind.Calculator or ResultKind.Web)) _services.Search.RecordUse(query, result);
+            if (result.Kind is not (ResultKind.Calculator or ResultKind.Web or ResultKind.Clipboard)) _services.Search.RecordUse(query, result);
         }
         catch (Exception ex)
         {
@@ -75,6 +81,9 @@ public sealed class ResultExecutor
             case InternalCommands.ManageSnippets: _openSnippets(false); break;
             case InternalCommands.NewSnippet: _openSnippets(true); break;
             case InternalCommands.ManageActions: _openActions(false); break;
+            case InternalCommands.ClipboardEnable: _services.ApplySettings(s => s.ClipboardHistory = true); break;
+            case InternalCommands.ClipboardClear: _services.ClipboardStore.Clear(); break;
+            case InternalCommands.ManageExtensions: _openSettings(); break;
             case InternalCommands.NewAction: _openActions(true); break;
         }
     }

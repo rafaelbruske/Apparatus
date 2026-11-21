@@ -19,6 +19,7 @@ public enum StepKind
     Brightness,
     Media,
     System,
+    OpenLauncher,
 }
 
 public enum ScopeMode

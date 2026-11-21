@@ -12,6 +12,8 @@ public enum ResultKind
     Command = 7,
     Snippet = 8,
     Action = 9,
+    Extension = 10,
+    Clipboard = 11,
 }
 
 /// <summary>
@@ -27,7 +29,8 @@ public sealed record SearchResult(
     string Payload,
     double Score = 0,
     string? Icon = null,
-    IReadOnlyList<int>? Highlight = null);
+    IReadOnlyList<int>? Highlight = null,
+    bool Favorite = false);
 
 public sealed record SearchContext(string Raw, FuzzyQuery Fuzzy)
 {

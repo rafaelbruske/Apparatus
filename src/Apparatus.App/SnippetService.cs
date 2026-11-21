@@ -347,6 +347,42 @@ public sealed class SnippetService : IDisposable
         await done.Task.ConfigureAwait(false);
     }
 
+    /// <summary>Types or pastes literal text (no variables are interpreted), or copies it with <paramref name="copyOnly"/>.</summary>
+    public Task InsertPlainAsync(string text, nint target = 0, bool copyOnly = false)
+    {
+        if (target == 0) target = KeyTranslator.ForegroundWindow();
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _jobs.Add(() =>
+        {
+            try
+            {
+                if (copyOnly)
+                {
+                    _ui.TryEnqueue(() =>
+                    {
+                        var package = new DataPackage();
+                        package.SetText(text.Replace("\n", "\r\n"));
+                        Clipboard.SetContent(package);
+                        Clipboard.Flush();
+                    });
+                }
+                else
+                {
+                    RestoreFocus(target);
+                    TextInjector.WaitForModifiersReleased(400);
+                    Insert(new RenderedSnippet(text.Replace("\r\n", "\n"), 0), InsertMode.Auto);
+                }
+                done.SetResult();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error("Inserting text failed", ex);
+                done.SetException(ex);
+            }
+        });
+        return done.Task;
+    }
+
     public void Dispose()
     {
         _hook.Dispose();

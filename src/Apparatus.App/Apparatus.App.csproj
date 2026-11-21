@@ -31,5 +31,6 @@
   <ItemGroup>
     <Content Include="Assets\apparatus.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\apparatus.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Samples\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

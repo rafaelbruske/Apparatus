@@ -73,6 +73,50 @@ public sealed unsafe class ClipboardAccess : IDisposable
     }
 
     /// <summary>
+    /// Reads what was just copied, for the history. Returns null when it should not be recorded: no text, marked
+    /// by the source as private (password managers do this), or copied in an excluded program.
+    /// </summary>
+    public ClipboardCapture? ReadForHistory(IReadOnlyCollection<string> excludedProcesses)
+    {
+        // Ask for the owner first: it is only meaningful while the clipboard still holds this copy.
+        string source = OwnerProcessName();
+        if (source.Length > 0 && excludedProcesses.Contains(source, StringComparer.OrdinalIgnoreCase)) return null;
+        if (!PInvoke.IsClipboardFormatAvailable(CF_UNICODETEXT)) return null;
+        if (PInvoke.IsClipboardFormatAvailable(_excludeFromMonitor)) return null;
+        if (PInvoke.IsClipboardFormatAvailable(_canIncludeInHistory) && ReadDword(_canIncludeInHistory) == 0) return null;
+
+        string? text = GetText();
+        return string.IsNullOrWhiteSpace(text) ? null : new ClipboardCapture(text, source);
+    }
+
+    private string OwnerProcessName()
+    {
+        var owner = PInvoke.GetClipboardOwner();
+        if (owner == HWND.Null) return "";
+        uint pid;
+        PInvoke.GetWindowThreadProcessId(owner, &pid);
+        try { using var p = System.Diagnostics.Process.GetProcessById((int)pid); return p.ProcessName; }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return ""; }
+    }
+
+    private uint? ReadDword(uint format)
+    {
+        if (!Open()) return null;
+        try
+        {
+            var handle = PInvoke.GetClipboardData(format);
+            if (handle == HANDLE.Null) return null;
+            var hMem = new HGLOBAL((void*)handle.Value);
+            if (PInvoke.GlobalSize(hMem) < sizeof(uint)) return null;
+            var p = PInvoke.GlobalLock(hMem);
+            if (p is null) return null;
+            try { return *(uint*)p; }
+            finally { PInvoke.GlobalUnlock(hMem); }
+        }
+        finally { PInvoke.CloseClipboard(); }
+    }
+
+    /// <summary>
     /// True when the clipboard is empty or holds only text, i.e. it can be replaced and restored without
     /// losing anything (an image or a copied file would be lost).
     /// </summary>
@@ -134,6 +178,8 @@ public sealed unsafe class ClipboardAccess : IDisposable
 
     public void Dispose() => PInvoke.DestroyWindow(_owner);
 }
+
+public sealed record ClipboardCapture(string Text, string Source);
 
 /// <summary>Types and pastes text into whichever window has the focus. Not thread-safe: use from one worker thread.</summary>
 public sealed unsafe class TextInjector : IDisposable

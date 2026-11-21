@@ -174,7 +174,7 @@ public sealed partial class LauncherWindow : Window
         await RunSearchAsync(SearchBox.Text);
     }
 
-    private async Task RunSearchAsync(string text)
+    private async Task RunSearchAsync(string text, int keepSelection = -1)
     {
         _searchCts?.Cancel();
         var cts = _searchCts = new CancellationTokenSource();
@@ -185,6 +185,7 @@ public sealed partial class LauncherWindow : Window
             var results = await _services.Search.SearchAsync(text, _services.Settings.Current.MaxResults, cts.Token);
             if (cts.IsCancellationRequested) return;
             ShowResults(results);
+            if (keepSelection >= 0 && Items.Count > 0) ResultsList.SelectedIndex = Math.Min(keepSelection, Items.Count - 1);
         }
         catch (OperationCanceledException)
         {
@@ -222,15 +223,20 @@ public sealed partial class LauncherWindow : Window
     /// <summary>The footer explains what Enter and Ctrl+Enter will do for the selected result.</summary>
     private void UpdateHints()
     {
-        HintsText.Text = (ResultsList.SelectedItem as ResultItemViewModel)?.Result.Kind switch
+        var selected = (ResultsList.SelectedItem as ResultItemViewModel)?.Result;
+        string star = selected is null ? "" : selected.Kind == Core.Search.ResultKind.Clipboard ? "     Ctrl+D Fixar"
+            : Core.Storage.UsageStore.CanFavorite(selected) ? (selected.Favorite ? "     Ctrl+D Desafixar" : "     Ctrl+D Favoritar") : "";
+        HintsText.Text = selected?.Kind switch
         {
             Core.Search.ResultKind.File or Core.Search.ResultKind.Folder => "↵ Abrir     Ctrl+↵ Mostrar na pasta     Esc Fechar",
             Core.Search.ResultKind.Calculator => "↵ Copiar o resultado     Esc Fechar",
             Core.Search.ResultKind.Snippet => "↵ Inserir     Ctrl+↵ Copiar     Esc Fechar",
             Core.Search.ResultKind.Action => "↵ Executar     Esc Fechar",
+            Core.Search.ResultKind.Clipboard => "↵ Colar     Ctrl+↵ Copiar     Shift+Del Esquecer     Esc Fechar",
+            Core.Search.ResultKind.Extension => "↵ Executar     Ctrl+↵ Alternativa     Esc Fechar",
             Core.Search.ResultKind.Command => "↵ Executar     Esc Fechar",
             _ => "↵ Abrir     Esc Fechar",
-        };
+        } + star;
     }
 
     private async Task LoadIconAsync(ResultItemViewModel vm, string key)
@@ -284,6 +290,14 @@ public sealed partial class LauncherWindow : Window
                 else HideLauncher();
                 e.Handled = true;
                 break;
+            case VirtualKey.D when ctrl:
+                ToggleFavoriteOfSelected();
+                e.Handled = true;
+                break;
+            case VirtualKey.Delete when shift && (ResultsList.SelectedItem as ResultItemViewModel)?.Result.Kind == Core.Search.ResultKind.Clipboard:
+                ForgetClipboardEntry();
+                e.Handled = true;
+                break;
             case VirtualKey.Delete when shift && string.IsNullOrEmpty(SearchBox.Text):
                 ForgetSelected();
                 e.Handled = true;
@@ -314,6 +328,30 @@ public sealed partial class LauncherWindow : Window
         string query = SearchBox.Text;
         HideLauncher();   // hide first so the launched program gets the foreground
         _executor.Run(vm.Result, query, secondary);
+    }
+
+    private void ToggleFavoriteOfSelected()
+    {
+        if (ResultsList.SelectedItem is not ResultItemViewModel vm) return;
+        int index = ResultsList.SelectedIndex;
+        if (vm.Result.Kind == Core.Search.ResultKind.Clipboard)
+        {
+            // Clipboard entries are pinned inside the history (so they survive its clean-ups), not in the favorites list.
+            _services.ClipboardHost?.TogglePin(long.Parse(vm.Result.Payload));
+            _ = RunSearchAsync(SearchBox.Text, keepSelection: index);
+            return;
+        }
+        if (!Core.Storage.UsageStore.CanFavorite(vm.Result)) return;
+        _services.Usage.ToggleFavorite(vm.Result);
+        _ = RunSearchAsync(SearchBox.Text, keepSelection: index);
+    }
+
+    private void ForgetClipboardEntry()
+    {
+        if (ResultsList.SelectedItem is not ResultItemViewModel vm) return;
+        int index = ResultsList.SelectedIndex;
+        _services.ClipboardStore.Delete(long.Parse(vm.Result.Payload));
+        _ = RunSearchAsync(SearchBox.Text, keepSelection: index);
     }
 
     private void ForgetSelected()

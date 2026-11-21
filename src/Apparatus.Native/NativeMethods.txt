@@ -1,3 +1,4 @@
+AddClipboardFormatListener
 AppendMenu
 AttachThreadInput
 BringWindowToTop
@@ -24,6 +25,7 @@ GWL_STYLE
 GetAsyncKeyState
 GetClassName
 GetClipboardData
+GetClipboardOwner
 GetClipboardSequenceNumber
 GetCurrentProcessId
 GetCurrentThreadId
@@ -46,6 +48,7 @@ GlobalSize
 GlobalUnlock
 HWND_MESSAGE
 INPUT
+IsClipboardFormatAvailable
 IsWindowVisible
 KBDLLHOOKSTRUCT
 KEYBDINPUT
@@ -64,6 +67,7 @@ RegisterClassEx
 RegisterClipboardFormat
 RegisterHotKey
 RegisterWindowMessage
+RemoveClipboardFormatListener
 SendInput
 SetClipboardData
 SetForegroundWindow
@@ -77,6 +81,7 @@ UnregisterHotKey
 VIRTUAL_KEY
 WH_KEYBOARD_LL
 WM_APP
+WM_CLIPBOARDUPDATE
 WM_CONTEXTMENU
 WM_DESTROY
 WM_HOTKEY

@@ -1,0 +1,12 @@
+{
+  "id": "hello-powershell",
+  "name": "Olá, PowerShell",
+  "description": "Extensão de exemplo escrita em PowerShell: responde ao gatilho “hello” com saudação, hora, pasta temporária e uma contagem de arquivos.",
+  "version": "1.0.0",
+  "author": "Apparatus",
+  "keyword": "hello",
+  "command": "powershell.exe",
+  "args": ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", "main.ps1"],
+  "mode": "persistent",
+  "timeoutMs": 4000
+}

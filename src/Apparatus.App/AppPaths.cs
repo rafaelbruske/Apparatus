@@ -34,5 +34,11 @@ public static class AppPaths
     /// <summary>User-defined actions and macros.</summary>
     public static string ActionsFile => Path.Combine(Roaming, "actions.db");
 
+    /// <summary>Each sub-folder holding an extension.json is an extension.</summary>
+    public static string ExtensionsDirectory => Path.Combine(Roaming, "extensions");
+
+    /// <summary>What was copied: the most sensitive data the app keeps, so it stays out of the roaming folder.</summary>
+    public static string ClipboardFile => Path.Combine(Local, "clipboard.db");
+
     public static string AssetPath(string name) => Path.Combine(AppContext.BaseDirectory, "Assets", name);
 }

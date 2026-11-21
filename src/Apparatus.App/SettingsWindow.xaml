@@ -183,6 +183,116 @@
                 </StackPanel>
             </Border>
 
+            <!-- clipboard -->
+            <TextBlock Text="Área de transferência" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <ToggleSwitch
+                        x:Name="ClipboardSwitch"
+                        Header="Guardar um histórico do que eu copiar"
+                        OnContent="Ativado"
+                        OffContent="Desativado"
+                        Toggled="OnClipboardToggled" />
+                    <TextBlock
+                        Text="Só texto, guardado apenas neste computador. Digite “clip” no launcher para ver. Cópias que um gerenciador de senhas marca como privadas, e as feitas nos aplicativos listados abaixo, nunca são guardadas."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="24">
+                        <NumberBox
+                            x:Name="ClipboardMaxBox"
+                            Header="Máximo de itens"
+                            Minimum="20"
+                            Maximum="5000"
+                            SpinButtonPlacementMode="Inline"
+                            Width="180"
+                            ValueChanged="OnClipboardLimitsChanged" />
+                        <NumberBox
+                            x:Name="ClipboardDaysBox"
+                            Header="Guardar por (dias)"
+                            Minimum="1"
+                            Maximum="365"
+                            SpinButtonPlacementMode="Inline"
+                            Width="180"
+                            ValueChanged="OnClipboardLimitsChanged" />
+                    </StackPanel>
+                    <TextBox
+                        x:Name="ClipboardExcludedBox"
+                        Header="Aplicativos que nunca entram no histórico (nome do processo, um por linha)"
+                        AcceptsReturn="True"
+                        TextWrapping="NoWrap"
+                        Height="90"
+                        LostFocus="OnClipboardExcludedLostFocus" />
+                    <Button Content="Limpar o histórico agora (itens fixados ficam)" Click="OnClearClipboard" />
+                </StackPanel>
+            </Border>
+
+            <!-- quicklinks -->
+            <TextBlock Text="Quicklinks e buscas na web" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Com {query} no destino, o atalho vira uma busca (“yt lofi” pesquisa no YouTube). Sem {query}, é um atalho que abre um site, uma pasta, um arquivo ou um programa quando você escolhe o nome no launcher."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <ListView
+                        x:Name="QuicklinksList"
+                        SelectionMode="Single"
+                        MinHeight="80"
+                        MaxHeight="220"
+                        BorderThickness="1"
+                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        CornerRadius="6" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Adicionar…" Click="OnAddQuicklink" />
+                        <Button Content="Editar…" Click="OnEditQuicklink" />
+                        <Button Content="Remover" Click="OnRemoveQuicklink" />
+                        <Button Content="Restaurar padrões" Click="OnResetQuicklinks" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- extensions -->
+            <TextBlock Text="Extensões" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="ExtensionsFolderText" FontSize="12" Opacity="0.65" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
+                    <StackPanel x:Name="ExtensionsList" Spacing="12" />
+                    <TextBlock
+                        x:Name="ExtensionsErrors"
+                        FontSize="12"
+                        TextWrapping="Wrap"
+                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                        Visibility="Collapsed" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Abrir a pasta" Click="OnOpenExtensionsFolder" />
+                        <Button Content="Recarregar" Click="OnReloadExtensions" />
+                        <Button Content="Restaurar o exemplo" Click="OnRestoreSample" />
+                    </StackPanel>
+                    <TextBlock
+                        Text="Uma extensão é um programa que o Apparatus executa com as suas permissões. Nenhuma roda sem você ativá-la aqui; ative só as de fonte confiável."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
             <!-- data -->
             <TextBlock Text="Dados" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border

@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The sample extension doubles as a test fixture. -->
+    <Content Include="..\..\src\Apparatus.App\Samples\**\*" LinkBase="Samples" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

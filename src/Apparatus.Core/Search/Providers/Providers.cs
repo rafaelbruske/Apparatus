@@ -172,7 +172,7 @@ public sealed partial class WebSearchProvider : ISearchProvider
         if (space > 0)
         {
             string keyword = raw[..space];
-            var engine = settings.SearchEngines.FirstOrDefault(e => string.Equals(e.Keyword, keyword, StringComparison.OrdinalIgnoreCase));
+            var engine = settings.SearchEngines.FirstOrDefault(e => Quicklinks.IsSearch(e) && string.Equals(e.Keyword, keyword, StringComparison.OrdinalIgnoreCase));
             string term = raw[(space + 1)..].Trim();
             if (engine is not null && term.Length > 0)
             {
@@ -181,14 +181,23 @@ public sealed partial class WebSearchProvider : ISearchProvider
             }
         }
 
+        // Plain quicklinks (no {query}) are found by name or keyword like any other item.
+        foreach (var q in settings.SearchEngines.Where(e => !Quicklinks.IsSearch(e)))
+        {
+            int s = Math.Max(FuzzyMatcher.Score(q.Name, context.Fuzzy), FuzzyMatcher.Score(q.Keyword, context.Fuzzy));
+            if (s == FuzzyMatcher.NoMatch) continue;
+            double exact = q.Keyword.Equals(raw, StringComparison.OrdinalIgnoreCase) ? 100 : 0;
+            list.Add(new SearchResult($"quicklink:{q.Keyword}", ResultKind.Url, q.Name, q.UrlTemplate, q.UrlTemplate, s + 70 + exact));
+        }
+
         if (!raw.Contains(' ') && UrlPattern().IsMatch(raw))
         {
             string url = raw.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? raw : "https://" + raw;
             list.Add(new SearchResult($"url:{url}", ResultKind.Url, $"Abrir {raw}", "Endereço da web", url, 5_000));
         }
 
-        var fallback = settings.SearchEngines.FirstOrDefault(e => string.Equals(e.Keyword, settings.DefaultSearchEngine, StringComparison.OrdinalIgnoreCase))
-                       ?? settings.SearchEngines.FirstOrDefault()
+        var fallback = settings.SearchEngines.FirstOrDefault(e => Quicklinks.IsSearch(e) && string.Equals(e.Keyword, settings.DefaultSearchEngine, StringComparison.OrdinalIgnoreCase))
+                       ?? settings.SearchEngines.FirstOrDefault(Quicklinks.IsSearch)
                        ?? new WebSearchEngine { Keyword = "g", Name = "Google", UrlTemplate = "https://www.google.com/search?q={query}" };
         // Always last: a safety net when nothing else matches.
         list.Add(Build(fallback, raw, -500));
@@ -215,6 +224,9 @@ public static class InternalCommands
     public const string NewSnippet = "apparatus:snippet-new";
     public const string ManageActions = "apparatus:actions";
     public const string NewAction = "apparatus:action-new";
+    public const string ClipboardEnable = "apparatus:clipboard-enable";
+    public const string ClipboardClear = "apparatus:clipboard-clear";
+    public const string ManageExtensions = "apparatus:extensions";
 }
 
 public sealed class InternalCommandsProvider : ISearchProvider
@@ -227,6 +239,8 @@ public sealed class InternalCommandsProvider : ISearchProvider
         new(InternalCommands.NewSnippet, "Novo snippet", "Cria um texto reutilizável", "apparatus snippet criar adicionar texto"),
         new(InternalCommands.ManageActions, "Gerenciar ações e atalhos", "Atalhos de teclado e macros", "apparatus ações atalhos macros hotkeys automação"),
         new(InternalCommands.NewAction, "Nova ação", "Cria um atalho ou macro", "apparatus ação criar atalho macro automação"),
+        new(InternalCommands.ClipboardClear, "Limpar o histórico da área de transferência", "Apaga o que foi copiado (itens fixados ficam)", "apparatus clipboard área transferência histórico apagar"),
+        new(InternalCommands.ManageExtensions, "Extensões", "Ativar, desativar e abrir a pasta das extensões", "apparatus extensões plugins scripts"),
         new(InternalCommands.OpenSettings, "Configurações do Apparatus", "Atalho, indexação e preferências", "apparatus preferências opções settings atalho hotkey"),
         new(InternalCommands.Reindex, "Reindexar arquivos", "Atualiza o índice de arquivos e pastas agora", "apparatus indexar atualizar scan arquivos"),
         new(InternalCommands.ClearHistory, "Limpar histórico do launcher", "Esquece os itens usados com frequência", "apparatus histórico apagar recentes"),

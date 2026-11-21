@@ -45,7 +45,7 @@ public sealed class ActionService : IDisposable
         _services = services;
         _ui = ui;
         _runner = new ActionRunner(
-            new IStepExecutor[] { new WindowsStepExecutor(), new SnippetStepExecutor(services) },
+            new IStepExecutor[] { new WindowsStepExecutor(), new SnippetStepExecutor(services), new LauncherStepExecutor(services) },
             new ForegroundProbe());
 
         services.Actions.LauncherHotkey = services.Settings.Current.Hotkey;

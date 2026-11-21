@@ -100,6 +100,10 @@ public static class StepCatalog
         {
             new("snippet", "Snippet", FieldType.Snippet, Required: true),
         }),
+        new(StepKind.OpenLauncher, "Abrir o launcher", "Abre o launcher já com um texto (por exemplo “clip ” mostra o histórico da área de transferência).", "", new StepField[]
+        {
+            new("query", "Texto inicial (opcional)", FieldType.Text, Hint: "clip   mostra a área de transferência; hello   chama uma extensão"),
+        }),
         new(StepKind.Wait, "Aguardar", "Espera um tempo antes do próximo passo.", "", new StepField[]
         {
             new("ms", "Milissegundos", FieldType.Number, "500", Hint: "1000 = 1 segundo", Required: true),
@@ -155,6 +159,7 @@ public static class StepCatalog
             StepKind.SendKeys => "Teclas: " + step.Get("keys"),
             StepKind.TypeText => "Digitar: " + FirstLine(step.Get("text")),
             StepKind.InsertSnippet => "Snippet: " + step.Get("snippet"),
+            StepKind.OpenLauncher => step.Get("query").Length > 0 ? $"Abrir o launcher com “{step.Get("query")}”" : "Abrir o launcher",
             StepKind.Wait => $"Aguardar {step.Get("ms", "0")} ms",
             StepKind.Window => "Janela: " + ChoiceLabel(StepKind.Window, "command", step.Get("command")),
             StepKind.Volume => VolumeText(step),

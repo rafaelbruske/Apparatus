@@ -16,6 +16,10 @@ public sealed class UsageStore : IDisposable
     private readonly object _gate = new();
     private readonly Dictionary<string, Usage> _usage = new();
     private readonly Dictionary<(string Query, string Key), (int Count, long Last)> _queryUsage = new();
+    private readonly Dictionary<string, FavoriteRow> _favorites = new();
+    private long _favoriteSequence;
+
+    private sealed record FavoriteRow(SearchResult Result, long Added);
 
     public UsageStore(string databasePath)
     {
@@ -44,6 +48,15 @@ public sealed class UsageStore : IDisposable
                 PRAGMA user_version = 1;
                 """);
         }
+        if (version < 2)
+        {
+            Exec("""
+                CREATE TABLE favorites(
+                    key TEXT PRIMARY KEY, kind INTEGER NOT NULL, title TEXT NOT NULL, subtitle TEXT NOT NULL,
+                    payload TEXT NOT NULL, icon TEXT, added INTEGER NOT NULL);
+                PRAGMA user_version = 2;
+                """);
+        }
     }
 
     private void LoadAll()
@@ -63,6 +76,18 @@ public sealed class UsageStore : IDisposable
             cmd.CommandText = "SELECT query, key, count, last_used FROM query_usage";
             using var r = cmd.ExecuteReader();
             while (r.Read()) _queryUsage[(r.GetString(0), r.GetString(1))] = (r.GetInt32(2), r.GetInt64(3));
+        }
+        using (var cmd = _db.CreateCommand())
+        {
+            cmd.CommandText = "SELECT key, kind, title, subtitle, payload, icon, added FROM favorites ORDER BY added, rowid";
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                var result = new SearchResult(r.GetString(0), (ResultKind)r.GetInt32(1), r.GetString(2), r.GetString(3),
+                    r.GetString(4), 0, r.IsDBNull(5) ? null : r.GetString(5), null, Favorite: true);
+                _favorites[result.Key] = new FavoriteRow(result, r.GetInt64(6));
+                _favoriteSequence = Math.Max(_favoriteSequence, r.GetInt64(6));
+            }
         }
     }
 
@@ -178,6 +203,52 @@ public sealed class UsageStore : IDisposable
             cmd.CommandText = "DELETE FROM usage WHERE key=$k; DELETE FROM query_usage WHERE key=$k;";
             cmd.Parameters.AddWithValue("$k", key);
             cmd.ExecuteNonQuery();
+        }
+    }
+
+    // ---------------------------------------------------------- favorites
+
+    /// <summary>Results that cannot be pinned: they do not exist outside the moment (a sum, a web-search fallback).</summary>
+    public static bool CanFavorite(SearchResult r) => r.Kind is not (ResultKind.Calculator or ResultKind.Web or ResultKind.Clipboard);
+
+    public bool IsFavorite(string key)
+    {
+        lock (_gate) return _favorites.ContainsKey(key);
+    }
+
+    /// <summary>Pinned results in the order they were pinned.</summary>
+    public IReadOnlyList<SearchResult> Favorites()
+    {
+        lock (_gate) return _favorites.Values.OrderBy(f => f.Added).Select(f => f.Result).ToList();
+    }
+
+    /// <summary>Pins the result, or unpins it when already pinned. Returns the new state.</summary>
+    public bool ToggleFavorite(SearchResult result)
+    {
+        if (!CanFavorite(result)) return false;
+        lock (_gate)
+        {
+            using var cmd = _db.CreateCommand();
+            if (_favorites.Remove(result.Key))
+            {
+                cmd.CommandText = "DELETE FROM favorites WHERE key=$k";
+                cmd.Parameters.AddWithValue("$k", result.Key);
+                cmd.ExecuteNonQuery();
+                return false;
+            }
+
+            long added = ++_favoriteSequence;
+            cmd.CommandText = "INSERT INTO favorites(key, kind, title, subtitle, payload, icon, added) VALUES($k, $kind, $t, $s, $p, $i, $a)";
+            cmd.Parameters.AddWithValue("$k", result.Key);
+            cmd.Parameters.AddWithValue("$kind", (int)result.Kind);
+            cmd.Parameters.AddWithValue("$t", result.Title);
+            cmd.Parameters.AddWithValue("$s", result.Subtitle);
+            cmd.Parameters.AddWithValue("$p", result.Payload);
+            cmd.Parameters.AddWithValue("$i", (object?)result.Icon ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$a", added);
+            cmd.ExecuteNonQuery();
+            _favorites[result.Key] = new FavoriteRow(result with { Highlight = null, Favorite = true, Score = 0 }, added);
+            return true;
         }
     }
 

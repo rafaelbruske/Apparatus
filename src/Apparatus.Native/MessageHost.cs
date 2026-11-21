@@ -41,6 +41,7 @@ public sealed unsafe class MessageHost : IDisposable
     private bool _trayAdded;
     private readonly HashSet<int> _registeredHotkeys = new();
     private nint _foregroundHook;
+    private readonly bool _clipboardListener;
 
     public MessageHost()
     {
@@ -63,12 +64,17 @@ public sealed unsafe class MessageHost : IDisposable
         _hwnd = PInvoke.CreateWindowEx(0, WindowClass, "Apparatus", 0, 0, 0, 0, 0, HWND.Null, null, null, null);
         if (_hwnd == HWND.Null) throw new InvalidOperationException("Cannot create the message window");
         _taskbarCreatedMessage = PInvoke.RegisterWindowMessage("TaskbarCreated");
+        _clipboardListener = PInvoke.AddClipboardFormatListener(_hwnd);
+        if (!_clipboardListener) AppLog.Warn("AddClipboardFormatListener failed: the clipboard history will not see copies");
     }
 
     public nint Handle => _hwnd;
 
     /// <summary>Raised with the id of any registered hotkey that was pressed.</summary>
     public event Action<int>? HotkeyPressed;
+
+    /// <summary>Raised on the UI thread each time the clipboard content changes.</summary>
+    public event Action? ClipboardChanged;
 
     /// <summary>Raised (on the UI thread) with the process name of the window that just took the focus.</summary>
     public event Action<string>? ForegroundChanged;
@@ -245,6 +251,11 @@ public sealed unsafe class MessageHost : IDisposable
         {
             try
             {
+                if (msg == PInvoke.WM_CLIPBOARDUPDATE)
+                {
+                    self.ClipboardChanged?.Invoke();
+                    return default;
+                }
                 if (msg == PInvoke.WM_HOTKEY)
                 {
                     self.HotkeyPressed?.Invoke((int)wParam.Value);
@@ -276,6 +287,7 @@ public sealed unsafe class MessageHost : IDisposable
     {
         foreach (var id in _registeredHotkeys.ToList()) UnregisterHotkey(id);
         if (_foregroundHook != 0) { UnhookWinEvent(_foregroundHook); _foregroundHook = 0; }
+        if (_clipboardListener) PInvoke.RemoveClipboardFormatListener(_hwnd);
         if (_trayAdded)
         {
             var nid = NewNotifyData();

@@ -45,6 +45,28 @@ public sealed class AppSettings
     };
 
     /// <summary>Keyword of the engine used when nothing matches (see <see cref="SearchEngines"/>).</summary>
+    /// <summary>Keep a history of copied text (opt-in: it records everything copied, so it starts switched off).</summary>
+    public bool ClipboardHistory { get; set; }
+
+    public int ClipboardMaxEntries { get; set; } = 500;
+
+    public int ClipboardRetentionDays { get; set; } = 30;
+
+    /// <summary>Copies made in these programs are never recorded.</summary>
+    public List<string> ClipboardExcludedProcesses { get; set; } = new()
+    {
+        "KeePass", "KeePassXC", "1Password", "Bitwarden", "Dashlane", "LastPass", "mstsc",
+    };
+
+    /// <summary>Ids of the extensions the user switched on. A new extension never runs until it is listed here.</summary>
+    public List<string> EnabledExtensions { get; set; } = new();
+
+    /// <summary>Enabled extensions that also receive ordinary searches (not only their keyword).</summary>
+    public List<string> GlobalExtensions { get; set; } = new();
+
+    /// <summary>Set once the bundled sample extension has been copied to the extensions folder.</summary>
+    public bool ExtensionSampleInstalled { get; set; }
+
     public string DefaultSearchEngine { get; set; } = "g";
 
     public List<WebSearchEngine> SearchEngines { get; set; } = DefaultEngines();

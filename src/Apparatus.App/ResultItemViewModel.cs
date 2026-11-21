@@ -27,6 +27,8 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
 
     public string Glyph { get; }
 
+    public Visibility FavoriteVisibility => Result.Favorite ? Visibility.Visible : Visibility.Collapsed;
+
     public string KindLabel { get; }
 
     /// <summary>The real icon once loaded; until then (or if none exists) the kind glyph shows.</summary>
@@ -61,6 +63,8 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
         ResultKind.Command => "",
         ResultKind.Snippet => "",
         ResultKind.Action => "",
+        ResultKind.Extension => "",
+        ResultKind.Clipboard => "",
         _ => "",
     };
 
@@ -75,6 +79,8 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
         ResultKind.Command => "Comando",
         ResultKind.Snippet => "Snippet",
         ResultKind.Action => "Ação",
+        ResultKind.Extension => "Extensão",
+        ResultKind.Clipboard => "Copiado",
         _ => "",
     };
 }
