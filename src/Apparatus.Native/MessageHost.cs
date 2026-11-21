@@ -25,7 +25,8 @@ public sealed unsafe class MessageHost : IDisposable
 {
     private const uint TrayCallbackMessage = PInvoke.WM_APP + 1;
     private const uint TrayIconId = 1;
-    private const int HotkeyId = 0xA990;
+    /// <summary>Id of the launcher's hotkey; action hotkeys use other ids.</summary>
+    public const int LauncherHotkeyId = 0xA990;
     private const int NIN_SELECT = 0x400;
     private const int NIN_KEYSELECT = 0x401;
     private const string WindowClass = "Apparatus.MessageHost";
@@ -38,7 +39,8 @@ public sealed unsafe class MessageHost : IDisposable
     private IDisposable? _iconOwner;
     private string _tooltip = "Apparatus";
     private bool _trayAdded;
-    private bool _hotkeyRegistered;
+    private readonly HashSet<int> _registeredHotkeys = new();
+    private nint _foregroundHook;
 
     public MessageHost()
     {
@@ -65,8 +67,11 @@ public sealed unsafe class MessageHost : IDisposable
 
     public nint Handle => _hwnd;
 
-    /// <summary>Raised when the global hotkey is pressed.</summary>
-    public event Action? HotkeyPressed;
+    /// <summary>Raised with the id of any registered hotkey that was pressed.</summary>
+    public event Action<int>? HotkeyPressed;
+
+    /// <summary>Raised (on the UI thread) with the process name of the window that just took the focus.</summary>
+    public event Action<string>? ForegroundChanged;
 
     /// <summary>Raised on a left click on the tray icon.</summary>
     public event Action? TrayClicked;
@@ -79,24 +84,61 @@ public sealed unsafe class MessageHost : IDisposable
 
     // ----------------------------------------------------------- hotkey
 
-    /// <summary>Registers (replacing any previous) the global hotkey. Error 1409 means another app owns it.</summary>
-    public HotkeyRegistration RegisterHotkey(HotkeySpec spec)
+    /// <summary>Registers (replacing any previous) the launcher hotkey. Error 1409 means another app owns it.</summary>
+    public HotkeyRegistration RegisterHotkey(HotkeySpec spec) => RegisterHotkey(LauncherHotkeyId, spec);
+
+    public void UnregisterHotkey() => UnregisterHotkey(LauncherHotkeyId);
+
+    /// <summary>Registers a hotkey under <paramref name="id"/>, replacing whatever that id held. Windows consumes the keys while it is registered.</summary>
+    public HotkeyRegistration RegisterHotkey(int id, HotkeySpec spec)
     {
-        UnregisterHotkey();
+        UnregisterHotkey(id);
         var mods = (Windows.Win32.UI.Input.KeyboardAndMouse.HOT_KEY_MODIFIERS)(uint)spec.Modifiers
                    | Windows.Win32.UI.Input.KeyboardAndMouse.HOT_KEY_MODIFIERS.MOD_NOREPEAT;
-        bool ok = PInvoke.RegisterHotKey(_hwnd, HotkeyId, mods, spec.VirtualKey);
+        bool ok = PInvoke.RegisterHotKey(_hwnd, id, mods, spec.VirtualKey);
         int error = ok ? 0 : Marshal.GetLastWin32Error();
-        _hotkeyRegistered = ok;
-        if (!ok) AppLog.Warn($"RegisterHotKey({spec}) failed with error {error}");
+        if (ok) _registeredHotkeys.Add(id);
+        else AppLog.Warn($"RegisterHotKey({spec}) failed with error {error}");
         return new HotkeyRegistration(ok, error);
     }
 
-    public void UnregisterHotkey()
+    public void UnregisterHotkey(int id)
     {
-        if (!_hotkeyRegistered) return;
-        PInvoke.UnregisterHotKey(_hwnd, HotkeyId);
-        _hotkeyRegistered = false;
+        if (!_registeredHotkeys.Remove(id)) return;
+        PInvoke.UnregisterHotKey(_hwnd, id);
+    }
+
+    // ------------------------------------------------- foreground tracking
+
+    private const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+    private const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+
+    [DllImport("user32.dll")]
+    private static extern nint SetWinEventHook(uint eventMin, uint eventMax, nint hmodWinEventProc,
+        delegate* unmanaged[Stdcall]<nint, uint, nint, int, int, uint, uint, void> proc, uint idProcess, uint idThread, uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern bool UnhookWinEvent(nint hook);
+
+    /// <summary>Starts raising <see cref="ForegroundChanged"/>. Must be called on the UI thread (the callback needs its message loop).</summary>
+    public void StartForegroundTracking()
+    {
+        if (_foregroundHook != 0) return;
+        _foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, 0, &ForegroundEventProc, 0, 0, WINEVENT_OUTOFCONTEXT);
+        if (_foregroundHook == 0) AppLog.Warn("SetWinEventHook failed: app-specific hotkeys will not follow the active window");
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static void ForegroundEventProc(nint hook, uint eventType, nint hwnd, int idObject, int idChild, uint thread, uint time)
+    {
+        try
+        {
+            s_instance?.ForegroundChanged?.Invoke(KeyTranslator.ForegroundProcessName());
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Foreground handler failed", ex);
+        }
     }
 
     // ------------------------------------------------------------- tray
@@ -203,9 +245,9 @@ public sealed unsafe class MessageHost : IDisposable
         {
             try
             {
-                if (msg == PInvoke.WM_HOTKEY && (int)wParam.Value == HotkeyId)
+                if (msg == PInvoke.WM_HOTKEY)
                 {
-                    self.HotkeyPressed?.Invoke();
+                    self.HotkeyPressed?.Invoke((int)wParam.Value);
                     return default;
                 }
                 if (msg == TrayCallbackMessage)
@@ -232,7 +274,8 @@ public sealed unsafe class MessageHost : IDisposable
 
     public void Dispose()
     {
-        UnregisterHotkey();
+        foreach (var id in _registeredHotkeys.ToList()) UnregisterHotkey(id);
+        if (_foregroundHook != 0) { UnhookWinEvent(_foregroundHook); _foregroundHook = 0; }
         if (_trayAdded)
         {
             var nid = NewNotifyData();

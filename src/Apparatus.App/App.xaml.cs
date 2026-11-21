@@ -8,7 +8,7 @@ namespace Apparatus.App;
 
 public partial class App : Application
 {
-    private const int CmdOpen = 1, CmdSettings = 2, CmdAutostart = 3, CmdReindex = 4, CmdQuit = 5, CmdSnippets = 6, CmdExpansion = 7;
+    private const int CmdOpen = 1, CmdSettings = 2, CmdAutostart = 3, CmdReindex = 4, CmdQuit = 5, CmdSnippets = 6, CmdExpansion = 7, CmdActions = 8;
 
     private readonly SingleInstance _instance;
     private readonly string[] _args;
@@ -18,6 +18,7 @@ public partial class App : Application
     private LauncherWindow? _launcher;
     private SettingsWindow? _settings;
     private SnippetsWindow? _snippetsWindow;
+    private ActionsWindow? _actionsWindow;
 
     public App(SingleInstance instance, string[] args)
     {
@@ -40,13 +41,14 @@ public partial class App : Application
         _host = new MessageHost();
         _services = new AppServices(_host);
         _services.Expander = new SnippetService(_services, _ui);
-        var executor = new ResultExecutor(_services, OpenSettings, Quit, newSnippet => OpenSnippets(newSnippet));
+        _services.ActionHost = new ActionService(_services, _ui);
+        var executor = new ResultExecutor(_services, OpenSettings, Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction));
         _launcher = new LauncherWindow(_services, executor);
 
         _host.TrayMenuProvider = BuildTrayMenu;
         _host.TrayClicked += () => _launcher.ShowLauncher();
         _host.TrayCommand += OnTrayCommand;
-        _host.HotkeyPressed += () => _launcher.ToggleLauncher();
+        _host.HotkeyPressed += id => { if (id == MessageHost.LauncherHotkeyId) _launcher.ToggleLauncher(); };
         _host.ShowTrayIcon(AppPaths.AssetPath("apparatus.ico"), "Apparatus");
 
         var registration = _services.RegisterConfiguredHotkey();
@@ -71,6 +73,10 @@ public partial class App : Application
             {
                 OpenSnippets();
             }
+            else if (_args.Contains("--actions", StringComparer.OrdinalIgnoreCase))
+            {
+                OpenActions();
+            }
             else if (!background || _args.Contains("--show", StringComparer.OrdinalIgnoreCase))
             {
                 _launcher.ShowLauncher(ArgValue("--query"));
@@ -91,6 +97,7 @@ public partial class App : Application
         return new[]
         {
             new TrayMenuItem(CmdOpen, hotkey.Length > 0 ? $"Abrir Apparatus\t{hotkey}" : "Abrir Apparatus"),
+            new TrayMenuItem(CmdActions, "Ações e atalhos…"),
             new TrayMenuItem(CmdSnippets, "Snippets…"),
             new TrayMenuItem(CmdSettings, "Configurações"),
             TrayMenuItem.Divider,
@@ -109,6 +116,7 @@ public partial class App : Application
             case CmdOpen: _launcher?.ShowLauncher(); break;
             case CmdSettings: OpenSettings(); break;
             case CmdSnippets: OpenSnippets(); break;
+            case CmdActions: OpenActions(); break;
             case CmdExpansion:
                 _services?.ApplySettings(s => s.SnippetExpansion = !s.SnippetExpansion);
                 break;
@@ -147,12 +155,27 @@ public partial class App : Application
         if (startNew && _snippetsWindow is not null) _snippetsWindow.StartNewSnippet();
     }
 
+    public void OpenActions(bool startNew = false)
+    {
+        if (_services is null) return;
+        _launcher?.HideLauncher();
+        if (_actionsWindow is null)
+        {
+            _actionsWindow = new ActionsWindow(_services);
+            _actionsWindow.Closed += (_, _) => _actionsWindow = null;
+        }
+        _actionsWindow.Activate();
+        WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_actionsWindow));
+        if (startNew) _actionsWindow.StartNewAction();
+    }
+
     private void Quit()
     {
         AppLog.Info("Apparatus exiting");
         _launcher?.AllowClose();
         _settings?.Close();
         _snippetsWindow?.Close();
+        _actionsWindow?.Close();
         _launcher?.Close();
         _host?.Dispose();
         _services?.Dispose();

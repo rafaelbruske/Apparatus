@@ -98,8 +98,11 @@ public sealed partial class SnippetsWindow : Window
 
         // The editor's category box offers the existing categories too.
         string text = CategoryBox.Text;
+        bool wasLoading = _loading;
+        _loading = true;
         CategoryBox.ItemsSource = categories.Skip(1).ToList();
-        CategoryBox.Text = text;
+        SetCategory(CategoryBox, text);
+        _loading = wasLoading;
     }
 
     private void OnFilterChanged(object sender, object e)
@@ -175,7 +178,7 @@ public sealed partial class SnippetsWindow : Window
         NameBox.Text = snippet.Name;
         TriggerBox.Text = snippet.Trigger;
         AutoExpandSwitch.IsOn = snippet.AutoExpand;
-        CategoryBox.Text = snippet.Category;
+        SetCategory(CategoryBox, snippet.Category);
         TagsBox.Text = string.Join(", ", snippet.Tags);
         ModeBox.SelectedIndex = (int)snippet.Mode;
         FavoriteSwitch.IsOn = snippet.Favorite;
@@ -200,6 +203,19 @@ public sealed partial class SnippetsWindow : Window
     public async void StartNewSnippet()
     {
         if (await ConfirmLeaveAsync()) BeginNew();
+    }
+
+
+    /// <summary>
+    /// Shows <paramref name="category"/> in the editable category box. Assigning Text alone is ignored when the
+    /// value is one of the items, so the matching item is selected instead.
+    /// </summary>
+    private static void SetCategory(ComboBox box, string category)
+    {
+        var match = (box.ItemsSource as IEnumerable<string>)?.FirstOrDefault(c => c.Equals(category, StringComparison.CurrentCultureIgnoreCase));
+        if (match is not null) { box.SelectedItem = match; return; }
+        box.SelectedItem = null;
+        box.Text = category;
     }
 
     private void OnEdited(object sender, object e)

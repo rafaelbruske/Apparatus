@@ -252,7 +252,11 @@ public sealed class SnippetService : IDisposable
     }
 
     /// <summary>Shows the field dialog on the UI thread and blocks the worker until it closes. Null means cancelled.</summary>
-    private Dictionary<string, string>? AskForFields(string title, IReadOnlyList<SnippetField> fields)
+    private Dictionary<string, string>? AskForFields(string title, IReadOnlyList<SnippetField> fields) =>
+        AskForFieldsAsync(title, fields).GetAwaiter().GetResult();
+
+    /// <summary>Shows the field dialog on the UI thread. Completes with null when the user cancels.</summary>
+    public Task<Dictionary<string, string>?> AskForFieldsAsync(string title, IReadOnlyList<SnippetField> fields)
     {
         var done = new TaskCompletionSource<Dictionary<string, string>?>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!_ui.TryEnqueue(async () =>
@@ -261,9 +265,9 @@ public sealed class SnippetService : IDisposable
                 catch (Exception ex) { AppLog.Error("Field dialog failed", ex); done.SetResult(null); }
             }))
         {
-            return null;
+            done.SetResult(null);
         }
-        return done.Task.GetAwaiter().GetResult();
+        return done.Task;
     }
 
     // ------------------------------------------------- from the launcher
@@ -275,50 +279,72 @@ public sealed class SnippetService : IDisposable
         {
             var snippet = _services.Snippets.Get(snippetId);
             if (snippet is null) return;
-
-            var template = SnippetTemplate.Parse(snippet.Content);
-            Dictionary<string, string>? values = null;
-            if (template.Fields.Count > 0)
-            {
-                values = await new SnippetFillWindow(snippet.Name, template.Fields).AskAsync();
-                if (values is null) return;
-            }
-
-            nint target = _launcherTarget;
-            _jobs.Add(() =>
-            {
-                try
-                {
-                    var rendered = template.Render(SnippetContext.Create(template.UsesClipboard ? _injector.Clipboard.GetText() : null), values);
-                    if (copyOnly)
-                    {
-                        _ui.TryEnqueue(() =>
-                        {
-                            var package = new DataPackage();
-                            package.SetText(rendered.Text.Replace("\n", "\r\n"));
-                            Clipboard.SetContent(package);
-                            Clipboard.Flush();
-                        });
-                    }
-                    else
-                    {
-                        RestoreFocus(target);
-                        TextInjector.WaitForModifiersReleased(400);
-                        Insert(rendered, snippet.Mode);
-                    }
-                    _services.Snippets.RecordUse(snippet.Id);
-                }
-                catch (Exception ex)
-                {
-                    AppLog.Error($"Inserting '{snippet.Name}' failed", ex);
-                    _services.Host.ShowBalloon("Não foi possível inserir o snippet", ex.Message);
-                }
-            });
+            await InsertTemplateAsync(snippet.Name, snippet.Content, snippet.Mode, _launcherTarget, copyOnly);
+            _services.Snippets.RecordUse(snippet.Id);
+        }
+        catch (OperationCanceledException)
+        {
+            // The user closed the fields dialog.
         }
         catch (Exception ex)
         {
-            AppLog.Error("Running a snippet from the launcher failed", ex);
+            AppLog.Error("Inserting a snippet from the launcher failed", ex);
+            _services.Host.ShowBalloon("Não foi possível inserir o snippet", ex.Message);
         }
+    }
+
+    /// <summary>The window that had the focus when the launcher was opened.</summary>
+    public nint LauncherTarget => _launcherTarget;
+
+    /// <summary>
+    /// Renders a snippet-style template (asking for its fields first, if any) and types or pastes it into
+    /// <paramref name="target"/> (the focused window when 0), or copies it when <paramref name="copyOnly"/>.
+    /// Completes when the text has been delivered. Throws <see cref="OperationCanceledException"/> if the user
+    /// cancels the fields dialog.
+    /// </summary>
+    public async Task InsertTemplateAsync(string title, string content, InsertMode mode, nint target = 0, bool copyOnly = false)
+    {
+        var template = SnippetTemplate.Parse(content);
+        if (target == 0) target = KeyTranslator.ForegroundWindow();
+
+        Dictionary<string, string>? values = null;
+        if (template.Fields.Count > 0)
+        {
+            values = await AskForFieldsAsync(title, template.Fields).ConfigureAwait(false);
+            if (values is null) throw new OperationCanceledException("Cancelado no diálogo de campos.");
+        }
+
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _jobs.Add(() =>
+        {
+            try
+            {
+                var rendered = template.Render(SnippetContext.Create(template.UsesClipboard ? _injector.Clipboard.GetText() : null), values);
+                if (copyOnly)
+                {
+                    _ui.TryEnqueue(() =>
+                    {
+                        var package = new DataPackage();
+                        package.SetText(rendered.Text.Replace("\n", "\r\n"));
+                        Clipboard.SetContent(package);
+                        Clipboard.Flush();
+                    });
+                }
+                else
+                {
+                    RestoreFocus(target);
+                    TextInjector.WaitForModifiersReleased(400);
+                    Insert(rendered, mode);
+                }
+                done.SetResult();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error($"Inserting '{title}' failed", ex);
+                done.SetException(ex);
+            }
+        });
+        await done.Task.ConfigureAwait(false);
     }
 
     public void Dispose()

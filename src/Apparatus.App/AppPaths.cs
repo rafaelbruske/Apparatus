@@ -31,5 +31,8 @@ public static class AppPaths
     /// <summary>User-written snippets: user data, kept apart from the disposable cache.</summary>
     public static string SnippetsFile => Path.Combine(Roaming, "snippets.db");
 
+    /// <summary>User-defined actions and macros.</summary>
+    public static string ActionsFile => Path.Combine(Roaming, "actions.db");
+
     public static string AssetPath(string name) => Path.Combine(AppContext.BaseDirectory, "Assets", name);
 }

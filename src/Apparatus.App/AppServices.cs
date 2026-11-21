@@ -1,4 +1,5 @@
 using Apparatus.Core;
+using Apparatus.Core.Actions;
 using Apparatus.Core.Indexing;
 using Apparatus.Core.Input;
 using Apparatus.Core.Search;
@@ -30,10 +31,13 @@ public sealed class AppServices : IDisposable
         Apps = new AppsProvider();
         Snippets = new SnippetStore(AppPaths.SnippetsFile);
         Snippets.SeedExamplesOnce();
+        Actions = new ActionStore(AppPaths.ActionsFile);
+        Actions.SeedExamplesOnce();
         Search = new SearchEngine(new ISearchProvider[]
         {
             Apps,
             new SnippetsProvider(Snippets),
+            new ActionsProvider(Actions),
             new FilesProvider(Index, () => Settings.Current),
             new WindowsSettingsProvider(),
             new CalculatorProvider(),
@@ -50,6 +54,10 @@ public sealed class AppServices : IDisposable
     public FileIndex Index { get; }
     public AppsProvider Apps { get; }
     public SnippetStore Snippets { get; }
+    public ActionStore Actions { get; }
+
+    /// <summary>Runs actions and keeps their hotkeys registered; set once the UI thread exists.</summary>
+    public ActionService? ActionHost { get; set; }
 
     /// <summary>Set once the UI thread exists; expands triggers and inserts snippets.</summary>
     public SnippetService? Expander { get; set; }
@@ -161,6 +169,7 @@ public sealed class AppServices : IDisposable
         if (result.Success)
         {
             ActiveHotkey = spec;
+            Actions.LauncherHotkey = spec.ToString();
             ApplySettings(s => s.Hotkey = spec.ToString());
         }
         else if (previous is { } p)
@@ -169,6 +178,10 @@ public sealed class AppServices : IDisposable
         }
         return result;
     }
+
+    /// <summary>The action that already uses these keys, if any (Windows would report it as taken by another app).</summary>
+    public string? FindActionUsing(HotkeySpec spec) =>
+        Actions.All.FirstOrDefault(a => a.Enabled && HotkeySpec.TryParse(a.Hotkey, out var s) && s == spec)?.Name;
 
     /// <summary>Frees the hotkey temporarily (e.g. while the user is recording a new one).</summary>
     public void SuspendHotkey()
@@ -184,7 +197,9 @@ public sealed class AppServices : IDisposable
     public void Dispose()
     {
         _rescanTimer.Dispose();
+        ActionHost?.Dispose();
         Expander?.Dispose();
+        Actions.Dispose();
         Snippets.Dispose();
         Index.Dispose();
         Usage.Dispose();

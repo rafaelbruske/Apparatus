@@ -213,6 +213,8 @@ public static class InternalCommands
     public const string Quit = "apparatus:quit";
     public const string ManageSnippets = "apparatus:snippets";
     public const string NewSnippet = "apparatus:snippet-new";
+    public const string ManageActions = "apparatus:actions";
+    public const string NewAction = "apparatus:action-new";
 }
 
 public sealed class InternalCommandsProvider : ISearchProvider
@@ -223,6 +225,8 @@ public sealed class InternalCommandsProvider : ISearchProvider
     {
         new(InternalCommands.ManageSnippets, "Gerenciar snippets", "Criar, editar, importar e exportar", "apparatus snippets textos atalhos expansão"),
         new(InternalCommands.NewSnippet, "Novo snippet", "Cria um texto reutilizável", "apparatus snippet criar adicionar texto"),
+        new(InternalCommands.ManageActions, "Gerenciar ações e atalhos", "Atalhos de teclado e macros", "apparatus ações atalhos macros hotkeys automação"),
+        new(InternalCommands.NewAction, "Nova ação", "Cria um atalho ou macro", "apparatus ação criar atalho macro automação"),
         new(InternalCommands.OpenSettings, "Configurações do Apparatus", "Atalho, indexação e preferências", "apparatus preferências opções settings atalho hotkey"),
         new(InternalCommands.Reindex, "Reindexar arquivos", "Atualiza o índice de arquivos e pastas agora", "apparatus indexar atualizar scan arquivos"),
         new(InternalCommands.ClearHistory, "Limpar histórico do launcher", "Esquece os itens usados com frequência", "apparatus histórico apagar recentes"),

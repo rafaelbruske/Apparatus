@@ -11,6 +11,7 @@ public enum ResultKind
     Calculator = 6,
     Command = 7,
     Snippet = 8,
+    Action = 9,
 }
 
 /// <summary>

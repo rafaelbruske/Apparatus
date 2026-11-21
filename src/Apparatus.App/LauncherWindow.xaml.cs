@@ -227,6 +227,7 @@ public sealed partial class LauncherWindow : Window
             Core.Search.ResultKind.File or Core.Search.ResultKind.Folder => "↵ Abrir     Ctrl+↵ Mostrar na pasta     Esc Fechar",
             Core.Search.ResultKind.Calculator => "↵ Copiar o resultado     Esc Fechar",
             Core.Search.ResultKind.Snippet => "↵ Inserir     Ctrl+↵ Copiar     Esc Fechar",
+            Core.Search.ResultKind.Action => "↵ Executar     Esc Fechar",
             Core.Search.ResultKind.Command => "↵ Executar     Esc Fechar",
             _ => "↵ Abrir     Esc Fechar",
         };

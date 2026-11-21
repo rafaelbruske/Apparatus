@@ -1,0 +1,208 @@
+<Window
+    x:Class="Apparatus.App.ActionsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Apparatus.App"
+    Title="Ações e atalhos — Apparatus">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="Root" PreviewKeyDown="OnRootPreviewKeyDown">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- list of actions -->
+        <Grid Grid.Column="0" Padding="16,12,8,16" RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBox x:Name="SearchBox" PlaceholderText="Buscar por nome ou categoria…" TextChanged="OnFilterChanged" />
+            <ComboBox x:Name="CategoryFilter" Grid.Row="1" HorizontalAlignment="Stretch" SelectionChanged="OnFilterChanged" />
+
+            <ListView
+                x:Name="ActionList"
+                Grid.Row="2"
+                ItemsSource="{x:Bind Items}"
+                SelectionMode="Single"
+                SelectionChanged="OnSelectionChanged">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:ActionListItem">
+                        <Grid Height="56" ColumnSpacing="8" Opacity="{x:Bind Opacity}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind Subtitle}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <FontIcon Grid.Column="1" Glyph="&#xE7BA;" FontSize="14" VerticalAlignment="Center"
+                                      Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                      Visibility="{x:Bind WarningVisibility}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
+                <DropDownButton Content="Nova ação" Style="{StaticResource AccentButtonStyle}">
+                    <DropDownButton.Flyout>
+                        <MenuFlyout x:Name="NewFlyout" />
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+                <Button Content="Duplicar" Click="OnDuplicate" />
+                <Button Content="Excluir" Click="OnDelete" />
+            </StackPanel>
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8">
+                <Button Content="Importar…" Click="OnImport" />
+                <Button Content="Exportar…" Click="OnExport" />
+            </StackPanel>
+        </Grid>
+
+        <!-- editor -->
+        <ScrollViewer Grid.Column="1">
+            <StackPanel Padding="16,12,28,24" Spacing="14">
+                <InfoBar x:Name="Status" IsOpen="False" IsClosable="True" />
+
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="NameBox" Header="Nome" PlaceholderText="Por exemplo: Abrir Photoshop" TextChanged="OnEdited" />
+                    <ToggleSwitch x:Name="EnabledSwitch" Grid.Column="1" Header="Ativada" Toggled="OnEdited" />
+                </Grid>
+
+                <ComboBox x:Name="CategoryBox" Header="Categoria (opcional)" IsEditable="True" Width="320" TextSubmitted="OnCategorySubmitted" SelectionChanged="OnEdited" />
+
+                <!-- hotkey -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Atalho de teclado" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border MinWidth="200" Padding="14,6" CornerRadius="6"
+                                Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                            <TextBlock x:Name="HotkeyText" FontFamily="Consolas" FontSize="15" HorizontalAlignment="Center" />
+                        </Border>
+                        <Button x:Name="RecordButton" Grid.Column="1" Content="Gravar" Click="OnRecordHotkey" />
+                        <Button Grid.Column="2" Content="Limpar" Click="OnClearHotkey" />
+                    </Grid>
+                    <TextBlock x:Name="HotkeyHelp" FontSize="12" TextWrapping="Wrap" />
+
+                    <ComboBox x:Name="ScopeBox" Header="Onde o atalho vale" Width="320" SelectionChanged="OnScopeChanged">
+                        <ComboBoxItem Content="Em qualquer aplicativo" />
+                        <ComboBoxItem Content="Somente nestes aplicativos" />
+                        <ComboBoxItem Content="Em todos, exceto nestes" />
+                    </ComboBox>
+                    <Grid x:Name="ScopeAppsPanel" ColumnSpacing="8" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="ScopeAppsBox" Header="Aplicativos (nome do processo, separados por vírgula)" PlaceholderText="Photoshop, chrome" TextChanged="OnEdited" />
+                        <DropDownButton Grid.Column="1" Content="Adicionar app aberto" VerticalAlignment="Bottom">
+                            <DropDownButton.Flyout>
+                                <MenuFlyout x:Name="RunningAppsFlyout" Opening="OnRunningAppsOpening" />
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+                    </Grid>
+                </StackPanel>
+
+                <!-- steps -->
+                <StackPanel Spacing="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="StepsTitle" Text="Passos" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                        <DropDownButton Grid.Column="1" Content="Adicionar passo">
+                            <DropDownButton.Flyout>
+                                <MenuFlyout x:Name="AddStepFlyout" />
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+                    </Grid>
+                    <ListView
+                        x:Name="StepsList"
+                        ItemsSource="{x:Bind Steps}"
+                        SelectionMode="Single"
+                        MinHeight="60"
+                        BorderThickness="1"
+                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        CornerRadius="6"
+                        SelectionChanged="OnStepSelected">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:StepListItem">
+                                <Grid Height="48" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Number, Mode=OneWay}" Opacity="0.5" VerticalAlignment="Center" Width="18" />
+                                    <FontIcon Grid.Column="1" Glyph="{x:Bind Glyph}" FontSize="18" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Title}" FontSize="12" Opacity="0.6" />
+                                        <TextBlock Text="{x:Bind Summary, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Subir" Click="OnStepUp" />
+                        <Button Content="Descer" Click="OnStepDown" />
+                        <Button Content="Duplicar passo" Click="OnStepDuplicate" />
+                        <Button Content="Remover passo" Click="OnStepRemove" />
+                    </StackPanel>
+
+                    <Border x:Name="StepEditor" Visibility="Collapsed" Padding="16" CornerRadius="8"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <StackPanel Spacing="12">
+                            <TextBlock x:Name="StepEditorTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock x:Name="StepEditorDescription" FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+                            <StackPanel x:Name="StepForm" Spacing="12" />
+                            <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                            <ComboBox x:Name="ConditionBox" Header="Quando executar este passo" HorizontalAlignment="Stretch" SelectionChanged="OnConditionChanged">
+                                <ComboBoxItem Content="Sempre" />
+                                <ComboBoxItem Content="Somente se o aplicativo ativo for…" />
+                                <ComboBoxItem Content="Somente se o aplicativo ativo não for…" />
+                                <ComboBoxItem Content="Somente se o título da janela contiver…" />
+                                <ComboBoxItem Content="Somente se o título da janela não contiver…" />
+                            </ComboBox>
+                            <TextBox x:Name="ConditionValueBox" Visibility="Collapsed" TextChanged="OnConditionChanged" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <ComboBox x:Name="OnErrorBox" Header="Se um passo falhar" Width="320" SelectionChanged="OnEdited">
+                    <ComboBoxItem Content="Parar a ação" />
+                    <ComboBoxItem Content="Continuar com os próximos passos" />
+                </ComboBox>
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="SaveButton" Content="Salvar" Click="OnSave" Style="{StaticResource AccentButtonStyle}" />
+                    <Button x:Name="DiscardButton" Content="Descartar alterações" Click="OnDiscard" />
+                    <Button x:Name="TestButton" Content="Testar (em 3 s)" Click="OnTest" />
+                </StackPanel>
+                <TextBlock Text="“Testar” espera 3 segundos para você trocar para o aplicativo onde a ação deve agir, e executa o que está no editor, mesmo sem salvar."
+                           FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

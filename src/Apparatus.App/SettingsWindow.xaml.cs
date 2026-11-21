@@ -39,7 +39,11 @@ public sealed partial class SettingsWindow : Window
         Closed += (_, _) =>
         {
             _services.Index.StatusChanged -= OnIndexStatusChanged;
-            if (_capturing) _services.ResumeHotkey();
+            if (_capturing)
+            {
+                _services.ResumeHotkey();
+                _services.ActionHost?.ResumeHotkeys();
+            }
         };
         _loading = false;
     }
@@ -70,6 +74,7 @@ public sealed partial class SettingsWindow : Window
         if (_capturing) { StopCapturing(resume: true); return; }
         _capturing = true;
         _services.SuspendHotkey();   // so pressing the current combination does not open the launcher
+        _services.ActionHost?.SuspendHotkeys();   // nor run an action that uses the same keys
         ChangeHotkeyButton.Content = "Cancelar";
         HotkeyText.Text = "Pressione…";
         HotkeyInfo.IsOpen = false;
@@ -90,6 +95,7 @@ public sealed partial class SettingsWindow : Window
         HotkeyHelp.Text = "Clique em Alterar e pressione a nova combinação.";
         HotkeyText.Text = _services.Settings.Current.Hotkey;
         if (resume) _services.ResumeHotkey();
+        _services.ActionHost?.ResumeHotkeys();
     }
 
     private static bool IsDown(VirtualKey key) =>
@@ -128,6 +134,15 @@ public sealed partial class SettingsWindow : Window
 
     private void TryApplyHotkey(HotkeySpec spec)
     {
+        // Windows would report these keys as "taken by another app" because the action registered them in this very process.
+        if (_services.FindActionUsing(spec) is { } actionName)
+        {
+            _services.ResumeHotkey();
+            HotkeyText.Text = _services.Settings.Current.Hotkey;
+            ShowHotkeyMessage($"{spec} já é o atalho da ação “{actionName}”. Escolha outra combinação ou mude o atalho dessa ação.", InfoBarSeverity.Error);
+            return;
+        }
+
         var result = _services.TryChangeHotkey(spec);
         HotkeyText.Text = _services.Settings.Current.Hotkey;
         if (result.Success)

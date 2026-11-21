@@ -60,6 +60,7 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
         ResultKind.Calculator => "",
         ResultKind.Command => "",
         ResultKind.Snippet => "",
+        ResultKind.Action => "",
         _ => "",
     };
 
@@ -73,6 +74,7 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
         ResultKind.Calculator => "Cálculo",
         ResultKind.Command => "Comando",
         ResultKind.Snippet => "Snippet",
+        ResultKind.Action => "Ação",
         _ => "",
     };
 }
