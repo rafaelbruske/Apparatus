@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>StartE2e</AssemblyName>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Apparatus.Core\Apparatus.Core.csproj" />
+    <ProjectReference Include="..\..\src\Apparatus.Native\Apparatus.Native.csproj" />
+  </ItemGroup>
+</Project>

@@ -27,6 +27,9 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
 
     public string Glyph { get; }
 
+    /// <summary>Initial shown in the "all apps" list on the first app of each letter; empty elsewhere.</summary>
+    public string Letter { get; set; } = "";
+
     public Visibility FavoriteVisibility => Result.Favorite ? Visibility.Visible : Visibility.Collapsed;
 
     public string KindLabel { get; }

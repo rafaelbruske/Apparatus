@@ -8,6 +8,7 @@ using Apparatus.Core.Search;
 using Apparatus.Core.Search.Providers;
 using Apparatus.Core.Settings;
 using Apparatus.Core.Snippets;
+using Apparatus.Core.Start;
 using Apparatus.Core.Storage;
 using Apparatus.Native;
 
@@ -35,7 +36,10 @@ public sealed class AppServices : IDisposable
         Snippets.SeedExamplesOnce();
         Actions = new ActionStore(AppPaths.ActionsFile);
         Actions.SeedExamplesOnce();
-        ClipboardStore = new ClipboardHistoryStore(AppPaths.ClipboardFile);
+        ClipboardStore = CreateClipboardStore();
+        Keyboard = new KeyboardHub();
+        StartLayout = new StartLayoutStore(AppPaths.StartLayoutFile);
+        Tweaks = new TweakService(new RegistryTweakStore(), AppPaths.TweakBackupFile);
         Extensions = new ExtensionHost(AppPaths.ExtensionsDirectory,
             () => Settings.Current.EnabledExtensions, () => Settings.Current.GlobalExtensions,
             (title, message) => host.ShowBalloon(title, message));
@@ -55,6 +59,36 @@ public sealed class AppServices : IDisposable
 
         _rescanTimer = new Timer(_ => ReindexIfStale(), null, RescanInterval, RescanInterval);
     }
+
+    /// <summary>
+    /// The history is encrypted with a key that Windows (DPAPI) ties to this user. If that key cannot be set up the history
+    /// is switched off: it never falls back to storing text in clear.
+    /// </summary>
+    private static ClipboardHistoryStore CreateClipboardStore()
+    {
+        try
+        {
+            var cipher = ClipboardCipher.Open(AppPaths.ClipboardKeyFile, new DpapiKeyProtector());
+            if (cipher.WasReset) AppLog.Warn("The clipboard encryption key was replaced; the previous history could not be read and was discarded");
+            return new ClipboardHistoryStore(AppPaths.ClipboardFile, cipher);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Clipboard history is unavailable: its encryption key could not be set up", ex);
+            return ClipboardHistoryStore.CreateUnavailable();
+        }
+    }
+
+    /// <summary>The one low-level keyboard hook, shared by snippet expansion and the Win-key tap of the Start menu.</summary>
+    public KeyboardHub Keyboard { get; }
+
+    public StartLayoutStore StartLayout { get; }
+
+    /// <summary>Taskbar and Windows-Start settings, with an exact undo.</summary>
+    public TweakService Tweaks { get; }
+
+    /// <summary>The Start menu; set once the UI thread exists.</summary>
+    public StartMenuService? StartHost { get; set; }
 
     public MessageHost Host { get; }
     public SettingsStore Settings { get; }
@@ -219,11 +253,13 @@ public sealed class AppServices : IDisposable
     public void Dispose()
     {
         _rescanTimer.Dispose();
+        StartHost?.Dispose();
         ClipboardHost?.Dispose();
         Extensions.Dispose();
         ClipboardStore.Dispose();
         ActionHost?.Dispose();
         Expander?.Dispose();
+        Keyboard.Dispose();
         Actions.Dispose();
         Snippets.Dispose();
         Index.Dispose();

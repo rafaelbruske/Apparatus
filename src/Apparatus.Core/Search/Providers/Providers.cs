@@ -26,6 +26,9 @@ public sealed class AppsProvider : ISearchProvider
 
     public int Count => _apps.Length;
 
+    /// <summary>Everything installed, in no particular order.</summary>
+    public IReadOnlyList<AppEntry> All => _apps;
+
     public void SetApps(IEnumerable<AppEntry> apps) =>
         _apps = apps.GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToArray();
 

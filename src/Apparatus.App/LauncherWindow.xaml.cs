@@ -226,6 +226,8 @@ public sealed partial class LauncherWindow : Window
         var selected = (ResultsList.SelectedItem as ResultItemViewModel)?.Result;
         string star = selected is null ? "" : selected.Kind == Core.Search.ResultKind.Clipboard ? "     Ctrl+D Fixar"
             : Core.Storage.UsageStore.CanFavorite(selected) ? (selected.Favorite ? "     Ctrl+D Desafixar" : "     Ctrl+D Favoritar") : "";
+        if (selected is not null && Core.Start.StartLayoutStore.CanPin(selected))
+            star += _services.StartLayout.IsPinned(selected.Key) ? "     Ctrl+P Tirar do Iniciar" : "     Ctrl+P Fixar no Iniciar";
         HintsText.Text = selected?.Kind switch
         {
             Core.Search.ResultKind.File or Core.Search.ResultKind.Folder => "↵ Abrir     Ctrl+↵ Mostrar na pasta     Esc Fechar",
@@ -294,6 +296,10 @@ public sealed partial class LauncherWindow : Window
                 ToggleFavoriteOfSelected();
                 e.Handled = true;
                 break;
+            case VirtualKey.P when ctrl:
+                TogglePinToStart();
+                e.Handled = true;
+                break;
             case VirtualKey.Delete when shift && (ResultsList.SelectedItem as ResultItemViewModel)?.Result.Kind == Core.Search.ResultKind.Clipboard:
                 ForgetClipboardEntry();
                 e.Handled = true;
@@ -344,6 +350,18 @@ public sealed partial class LauncherWindow : Window
         if (!Core.Storage.UsageStore.CanFavorite(vm.Result)) return;
         _services.Usage.ToggleFavorite(vm.Result);
         _ = RunSearchAsync(SearchBox.Text, keepSelection: index);
+    }
+
+    /// <summary>Ctrl+P: pins the selected result to the Start menu, or unpins it when it already is.</summary>
+    private void TogglePinToStart()
+    {
+        if (ResultsList.SelectedItem is not ResultItemViewModel vm || !Core.Start.StartLayoutStore.CanPin(vm.Result)) return;
+        var store = _services.StartLayout;
+        bool wasPinned = store.IsPinned(vm.Result.Key);
+        if (wasPinned) store.Unpin(vm.Result.Key);
+        else store.Pin(vm.Result);
+        StatusText.Text = wasPinned ? $"“{vm.Result.Title}” saiu do Iniciar" : $"“{vm.Result.Title}” fixado no Iniciar";
+        UpdateHints();
     }
 
     private void ForgetClipboardEntry()

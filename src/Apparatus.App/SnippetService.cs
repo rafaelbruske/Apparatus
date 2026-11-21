@@ -19,7 +19,7 @@ public sealed class SnippetService : IDisposable
 
     private readonly AppServices _services;
     private readonly DispatcherQueue _ui;
-    private readonly KeyboardHook _hook = new();
+    private IDisposable? _keys;   // subscription to the shared keyboard hook while expansion is on
     private readonly TriggerBuffer _buffer = new();
     private readonly TextInjector _injector = new();
     private readonly BlockingCollection<Action> _jobs = new();
@@ -47,7 +47,6 @@ public sealed class SnippetService : IDisposable
     {
         _services = services;
         _ui = ui;
-        _hook.Handler = OnKey;
         _worker = new Thread(WorkerLoop) { IsBackground = true, Name = "Snippet worker" };
         _worker.Start();
 
@@ -66,11 +65,15 @@ public sealed class SnippetService : IDisposable
         var s = _services.Settings.Current;
         _excluded = new HashSet<string>(s.SnippetExcludedProcesses.Append(_ownProcess), StringComparer.OrdinalIgnoreCase);
         _expansionEnabled = s.SnippetExpansion;
-        if (s.SnippetExpansion && !_hook.IsRunning) _hook.Start();
-        else if (!s.SnippetExpansion && _hook.IsRunning) _hook.Stop();
+        if (s.SnippetExpansion && _keys is null) _keys = _services.Keyboard.Subscribe(OnKey);
+        else if (!s.SnippetExpansion && _keys is not null)
+        {
+            _keys.Dispose();
+            _keys = null;
+        }
     }
 
-    public bool IsExpansionActive => _hook.IsRunning;
+    public bool IsExpansionActive => _keys is not null && _services.Keyboard.IsRunning;
 
     /// <summary>Called when the launcher opens, before it takes the focus: where inserted text should go.</summary>
     public void RememberLauncherTarget(nint hwnd) => _launcherTarget = hwnd;
@@ -385,7 +388,8 @@ public sealed class SnippetService : IDisposable
 
     public void Dispose()
     {
-        _hook.Dispose();
+        _keys?.Dispose();
+        _keys = null;
         _jobs.CompleteAdding();
         _worker.Join(TimeSpan.FromSeconds(1));
         _injector.Dispose();

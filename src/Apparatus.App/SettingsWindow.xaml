@@ -199,7 +199,7 @@
                         OffContent="Desativado"
                         Toggled="OnClipboardToggled" />
                     <TextBlock
-                        Text="Só texto, guardado apenas neste computador. Digite “clip” no launcher para ver. Cópias que um gerenciador de senhas marca como privadas, e as feitas nos aplicativos listados abaixo, nunca são guardadas."
+                        Text="Só texto, guardado apenas neste computador e cifrado com a sua conta do Windows (DPAPI). Digite “clip” no launcher para ver. Cópias que um gerenciador de senhas marca como privadas, e as feitas nos aplicativos listados abaixo, nunca são guardadas."
                         FontSize="12"
                         Opacity="0.65"
                         TextWrapping="Wrap" />
@@ -290,6 +290,95 @@
                         FontSize="12"
                         Opacity="0.65"
                         TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- start menu -->
+            <TextBlock Text="Menu Iniciar do Apparatus" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <ToggleSwitch
+                        x:Name="StartKeySwitch"
+                        Header="A tecla Windows abre o menu Iniciar do Apparatus"
+                        OnContent="Ativado"
+                        OffContent="Desativado"
+                        Toggled="OnStartKeyToggled" />
+                    <TextBlock
+                        Text="Só o toque isolado na tecla Windows é tomado; Win+E, Win+D e os demais atalhos continuam como sempre. O menu original do Windows segue disponível com Ctrl+Esc. Desligar aqui devolve a tecla ao Windows na hora."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="24">
+                        <ComboBox x:Name="StartThemeBox" Header="Tema" MinWidth="150" SelectionChanged="OnStartAppearanceChanged">
+                            <ComboBoxItem Content="Como o sistema" Tag="system" />
+                            <ComboBoxItem Content="Claro" Tag="light" />
+                            <ComboBoxItem Content="Escuro" Tag="dark" />
+                        </ComboBox>
+                        <ComboBox x:Name="StartBackdropBox" Header="Fundo" MinWidth="150" SelectionChanged="OnStartAppearanceChanged">
+                            <ComboBoxItem Content="Acrílico" Tag="acrylic" />
+                            <ComboBoxItem Content="Mica" Tag="mica" />
+                            <ComboBoxItem Content="Sólido" Tag="none" />
+                        </ComboBox>
+                        <ComboBox x:Name="StartPositionBox" Header="Posição" MinWidth="190" SelectionChanged="OnStartAppearanceChanged">
+                            <ComboBoxItem Content="Junto ao botão Iniciar" Tag="taskbar" />
+                            <ComboBoxItem Content="Centro da tela" Tag="center" />
+                            <ComboBoxItem Content="Canto esquerdo" Tag="left" />
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="24">
+                        <NumberBox
+                            x:Name="StartColumnsBox"
+                            Header="Itens por linha"
+                            Minimum="4"
+                            Maximum="8"
+                            SmallChange="1"
+                            SpinButtonPlacementMode="Inline"
+                            Width="170"
+                            ValueChanged="OnStartColumnsChanged" />
+                        <ToggleSwitch
+                            x:Name="StartRecentSwitch"
+                            Header="Mostrar os mais usados"
+                            OnContent="Sim"
+                            OffContent="Não"
+                            Toggled="OnStartAppearanceToggled" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Abrir o menu agora" Click="OnOpenStartMenu" />
+                        <Button Content="Esvaziar os fixados…" Click="OnResetStartLayout" />
+                    </StackPanel>
+                    <TextBlock
+                        Text="Para fixar: pesquise no menu (ou no launcher) e pressione Ctrl+P, ou use o botão direito. Arraste os itens para reordenar; mova entre seções pelo botão direito."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- windows taskbar and start tweaks -->
+            <TextBlock Text="Barra de tarefas e Iniciar do Windows" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Ajustes do Windows 11 feitos pelo registro do seu usuário. O valor original é guardado na primeira alteração, e cada ajuste pode ser desfeito exatamente. Nada exige permissão de administrador."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <StackPanel x:Name="TweaksList" Spacing="12" />
+                    <InfoBar x:Name="TweaksInfo" IsOpen="False" IsClosable="True" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Reiniciar o Explorer…" Click="OnRestartExplorer" />
+                        <Button Content="Desfazer todos os ajustes" Click="OnRestoreAllTweaks" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

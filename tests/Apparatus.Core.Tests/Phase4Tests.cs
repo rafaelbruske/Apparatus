@@ -138,7 +138,7 @@ public class ClipboardHistoryTests
     [Fact]
     public void Add_StoresNewestFirst_AndDeduplicates()
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         int changes = 0;
         store.Changed += (_, _) => changes++;
 
@@ -159,7 +159,7 @@ public class ClipboardHistoryTests
     [InlineData("   \r\n\t ")]
     public void BlankText_IsIgnored(string text)
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         Assert.Null(store.Add(text, "x"));
         Assert.Empty(store.All);
     }
@@ -167,7 +167,7 @@ public class ClipboardHistoryTests
     [Fact]
     public void HugeText_IsIgnored_ButTheLimitItselfIsKept()
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         Assert.Null(store.Add(new string('x', ClipboardHistoryStore.MaxTextLength + 1), "x"));
         Assert.NotNull(store.Add(new string('y', ClipboardHistoryStore.MaxTextLength), "x"));
     }
@@ -175,7 +175,7 @@ public class ClipboardHistoryTests
     [Fact]
     public void Text_IsStoredExactly_WithAccentsAndNewlines()
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         string text = "Olá,\r\n  ação  ✓\t fim ";
         Assert.Equal(text, store.Add(text, "x")!.Text);
         Assert.NotEqual(store.Add("ola", "x")!.Id, store.Add("Ola", "x")!.Id);   // case differences are different text
@@ -184,7 +184,7 @@ public class ClipboardHistoryTests
     [Fact]
     public void CopiesWithinTheSameSecond_AreStillOrdered()
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         store.Add("a", "x", T0);
         store.Add("b", "x", T0.AddMilliseconds(300));
         store.Add("a", "x", T0.AddMilliseconds(600));   // copied again, still inside the first second
@@ -195,7 +195,7 @@ public class ClipboardHistoryTests
     [Fact]
     public void Retention_DropsOldEntries_ButNotPinnedOnes()
     {
-        using var store = new ClipboardHistoryStore(":memory:", retentionDays: 7);
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral(), retentionDays: 7);
         var old = store.Add("velho", "x", T0)!;
         var oldPinned = store.Add("velho fixado", "x", T0)!;
         store.SetPinned(oldPinned.Id, true);
@@ -209,7 +209,7 @@ public class ClipboardHistoryTests
     [Fact]
     public void MaxEntries_KeepsTheNewest_AndNeverDropsPinned()
     {
-        using var store = new ClipboardHistoryStore(":memory:", maxEntries: 3);
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral(), maxEntries: 3);
         var pinned = store.Add("fixado", "x", T0)!;
         store.SetPinned(pinned.Id, true);
         for (int i = 1; i <= 6; i++) store.Add($"item {i}", "x", T0.AddMinutes(i));
@@ -222,7 +222,7 @@ public class ClipboardHistoryTests
     [Fact]
     public void Clear_KeepsPinnedByDefault()
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         store.SetPinned(store.Add("fica", "x")!.Id, true);
         store.Add("some", "x");
         store.Clear();
@@ -237,13 +237,13 @@ public class ClipboardHistoryTests
         using var dir = new TempDir();
         var path = Path.Combine(dir.Path, "c.db");
         long keep;
-        using (var store = new ClipboardHistoryStore(path))
+        using (var store = new ClipboardHistoryStore(path, ClipboardCipher.Open(Path.Combine(dir.Path, "k"), new FakeKeyProtector())))
         {
             keep = store.Add("guardado", "Code", T0)!.Id;
             store.SetPinned(keep, true);
             store.Delete(store.Add("apagado", "x", T0)!.Id);
         }
-        using var again = new ClipboardHistoryStore(path);
+        using var again = new ClipboardHistoryStore(path, ClipboardCipher.Open(Path.Combine(dir.Path, "k"), new FakeKeyProtector()));
         var e = Assert.Single(again.All);
         Assert.Equal(keep, e.Id);
         Assert.True(e.Pinned);
@@ -268,7 +268,7 @@ public class ClipboardHistoryTests
     [InlineData("", false)]
     public async Task OnlyTheKeywordOpensTheHistory(string query, bool answers)
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         store.Add("algo", "x", T0);
         Assert.Equal(answers, (await Ask(Provider(store), query)).Count > 0);
     }
@@ -276,7 +276,7 @@ public class ClipboardHistoryTests
     [Fact]
     public async Task Disabled_OffersToTurnItOn_InsteadOfListing()
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         store.Add("segredo", "x", T0);
         var r = Assert.Single(await Ask(Provider(store, enabled: false), "clip"));
         Assert.Equal(ResultKind.Command, r.Kind);
@@ -287,7 +287,7 @@ public class ClipboardHistoryTests
     [Fact]
     public async Task BareKeyword_ListsNewestFirst_AndFiltering_IsFuzzy()
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         store.Add("senha do wifi", "Notepad", T0);
         store.Add("endereço: Rua das Flores, 10", "Chrome", T0.AddMinutes(5));
         store.Add("https://exemplo.com/relatorio", "Firefox", T0.AddMinutes(10));
@@ -305,7 +305,7 @@ public class ClipboardHistoryTests
     [Fact]
     public async Task Results_DescribeTheEntry_AndMarkPinned()
     {
-        using var store = new ClipboardHistoryStore(":memory:");
+        using var store = new ClipboardHistoryStore(":memory:", ClipboardCipher.CreateEphemeral());
         store.Add("linha um\nlinha dois", "Code", T0);
         var e = store.Add("linha um\nlinha dois", "Code", T0.AddMinutes(1))!;   // copied twice
         store.SetPinned(e.Id, true);

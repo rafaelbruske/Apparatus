@@ -67,6 +67,26 @@ public sealed class AppSettings
     /// <summary>Set once the bundled sample extension has been copied to the extensions folder.</summary>
     public bool ExtensionSampleInstalled { get; set; }
 
+    // ---- Start menu (replaces Windows' own when switched on)
+
+    /// <summary>Tapping the Windows key opens Apparatus' Start menu instead of Windows'. Opt-in: it takes over a system key.</summary>
+    public bool StartMenuEnabled { get; set; }
+
+    /// <summary>"system", "light" or "dark".</summary>
+    public string StartTheme { get; set; } = "system";
+
+    /// <summary>"acrylic", "mica" or "none".</summary>
+    public string StartBackdrop { get; set; } = "acrylic";
+
+    /// <summary>Tiles per row in the pinned area (4 to 8).</summary>
+    public int StartColumns { get; set; } = 6;
+
+    /// <summary>Show the most used items under the pinned ones.</summary>
+    public bool StartShowRecent { get; set; } = true;
+
+    /// <summary>"taskbar" (next to the Start button, following the taskbar), "center" or "left".</summary>
+    public string StartPosition { get; set; } = "taskbar";
+
     public string DefaultSearchEngine { get; set; } = "g";
 
     public List<WebSearchEngine> SearchEngines { get; set; } = DefaultEngines();

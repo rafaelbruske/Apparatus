@@ -68,6 +68,7 @@ public sealed partial class SettingsWindow : Window
         UpdateRootsVisibility();
         UpdateIndexStatus();
         LoadPhase4();
+        LoadStart();
     }
 
     // ------------------------------------------------------------ hotkey

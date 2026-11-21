@@ -88,6 +88,18 @@ internal static class Program
         Check("copies made in an excluded program are not recorded",
             !Entries().Any(e => e.Text.StartsWith("C-")) && Entries().Count == before, string.Join(" | ", Entries().Select(e => e.Text)));
 
+        // ---- the files themselves must not contain what was copied (the app is stopped; its write-ahead log stays on disk)
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        byte[] disk = new[] { "clipboard.db", "clipboard.db-wal", "clipboard.db-shm" }
+            .Select(f => Path.Combine(_profile, "data", f)).Where(File.Exists).SelectMany(File.ReadAllBytes).ToArray();
+        bool InClear(string s) => disk.AsSpan().IndexOf(System.Text.Encoding.UTF8.GetBytes(s)) >= 0 || disk.AsSpan().IndexOf(System.Text.Encoding.Unicode.GetBytes(s)) >= 0;
+        Check("the history files do not contain the copied text in clear",
+            disk.Length > 0 && !InClear("B-second copy") && !InClear("B-allowed-by-flag") && !InClear("acentuação") && !InClear("B-first"),
+            $"{disk.Length:N0} bytes scanned, readable text found");
+        string keyFile = Path.Combine(_profile, "data", "clipboard.key");
+        Check("the key is stored wrapped by Windows (DPAPI), not as a raw 32-byte key",
+            File.Exists(keyFile) && new FileInfo(keyFile).Length > 100, File.Exists(keyFile) ? $"{new FileInfo(keyFile).Length} bytes" : "missing");
+
         try { if (original is not null) Clipboard.SetText(original); else Clipboard.Clear(); } catch { }
 
         Console.WriteLine(string.Join("\n", Report));
@@ -156,7 +168,8 @@ internal static class Program
     {
         string path = Path.Combine(_profile, "data", "clipboard.db");
         if (!File.Exists(path)) return Array.Empty<ClipEntry>();
-        using var store = new ClipboardHistoryStore(path);   // a second reader is fine: the database is in WAL mode
+        // Same user, same DPAPI key file as the app: a second reader is fine (the database is in WAL mode).
+        using var store = new ClipboardHistoryStore(path, ClipboardCipher.Open(Path.Combine(_profile, "data", "clipboard.key"), new DpapiKeyProtector()));
         return store.All.ToList();
     }
 

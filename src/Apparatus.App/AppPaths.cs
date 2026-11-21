@@ -34,11 +34,20 @@ public static class AppPaths
     /// <summary>User-defined actions and macros.</summary>
     public static string ActionsFile => Path.Combine(Roaming, "actions.db");
 
+    /// <summary>What is pinned in the Start menu, and how it is grouped.</summary>
+    public static string StartLayoutFile => Path.Combine(Roaming, "start.json");
+
+    /// <summary>The original values of the Windows settings Apparatus changed, so each can be undone exactly.</summary>
+    public static string TweakBackupFile => Path.Combine(Roaming, "windows-tweaks-backup.json");
+
     /// <summary>Each sub-folder holding an extension.json is an extension.</summary>
     public static string ExtensionsDirectory => Path.Combine(Roaming, "extensions");
 
     /// <summary>What was copied: the most sensitive data the app keeps, so it stays out of the roaming folder.</summary>
     public static string ClipboardFile => Path.Combine(Local, "clipboard.db");
+
+    /// <summary>The Windows-protected key that encrypts the clipboard history.</summary>
+    public static string ClipboardKeyFile => Path.Combine(Local, "clipboard.key");
 
     public static string AssetPath(string name) => Path.Combine(AppContext.BaseDirectory, "Assets", name);
 }

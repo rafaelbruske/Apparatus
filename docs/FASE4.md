@@ -57,14 +57,37 @@ App     ClipboardService, ExtensionRunner, LauncherStepExecutor, cartões em Set
 - **Dados.** O histórico fica em `%LOCALAPPDATA%\Apparatus\clipboard.db` (fora da pasta que sincroniza), os favoritos
   em `apparatus.db`, as extensões e quicklinks em `%APPDATA%\Apparatus`.
 
+## Proteção do histórico (DPAPI)
+
+O texto copiado nunca vai ao disco em claro. Código em `Apparatus.Core/Clipboard/ClipboardCipher.cs` e `ClipboardHistory.cs`.
+
+- **Chave.** 32 bytes aleatórios, guardados em `%LOCALAPPDATA%\Apparatus\clipboard.key` embrulhados pelo DPAPI do Windows
+  (escopo do usuário, com um "entropy" próprio do Apparatus). Só a mesma conta, na mesma máquina, consegue desembrulhar.
+- **Cifra.** Da chave-mestra saem duas subchaves (HKDF): uma para AES-GCM (cada entrada: versão, nonce de 12 bytes,
+  tag de 16, texto cifrado) e outra para HMAC-SHA256, que substitui o hash simples usado para reconhecer uma cópia repetida
+  (um hash puro de um texto curto seria adivinhável). Origem do texto, horário e contagem continuam legíveis.
+- **Arquivo.** `PRAGMA secure_delete=ON`, para que linhas apagadas sejam sobrescritas. A migração do formato antigo
+  (texto puro) recriptografa tudo, faz `wal_checkpoint(TRUNCATE)` e `VACUUM`, e só então termina: nenhum resto em claro
+  fica no arquivo nem no WAL.
+- **Falha fechada.** Se a chave não puder ser criada ou lida, o histórico fica **indisponível** (a busca `clip` avisa) em
+  vez de gravar sem proteção. Se a chave se perder (outro perfil do Windows, arquivo apagado), uma nova é criada e as
+  entradas ilegíveis são descartadas, com aviso no log.
+- **Desempenho.** Cifrar ou decifrar uma entrada leva microssegundos; o custo do histórico continua sendo o do SQLite.
+- **O que não protege.** Um programa que rode como o seu usuário pode pedir ao DPAPI a mesma chave. O objetivo é proteger
+  contra outra conta, disco roubado e cópias de segurança, não contra malware já em execução na sua sessão.
+
 ## Verificação
 
 - Unitários: manifesto, protocolo, extensões com processos PowerShell reais (consulta, reuso do processo, acentos,
   timeout, cancelamento, ruído na saída, queda e limite de reinícios, programa inexistente, `oneshot`, `Stop`),
   provedor (palavra-chave, global, falhas engolidas), favoritos (persistência, ordem, ranking, lista vazia),
   histórico (deduplicação, retenção, limite, fixados, persistência) e quicklinks.
+- Criptografia (`ClipboardEncryptionTests`): ida e volta (acentos, emoji, texto grande), adulteração detectada, chave
+  persistida e chave perdida, DPAPI real, varredura dos arquivos (inclusive WAL) atrás do texto em claro, apagamento,
+  falha fechada e migração do formato antigo.
 - Ponta a ponta da área de transferência (`tests/Apparatus.E2E.Clipboard`): copia texto de verdade com o histórico
-  desligado, ligado e com o programa excluído; confere que cópias privadas, imagens e texto em branco não entram.
+  desligado, ligado e com o programa excluído; confere que cópias privadas, imagens e texto em branco não entram, que
+  os arquivos do histórico não contêm o texto copiado e que a chave está embrulhada pelo DPAPI.
 - Capturas do launcher real: favoritos com estrela, `clip` com idade/origem/tamanho, a extensão PowerShell respondendo
   a `hello mundo` e o quicklink `docs`.
 
@@ -76,8 +99,8 @@ App     ClipboardService, ExtensionRunner, LauncherStepExecutor, cartões em Set
 
 ## Limitações conhecidas
 
-- **O histórico fica em texto puro** no disco (`clipboard.db`), sem criptografia. Por isso é opcional e só texto.
-  Proteger o arquivo com DPAPI é um passo natural, mas não foi feito.
+- **O histórico é criptografado, mas isso não protege de um programa rodando como você** (veja "Proteção do histórico"
+  abaixo). Continua opcional e só texto.
 - **Não exercitado com cliques/teclas reais:** os cartões das Configurações (ativar extensão com o aviso, editar
   quicklink), `Ctrl+D` e `Shift+Del` no launcher, o `Enter` de resultados de extensão/área de transferência (abrir,
   copiar, inserir, colar) e o menu da bandeja. A lógica por trás tem testes; as ações `copy`, `insert` e `open`

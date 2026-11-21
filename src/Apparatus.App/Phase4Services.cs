@@ -36,7 +36,7 @@ public sealed class ClipboardService : IDisposable
 
     private void OnClipboardChanged()
     {
-        if (!Enabled) return;
+        if (!Enabled || !_services.ClipboardStore.IsAvailable) return;
         long ticket = Interlocked.Increment(ref _copyCounter);
         var excluded = _services.Settings.Current.ClipboardExcludedProcesses.ToList();
 
