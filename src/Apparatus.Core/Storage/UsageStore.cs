@@ -91,6 +91,46 @@ public sealed class UsageStore : IDisposable
         }
     }
 
+    // -------------------------------------------------------------- icons
+
+    /// <summary>
+    /// Replaces the stored icon of remembered results (history and favorites) whose key is in <paramref name="iconsByKey"/>.
+    /// Icons are remembered with each result, so one that was wrong (or missing) when the item was first used stays wrong until
+    /// the item is used again, unless it is corrected here. A null icon means "show the kind glyph". Returns how many rows changed.
+    /// </summary>
+    public int UpdateIcons(IReadOnlyDictionary<string, string?> iconsByKey)
+    {
+        int changed = 0;
+        lock (_gate)
+        {
+            foreach (var (key, icon) in iconsByKey)
+            {
+                if (_usage.TryGetValue(key, out var u) && u.Icon != icon)
+                {
+                    _usage[key] = u with { Icon = icon };
+                    Update("usage", key, icon);
+                    changed++;
+                }
+                if (_favorites.TryGetValue(key, out var f) && f.Result.Icon != icon)
+                {
+                    _favorites[key] = f with { Result = f.Result with { Icon = icon } };
+                    Update("favorites", key, icon);
+                    changed++;
+                }
+            }
+        }
+        return changed;
+    }
+
+    private void Update(string table, string key, string? icon)
+    {
+        using var cmd = _db.CreateCommand();
+        cmd.CommandText = $"UPDATE {table} SET icon=$icon WHERE key=$key";   // the table name is one of two literals above
+        cmd.Parameters.AddWithValue("$icon", (object?)icon ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$key", key);
+        cmd.ExecuteNonQuery();
+    }
+
     // ------------------------------------------------------------ record
 
     /// <summary>Call when the user runs a result. <paramref name="query"/> is what they had typed.</summary>

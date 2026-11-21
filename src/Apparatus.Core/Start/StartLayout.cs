@@ -262,6 +262,28 @@ public sealed class StartLayoutStore
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    // --------------------------------------------------------------- icons
+
+    /// <summary>Corrects the icon of pinned and quick items whose key is listed (null = show the kind glyph). Returns how many changed.</summary>
+    public int UpdateIcons(IReadOnlyDictionary<string, string?> iconsByKey)
+    {
+        int changed = 0;
+        lock (_gate)
+        {
+            foreach (var item in _layout.Sections.SelectMany(s => s.Items).Concat(_layout.Quick))
+            {
+                if (iconsByKey.TryGetValue(item.Key, out var icon) && item.Icon != icon)
+                {
+                    item.Icon = icon;
+                    changed++;
+                }
+            }
+            if (changed > 0) Save();
+        }
+        if (changed > 0) Changed?.Invoke(this, EventArgs.Empty);
+        return changed;
+    }
+
     // ----------------------------------------------------------- backup/restore
 
     public string ExportJson()

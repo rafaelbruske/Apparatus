@@ -60,8 +60,17 @@ public static class ShellIcons
         {
             var iid = FactoryIid;
             SHCreateItemFromParsingName(parsingName, IntPtr.Zero, ref iid, out factory);
-            if (factory.GetImage(new SIZE { cx = size, cy = size }, SIIGBF_ICONONLY, out hbitmap) != 0 || hbitmap == IntPtr.Zero)
-                return null;
+
+            // The first requests for a file type the shell has not met yet can fail (several at once, right after start-up);
+            // asking again a moment later works.
+            int hr = 0;
+            for (int attempt = 0; attempt < 4; attempt++)
+            {
+                if (attempt > 0) Thread.Sleep(60 * attempt);
+                hr = factory.GetImage(new SIZE { cx = size, cy = size }, SIIGBF_ICONONLY, out hbitmap);
+                if (hr == 0 && hbitmap != IntPtr.Zero) break;
+            }
+            if (hr != 0 || hbitmap == IntPtr.Zero) return null;
 
             if (GetObjectW(hbitmap, Marshal.SizeOf<BITMAP>(), out var bmp) == 0 || bmp.bmWidth <= 0 || bmp.bmHeight <= 0)
                 return null;

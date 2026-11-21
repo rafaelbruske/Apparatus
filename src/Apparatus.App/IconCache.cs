@@ -20,10 +20,14 @@ public sealed class IconCache
     public IconCache(DispatcherQueue ui) => _ui = ui;
 
     /// <param name="key">"shell:&lt;parsing name&gt;" or "path:&lt;file path&gt;".</param>
-    public Task<ImageSource?> GetAsync(string key)
+    public async Task<ImageSource?> GetAsync(string key)
     {
         if (_cache.Count > MaxEntries) _cache.Clear();
-        return _cache.GetOrAdd(key, Load);
+        var task = _cache.GetOrAdd(key, Load);
+        var image = await task.ConfigureAwait(false);
+        // A failure is not remembered: the next time the icon is wanted it is tried again.
+        if (image is null) _cache.TryRemove(new KeyValuePair<string, Task<ImageSource?>>(key, task));
+        return image;
     }
 
     private async Task<ImageSource?> Load(string key)

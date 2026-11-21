@@ -9,7 +9,18 @@ namespace Apparatus.Core.Search.Providers;
 
 // ============================================================== apps
 
-public sealed record AppEntry(string Id, string Name, string ParsingName);
+/// <param name="IconSource">
+/// Where the icon comes from, as an icon key ("path:&lt;file&gt;"). Null means the usual one (the shell icon of
+/// <see cref="ParsingName"/>); empty means there is none to be had, so the kind glyph shows instead.
+/// </param>
+public sealed record AppEntry(string Id, string Name, string ParsingName, string? IconSource = null)
+{
+    /// <summary>Apps whose id is a URL (Steam, Epic, Battle.net…) rather than a program or a packaged-app id.</summary>
+    public bool IsUrlApp => Id.Contains("://", StringComparison.Ordinal);
+
+    /// <summary>The key the icon cache understands, or null to show the glyph.</summary>
+    public string? IconKey => IconSource is null ? $"shell:{ParsingName}" : IconSource.Length == 0 ? null : IconSource;
+}
 
 /// <summary>Source of installed applications (implemented on Windows via shell:AppsFolder).</summary>
 public interface IAppCatalog
@@ -29,8 +40,31 @@ public sealed class AppsProvider : ISearchProvider
     /// <summary>Everything installed, in no particular order.</summary>
     public IReadOnlyList<AppEntry> All => _apps;
 
-    public void SetApps(IEnumerable<AppEntry> apps) =>
-        _apps = apps.GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToArray();
+    private readonly Func<UrlShortcutIndex> _shortcuts;
+
+    /// <param name="shortcutRoots">Folders searched for the .url shortcuts that carry the icons of URL apps (default: the Start Menu).</param>
+    public AppsProvider(IEnumerable<string>? shortcutRoots = null)
+    {
+        var roots = shortcutRoots?.ToList();
+        _shortcuts = () => new UrlShortcutIndex(roots ?? UrlShortcutIndex.StartMenuRoots());
+    }
+
+    public void SetApps(IEnumerable<AppEntry> apps)
+    {
+        var distinct = apps.GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToArray();
+
+        // Steam games and the like have no icon the shell can resolve from their URL; use the icon file their .url shortcut names.
+        if (distinct.Any(a => a.IsUrlApp && a.IconSource is null))
+        {
+            var index = _shortcuts();
+            for (int i = 0; i < distinct.Length; i++)
+            {
+                if (!distinct[i].IsUrlApp || distinct[i].IconSource is not null) continue;
+                distinct[i] = distinct[i] with { IconSource = index.FindIconFile(distinct[i].Name) is { } file ? $"path:{file}" : "" };
+            }
+        }
+        _apps = distinct;
+    }
 
     public Task<IReadOnlyList<SearchResult>> QueryAsync(SearchContext context, CancellationToken ct)
     {
@@ -40,7 +74,7 @@ public sealed class AppsProvider : ISearchProvider
             int s = FuzzyMatcher.Score(app.Name, context.Fuzzy);
             if (s == FuzzyMatcher.NoMatch) continue;
             results.Add(new SearchResult($"app:{app.Id}", ResultKind.App, app.Name, "Aplicativo", app.ParsingName,
-                s + KindBonus, $"shell:{app.ParsingName}"));
+                s + KindBonus, app.IconKey));
         }
         return Task.FromResult<IReadOnlyList<SearchResult>>(results);
     }

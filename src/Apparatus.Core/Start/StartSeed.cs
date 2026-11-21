@@ -24,7 +24,7 @@ public static class StartSeed
     };
 
     public static SearchResult AppResult(AppEntry app) =>
-        new($"app:{app.Id}", ResultKind.App, app.Name, "Aplicativo", app.ParsingName, 0, $"shell:{app.ParsingName}");
+        new($"app:{app.Id}", ResultKind.App, app.Name, "Aplicativo", app.ParsingName, 0, app.IconKey);
 
     /// <summary>Most-used apps first, then the well-known ones that are installed, up to <paramref name="max"/>.</summary>
     public static IReadOnlyList<SearchResult> PinnedApps(IReadOnlyList<AppEntry> installed, IEnumerable<SearchResult> mostUsed, int max = 12)

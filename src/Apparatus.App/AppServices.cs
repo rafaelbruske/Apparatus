@@ -155,6 +155,18 @@ public sealed class AppServices : IDisposable
         }
     }
 
+    /// <summary>
+    /// Icons are remembered together with history, favorites and pinned items. Steam-like apps used to be remembered with a
+    /// generic icon; now that their real one is known, fix what was stored.
+    /// </summary>
+    private void CorrectRememberedAppIcons()
+    {
+        var icons = Apps.All.Where(a => a.IsUrlApp).ToDictionary(a => $"app:{a.Id}", a => a.IconKey, StringComparer.OrdinalIgnoreCase);
+        if (icons.Count == 0) return;
+        int n = Usage.UpdateIcons(icons) + StartLayout.UpdateIcons(icons);
+        if (n > 0) AppLog.Info($"Corrected {n} remembered app icon(s)");
+    }
+
     public async Task RefreshAppsAsync(bool force = false)
     {
         if (!force && DateTime.UtcNow - _appsLoadedAt < AppsRefreshInterval) return;
@@ -164,6 +176,7 @@ public sealed class AppServices : IDisposable
             var apps = await _catalog.LoadAsync(CancellationToken.None).ConfigureAwait(false);
             if (apps.Count == 0) return;
             Apps.SetApps(apps);
+            CorrectRememberedAppIcons();
             Usage.SaveAppsCache(apps.Select(a => (a.Id, a.Name, a.ParsingName)));
             _appsLoadedAt = DateTime.UtcNow;
             AppLog.Info($"Apps refreshed: {apps.Count}");
