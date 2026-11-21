@@ -23,6 +23,7 @@ internal static class Program
     private static readonly List<string> Report = new();
     private static int _passed, _failed;
 
+    [STAThread]
     private static int Main(string[] args)
     {
         const string sandbox = @"Software\ApparatusE2eSandbox";
@@ -34,6 +35,8 @@ internal static class Program
             TaskbarChecks();
             HookLifecycleChecks();
             if (args.Length >= 3 && args[0] == "--inject-win") WinTapChecks(args[1], args[2]);
+            if (args.Length >= 3 && args[0] == "--sync") SyncChecks(args[1], args[2]);
+            if (args.Length >= 1 && args[0] == "--record") RecordChecks();
         }
         finally
         {
@@ -185,6 +188,121 @@ internal static class Program
         {
             try { app.Kill(true); app.WaitForExit(3000); } catch (InvalidOperationException) { }
         }
+    }
+
+    // --------------------------------------------------- macro recording
+
+    /// <summary>
+    /// Records keys typed into a form of this process (only while it is verifiably in front): "ola", a pause, Ctrl+A, Enter, then
+    /// Pause to stop. Takes about 6 seconds and presses real keys, so do not use the keyboard meanwhile.
+    /// </summary>
+    private static void RecordChecks()
+    {
+        using var hub = new KeyboardHub();
+        using var session = new MacroRecordingSession(hub, ownProcess: "no-such-process", acceptInjected: true);
+        int stopped = 0;
+        session.StopRequested += () => Interlocked.Increment(ref stopped);
+
+        using var form = new System.Windows.Forms.Form { Text = "record target", Width = 400, Height = 200, StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen, TopMost = true };
+        var box = new System.Windows.Forms.TextBox { Multiline = true, Dock = System.Windows.Forms.DockStyle.Fill };
+        form.Controls.Add(box);
+        form.Shown += (_, _) => { form.Activate(); box.Focus(); };
+
+        bool injected = false;
+        var worker = new Thread(() =>
+        {
+            Thread.Sleep(1200);
+            bool front = false;
+            for (int i = 0; i < 20 && !front; i++)
+            {
+                form.Invoke(() => { form.Activate(); front = GetForegroundWindow() == form.Handle; });
+                if (!front) Thread.Sleep(150);
+            }
+            if (!front) { form.Invoke(form.Close); return; }
+
+            session.Start();
+            Thread.Sleep(300);
+            injected = true;
+            foreach (byte vk in new byte[] { 0x4F, 0x4C, 0x41 }) { Tap(vk); Thread.Sleep(60); }   // o l a
+            Thread.Sleep(1300);
+            keybd_event(0x11, 0, 0, UIntPtr.Zero);                                              // Ctrl+A
+            Tap(0x41);
+            keybd_event(0x11, 0, 2, UIntPtr.Zero);
+            Thread.Sleep(80);
+            Tap(0x0D);                                                                            // Enter
+            Thread.Sleep(100);
+            Tap(0x13);                                                                            // Pause: stop
+            Thread.Sleep(400);
+            form.Invoke(form.Close);
+        });
+        worker.Start();
+        System.Windows.Forms.Application.Run(form);
+        worker.Join();
+
+        if (!injected) { Report.Add("SKIP  macro recording: the target form could not take the foreground"); return; }
+        var steps = session.Stop();
+        var text = steps.Select(Apparatus.Core.Actions.StepCatalog.Summarize).ToList();
+        Report.Add("INFO  recorded: " + string.Join(" | ", text));
+        Check("Pause was seen as the stop key", stopped == 1, $"stop raised {stopped} time(s)");
+        Check("typed letters become one text step", text.Count > 0 && text[0] == "Digitar: ola", text.FirstOrDefault() ?? "(none)");
+        Check("the pause between them becomes a wait", text.Count > 1 && text[1].StartsWith("Aguardar 1") && text[1].EndsWith(" ms"), text.ElementAtOrDefault(1) ?? "(none)");
+        Check("Ctrl+A and Enter become one key step", text.Count > 2 && text[2] == "Teclas: Ctrl+A Enter", text.ElementAtOrDefault(2) ?? "(none)");
+        Check("the stop key itself is not recorded", text.Count == 3, $"{text.Count} steps");
+        Check("every step is valid", steps.All(s => Apparatus.Core.Actions.StepCatalog.Validate(s) is null), "");
+    }
+
+    // ---------------------------------------------------------- sync folder
+
+    /// <summary>Starts the real app (isolated profile, no key is pressed) with a sync folder and looks at the file it keeps there.</summary>
+    private static void SyncChecks(string exe, string root)
+    {
+        if (Process.GetProcessesByName("Apparatus").Length > 0) { Report.Add("SKIP  sync: an Apparatus instance is already running"); return; }
+        if (Directory.Exists(root)) Directory.Delete(root, true);
+        string profile = Path.Combine(root, "profile"), folder = Path.Combine(root, "sync");
+        Directory.CreateDirectory(Path.Combine(profile, "config"));
+        Directory.CreateDirectory(folder);
+        string file = Path.Combine(folder, Apparatus.Core.Backup.SyncPolicy.FileName);
+
+        void Settings() => File.WriteAllText(Path.Combine(profile, "config", "settings.json"), System.Text.Json.JsonSerializer.Serialize(new
+        {
+            IndexFiles = false, SnippetExpansion = false, ExtensionSampleInstalled = true, SyncFolder = folder, MaxResults = 9,
+        }));
+
+        void RunApp(int seconds)
+        {
+            var psi = new ProcessStartInfo(exe, "--background") { UseShellExecute = false };
+            psi.Environment["APPARATUS_PROFILE_DIR"] = profile;
+            using var app = Process.Start(psi)!;
+            Thread.Sleep(seconds * 1000);
+            try { app.Kill(true); app.WaitForExit(3000); } catch (InvalidOperationException) { }
+            Thread.Sleep(500);
+        }
+
+        // 1) first start with an empty sync folder: a valid backup appears by itself
+        Settings();
+        RunApp(16);
+        bool exists = File.Exists(file);
+        Check("the app writes the backup into the sync folder by itself", exists, "no file after 16 s");
+        if (exists)
+        {
+            using var s = File.OpenRead(file);
+            var content = Apparatus.Core.Backup.BackupBundle.Read(s);
+            Check("it is a valid backup from this computer", content.Manifest.Machine == Environment.MachineName && content.SettingsJson is not null, content.Manifest.Machine);
+            Check("it carries the user's settings", content.SettingsJson!.Contains("\"MaxResults\": 9"), "MaxResults missing");
+            Check("it does not carry the sync folder path itself", !content.SettingsJson.Contains(folder.Replace("\\", "\\\\")), "path leaked");
+        }
+
+        // 2) a newer file from another computer must not be overwritten
+        var foreign = new Apparatus.Core.Backup.BackupContent(
+            new Apparatus.Core.Backup.BackupManifest { Machine = "OUTRO-PC", CreatedUtc = DateTime.UtcNow.AddMinutes(5), Snippets = 0 },
+            "{\"MaxResults\":4}", null, null, null);
+        using (var o = File.Create(file)) Apparatus.Core.Backup.BackupBundle.Write(o, foreign);
+        byte[] before = File.ReadAllBytes(file);
+        RunApp(16);
+        Check("a newer file from another computer is left untouched", File.ReadAllBytes(file).AsSpan().SequenceEqual(before), "the file was overwritten");
+        string log = File.ReadAllText(Path.Combine(profile, "data", "logs", "apparatus.log"));
+        Check("and the app says why", log.Contains("Não gravei") && log.Contains("OUTRO-PC"), "no hold-back message in the log");
+        Check("without importing anything by itself", File.ReadAllText(Path.Combine(profile, "config", "settings.json")).Contains("\"MaxResults\":9"), "settings changed");
     }
 
     private static int Regex(string text, string needle)

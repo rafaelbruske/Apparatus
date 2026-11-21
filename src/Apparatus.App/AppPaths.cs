@@ -46,6 +46,9 @@ public static class AppPaths
     /// <summary>What was copied: the most sensitive data the app keeps, so it stays out of the roaming folder.</summary>
     public static string ClipboardFile => Path.Combine(Local, "clipboard.db");
 
+    /// <summary>Which sync-folder file this computer has already seen (so it never overwrites a newer one from elsewhere).</summary>
+    public static string SyncStateFile => Path.Combine(Local, "sync-state.json");
+
     /// <summary>The Windows-protected key that encrypts the clipboard history.</summary>
     public static string ClipboardKeyFile => Path.Combine(Local, "clipboard.key");
 

@@ -4,6 +4,7 @@
     <AssemblyName>StartE2e</AssemblyName>
     <TargetFramework>net10.0-windows</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseWindowsForms>true</UseWindowsForms>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>

@@ -382,6 +382,43 @@
                 </StackPanel>
             </Border>
 
+            <!-- backup and sync -->
+            <TextBlock Text="Backup e sincronização" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Um arquivo .apparatus reúne as configurações, os snippets, as ações e o menu Iniciar. Não entram: histórico da área de transferência, estatísticas de uso, extensões, atalho do launcher, pastas indexadas e o que depende deste computador."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Exportar backup…" Click="OnExportBackup" />
+                        <Button Content="Importar backup…" Click="OnImportBackup" />
+                    </StackPanel>
+
+                    <TextBlock Text="Pasta de sincronização" FontWeight="SemiBold" Margin="0,8,0,0" />
+                    <TextBlock
+                        Text="Escolha uma pasta que o OneDrive, o Dropbox ou similar já sincronize. O Apparatus grava lá o backup depois de cada alteração; no outro computador, você importa quando quiser. Um computador nunca sobrescreve alterações mais novas do outro sem você ter importado antes."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <TextBlock x:Name="SyncFolderText" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Escolher pasta…" Click="OnChooseSyncFolder" />
+                        <Button x:Name="SyncOffButton" Content="Desligar" Click="OnSyncOff" />
+                        <Button x:Name="SyncNowButton" Content="Gravar agora" Click="OnSyncNow" />
+                        <Button x:Name="SyncImportButton" Content="Importar da pasta…" Click="OnSyncImport" />
+                    </StackPanel>
+                    <TextBlock x:Name="SyncStatusText" FontSize="12" Opacity="0.75" TextWrapping="Wrap" />
+                    <InfoBar x:Name="BackupInfo" IsOpen="False" IsClosable="True" />
+                </StackPanel>
+            </Border>
+
             <!-- data -->
             <TextBlock Text="Dados" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border

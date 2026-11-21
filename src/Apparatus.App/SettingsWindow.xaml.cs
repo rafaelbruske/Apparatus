@@ -69,6 +69,7 @@ public sealed partial class SettingsWindow : Window
         UpdateIndexStatus();
         LoadPhase4();
         LoadStart();
+        LoadBackup();
     }
 
     // ------------------------------------------------------------ hotkey

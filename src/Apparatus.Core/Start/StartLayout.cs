@@ -262,6 +262,46 @@ public sealed class StartLayoutStore
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    // ----------------------------------------------------------- backup/restore
+
+    public string ExportJson()
+    {
+        lock (_gate) return JsonSerializer.Serialize(_layout, Json);
+    }
+
+    /// <summary>
+    /// Replaces the whole layout with the one in <paramref name="json"/> (after cleaning it: no item without a key, no key
+    /// pinned twice, no unnamed section, no more than <see cref="MaxQuick"/> quick items). Returns how many items were pinned.
+    /// </summary>
+    public int ImportJson(string json)
+    {
+        var imported = JsonSerializer.Deserialize<StartLayout>(json, Json) ?? throw new JsonException("layout vazio");
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var clean = new StartLayout { Seeded = true };
+        foreach (var section in imported.Sections ?? new())
+        {
+            var s = new StartSection { Id = string.IsNullOrWhiteSpace(section.Id) ? Guid.NewGuid().ToString("N") : section.Id, Name = CleanName(section.Name ?? "") };
+            foreach (var item in section.Items ?? new())
+            {
+                if (string.IsNullOrWhiteSpace(item.Key) || !seen.Add(item.Key)) continue;
+                s.Items.Add(item);
+            }
+            clean.Sections.Add(s);
+        }
+        var quickKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var q in (imported.Quick ?? new()).Where(q => !string.IsNullOrWhiteSpace(q.Key) && quickKeys.Add(q.Key)).Take(MaxQuick))
+            clean.Quick.Add(q);
+
+        lock (_gate)
+        {
+            _layout = clean;
+            Save();
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+        return clean.Sections.Sum(s => s.Items.Count);
+    }
+
     // --------------------------------------------------------------- helpers
 
     private static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);

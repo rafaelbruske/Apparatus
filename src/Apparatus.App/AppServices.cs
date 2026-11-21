@@ -1,5 +1,6 @@
 using Apparatus.Core;
 using Apparatus.Core.Actions;
+using Apparatus.Core.Backup;
 using Apparatus.Core.Clipboard;
 using Apparatus.Core.Extensions;
 using Apparatus.Core.Indexing;
@@ -40,6 +41,8 @@ public sealed class AppServices : IDisposable
         Keyboard = new KeyboardHub();
         StartLayout = new StartLayoutStore(AppPaths.StartLayoutFile);
         Tweaks = new TweakService(new RegistryTweakStore(), AppPaths.TweakBackupFile);
+        Backup = new BackupService(Settings, Snippets, Actions, StartLayout);
+        Sync = new SyncService(this, Backup);
         Extensions = new ExtensionHost(AppPaths.ExtensionsDirectory,
             () => Settings.Current.EnabledExtensions, () => Settings.Current.GlobalExtensions,
             (title, message) => host.ShowBalloon(title, message));
@@ -86,6 +89,12 @@ public sealed class AppServices : IDisposable
 
     /// <summary>Taskbar and Windows-Start settings, with an exact undo.</summary>
     public TweakService Tweaks { get; }
+
+    /// <summary>Export and import of everything the user configured.</summary>
+    public BackupService Backup { get; }
+
+    /// <summary>Keeps a backup in the sync folder, when one is chosen.</summary>
+    public SyncService Sync { get; }
 
     /// <summary>The Start menu; set once the UI thread exists.</summary>
     public StartMenuService? StartHost { get; set; }
@@ -254,6 +263,7 @@ public sealed class AppServices : IDisposable
     {
         _rescanTimer.Dispose();
         StartHost?.Dispose();
+        Sync.Dispose();
         ClipboardHost?.Dispose();
         Extensions.Dispose();
         ClipboardStore.Dispose();

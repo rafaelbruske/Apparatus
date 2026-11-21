@@ -64,6 +64,7 @@ public partial class App : Application
 
         var registration = _services.RegisterConfiguredHotkey();
         _services.StartBackgroundWork();
+        _services.Sync.Start();
         ExtensionRunner.InstallSampleOnce(_services);
         _instance.Listen(() => _ui.TryEnqueue(() => _launcher.ShowLauncher()));
 

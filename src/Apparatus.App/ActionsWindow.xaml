@@ -130,11 +130,14 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="StepsTitle" Text="Passos" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
-                        <DropDownButton Grid.Column="1" Content="Adicionar passo">
-                            <DropDownButton.Flyout>
-                                <MenuFlyout x:Name="AddStepFlyout" />
-                            </DropDownButton.Flyout>
-                        </DropDownButton>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Content="Gravar teclado…" Click="OnRecordIntoCurrent" ToolTipService.ToolTip="Grava o que você digitar e acrescenta como passos" />
+                            <DropDownButton Content="Adicionar passo">
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout x:Name="AddStepFlyout" />
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
+                        </StackPanel>
                     </Grid>
                     <ListView
                         x:Name="StepsList"

@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using Apparatus.Core;
 using Apparatus.Core.Actions;
 using Apparatus.Core.Input;
 using Apparatus.Core.Search;
 using Apparatus.Native;
 using Microsoft.UI.Input;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -97,6 +99,7 @@ public sealed partial class ActionsWindow : Window
             _services.Actions.Changed -= OnStoreChanged;
             if (_services.ActionHost is { } h) h.StatusChanged -= OnStatusChanged;
             if (_recording) StopRecording();
+            AbortMacroRecording();
         };
 
         RefreshCategories();
@@ -122,6 +125,9 @@ public sealed partial class ActionsWindow : Window
         AddNew("Enviar teclas", StepKind.SendKeys);
         NewFlyout.Items.Add(new MenuFlyoutSeparator());
         AddNew("Macro (vários passos)", null);
+        var record = new MenuFlyoutItem { Text = "Gravar uma macro do teclado…", Icon = new FontIcon { Glyph = "" } };
+        record.Click += async (_, _) => { if (await ConfirmLeaveAsync()) await RecordMacroAsync(append: false); };
+        NewFlyout.Items.Add(record);
 
         foreach (var d in StepCatalog.All)
         {
@@ -418,6 +424,105 @@ public sealed partial class ActionsWindow : Window
     private void RenumberSteps()
     {
         for (int i = 0; i < Steps.Count; i++) Steps[i].Number = (i + 1).ToString();
+    }
+
+    // ------------------------------------------------------ macro recording
+
+    private MacroRecordingSession? _macro;
+    private RecordingBanner? _banner;
+    private bool _macroAppend;
+
+    private async void OnRecordIntoCurrent(object sender, RoutedEventArgs e) => await RecordMacroAsync(append: true);
+
+    /// <summary>
+    /// Explains what will be recorded, hides this window and starts listening to the keyboard. Pause (or the banner's
+    /// button) stops; the steps then land in a new macro or at the end of the one being edited.
+    /// </summary>
+    private async Task RecordMacroAsync(bool append)
+    {
+        if (_macro is not null) return;
+        try
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Gravar o teclado",
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    Text = "Tudo o que você digitar em qualquer programa vira passos da macro: texto, atalhos, Enter, setas e as pausas. " +
+                           "Para parar, pressione Pause (ou use o botão que aparece no alto da tela).\n\n" +
+                           "Cuidado com senhas: campos de senha comuns do Windows são ignorados, mas os do navegador não são detectados. " +
+                           "Nada é gravado enquanto o Apparatus estiver em primeiro plano.",
+                },
+                PrimaryButtonText = "Começar a gravar",
+                CloseButtonText = "Cancelar",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = Content.XamlRoot,
+            };
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+            _macroAppend = append;
+            _macro = new MacroRecordingSession(_services.Keyboard);
+            _macro.StopRequested += () => DispatcherQueue.TryEnqueue(FinishMacroRecording);
+            _banner = new RecordingBanner(() => _macro?.StepCount ?? 0, () => DispatcherQueue.TryEnqueue(FinishMacroRecording));
+            ((OverlappedPresenter)AppWindow.Presenter).Minimize();
+            _macro.Start();
+            _banner.ShowAtTop();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Starting the macro recording failed", ex);
+            AbortMacroRecording();
+        }
+    }
+
+    private void FinishMacroRecording()
+    {
+        if (_macro is not { } session) return;
+        var steps = session.Stop();
+        int skipped = session.SkippedKeys, passwordKeys = session.PasswordKeysIgnored;
+        AbortMacroRecording();
+
+        ((OverlappedPresenter)AppWindow.Presenter).Restore();
+        Activate();
+        WindowHelpers.BringToForeground(_hwnd);
+
+        if (steps.Count == 0)
+        {
+            ShowStatus("Nada foi gravado.", "Use o teclado em outro programa enquanto grava; o que você digita no Apparatus não entra.", InfoBarSeverity.Informational);
+            return;
+        }
+
+        if (!_macroAppend)
+        {
+            BeginNew(null);
+            NameBox.Text = "Macro gravada";
+        }
+        foreach (var step in steps) Steps.Add(new StepListItem(step));
+        RenumberSteps();
+        StepsList.SelectedIndex = Steps.Count - steps.Count;
+        OnEdited(this, EventArgs.Empty);
+
+        string notes = $"{steps.Count} passo(s) gravado(s). Confira, remova o que sobrar e use “Testar”.";
+        if (skipped > 0) notes += $" {skipped} tecla(s) sem nome conhecido foram ignoradas.";
+        if (passwordKeys > 0) notes += $" {passwordKeys} tecla(s) em campos de senha não foram gravadas.";
+        ShowStatus("Gravação concluída", notes, InfoBarSeverity.Success);
+    }
+
+    private void AbortMacroRecording()
+    {
+        _macro?.Dispose();
+        _macro = null;
+        _banner?.Close();
+        _banner = null;
+    }
+
+    private void ShowStatus(string title, string message, InfoBarSeverity severity)
+    {
+        Status.Severity = severity;
+        Status.Title = title;
+        Status.Message = message;
+        Status.IsOpen = true;
     }
 
     private void AddStep(StepKind kind)

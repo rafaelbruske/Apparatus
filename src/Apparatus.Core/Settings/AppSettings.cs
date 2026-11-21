@@ -87,6 +87,9 @@ public sealed class AppSettings
     /// <summary>"taskbar" (next to the Start button, following the taskbar), "center" or "left".</summary>
     public string StartPosition { get; set; } = "taskbar";
 
+    /// <summary>A folder kept in sync by OneDrive, Dropbox or similar. When set, a backup file is written there after changes. Empty means off.</summary>
+    public string SyncFolder { get; set; } = "";
+
     public string DefaultSearchEngine { get; set; } = "g";
 
     public List<WebSearchEngine> SearchEngines { get; set; } = DefaultEngines();
