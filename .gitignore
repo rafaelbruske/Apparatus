@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 # build outputs of the installer pipeline
 artifacts/
+
+# The standard template ignores "Backup*/" (VS backup folders); this project has a real source folder with that name.
+!src/Apparatus.Core/Backup/
