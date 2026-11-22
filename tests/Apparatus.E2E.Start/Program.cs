@@ -8,7 +8,7 @@
 //   dotnet run --project tests/Apparatus.E2E.Start
 //
 // With --inject-win <path to Apparatus.exe> <empty temp folder> it also starts Apparatus in an isolated profile with the
-// Windows-key feature on, and TAPS THE REAL WINDOWS KEY with SendInput (then Esc). While it runs (about 20 s) do not touch
+// Windows-key feature on, and TAPS THE REAL WINDOWS KEY with SendInput. While it runs (about 20 s) do not touch
 // the keyboard; if the feature were broken, Windows' own Start menu would flash open. It checks that Apparatus' menu
 // opens and Windows' does not.
 using System.Diagnostics;
@@ -21,6 +21,35 @@ using Microsoft.Win32;
 internal static class Program
 {
     private static readonly List<string> Report = new();
+    private static string _lastStep = "(start)";
+
+    /// <summary>Progress marker, written to the file named by E2E_REPORT_FILE as it happens (so a stall shows where it is).</summary>
+    private static void Step(string text)
+    {
+        _lastStep = text;
+        Emit($"STEP  {DateTime.Now:HH:mm:ss.fff}  {text}");
+    }
+
+    private static void Emit(string line)
+    {
+        Console.WriteLine(line);
+        if (Environment.GetEnvironmentVariable("E2E_REPORT_FILE") is { Length: > 0 } path)
+        {
+            try { File.AppendAllText(path, line + Environment.NewLine); } catch (IOException) { }
+        }
+    }
+
+    /// <summary>Real-input runs must never hang a person's session: after this long the run is cut and says where it was.</summary>
+    private static void StartWatchdog(int seconds)
+    {
+        new Thread(() =>
+        {
+            Thread.Sleep(seconds * 1000);
+            Emit($"WATCHDOG  stuck for {seconds}s at: {_lastStep}");
+            foreach (var p in Process.GetProcessesByName("Apparatus")) { try { p.Kill(true); } catch { } }
+            Environment.Exit(9);
+        }) { IsBackground = true }.Start();
+    }
     private static int _passed, _failed;
 
     [STAThread]
@@ -33,7 +62,9 @@ internal static class Program
         {
             RegistryChecks(sandbox, temp);
             TaskbarChecks();
+            StartButtonChecks();
             HookLifecycleChecks();
+            if (args.Length >= 3 && args[0] == "--inject-failsafe") { StartWatchdog(150); FailsafeScenarios(args[1], args[2]); }
             if (args.Length >= 3 && args[0] == "--inject-win") WinTapChecks(args[1], args[2]);
             if (args.Length >= 3 && args[0] == "--sync") SyncChecks(args[1], args[2]);
             if (args.Length >= 1 && args[0] == "--record") RecordChecks();
@@ -95,6 +126,181 @@ internal static class Program
         Report.Add($"INFO  taskbar: {(tb is { } t ? $"{t.Edge} {t.Width}x{t.Height} at {t.Left},{t.Top} autohide={t.AutoHide}" : "unknown")}");
         Check("the shell reports where the taskbar is", tb is not null, "");
         if (tb is { } p) Check("the reported rectangle is not empty", p.Width > 0 && p.Height > 0, $"{p.Width}x{p.Height}");
+    }
+
+    // ------------------------------------------------- Start button + failsafe (safe part)
+
+    private static void StartButtonChecks()
+    {
+        var rects = StartButtonLocator.FindNow();
+        Report.Add("INFO  Start button(s): " + string.Join("; ", rects.Select(r => $"{r.Left},{r.Top}-{r.Right},{r.Bottom}")));
+        Check("UI Automation finds the Start button of the taskbar", rects.Count >= 1, "none found");
+        if (rects.Count >= 1)
+        {
+            var r = rects[0];
+            var tb = TaskbarInfo.Get();
+            Check("it is a small target, on the taskbar", r.Right - r.Left is > 10 and < 400 && r.Bottom - r.Top is > 10 and < 200
+                && tb is { } t && r.Top >= t.Top - 2 && r.Bottom <= t.Bottom + 2, $"{r}");
+        }
+        Check("Windows' own Start menu is closed right now", !OfficialStart.IsOpen(), "reported open");
+
+        string build = OsBuild.Current();
+        Report.Add($"INFO  Windows build: {build}");
+        Check("the Windows build reads as build.revision", System.Text.RegularExpressions.Regex.IsMatch(build, @"^\d{5}(\.\d+)?$"), build);
+    }
+
+    // --------------------------------------- Start button + failsafe (real input)
+
+    [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT p);
+    [DllImport("user32.dll")] private static extern void mouse_event(uint flags, int dx, int dy, int data, UIntPtr extra);
+
+    [StructLayout(LayoutKind.Sequential)] private struct POINT { public int X, Y; }
+
+    private static void Click(int x, int y)
+    {
+        SetCursorPos(x, y);
+        Thread.Sleep(150);
+        mouse_event(0x0002, 0, 0, 0, UIntPtr.Zero);   // left down
+        Thread.Sleep(60);
+        mouse_event(0x0004, 0, 0, 0, UIntPtr.Zero);   // left up
+    }
+
+    private sealed class Scenario : IDisposable
+    {
+        private readonly Process _app;
+        public readonly string Profile;
+
+        public Scenario(string exe, string profile, string settingsJson, Dictionary<string, string>? env = null)
+        {
+            Profile = profile;
+            if (Directory.Exists(profile)) Directory.Delete(profile, true);
+            Directory.CreateDirectory(Path.Combine(profile, "config"));
+            File.WriteAllText(Path.Combine(profile, "config", "settings.json"), settingsJson);
+            var psi = new ProcessStartInfo(exe, "--background") { UseShellExecute = false };
+            psi.Environment["APPARATUS_PROFILE_DIR"] = profile;
+            if (env is not null) foreach (var (k, v) in env) psi.Environment[k] = v;
+            _app = Process.Start(psi)!;
+            for (int i = 0; i < 100 && !LogText().Contains("Tray icon added"); i++) Thread.Sleep(100);
+        }
+
+        public string LogText() => Log(Profile);
+
+        public string SettingsText() => File.ReadAllText(Path.Combine(Profile, "config", "settings.json"));
+
+        public void Dispose()
+        {
+            try { _app.Kill(true); _app.WaitForExit(3000); } catch (InvalidOperationException) { }
+            _app.Dispose();
+            Thread.Sleep(400);
+        }
+    }
+
+    private const string StartOn = "{\"IndexFiles\":false,\"SnippetExpansion\":false,\"ExtensionSampleInstalled\":true,\"StartMenuEnabled\":true,\"StartButtonClick\":true}";
+
+    /// <summary>
+    /// Three runs of the real app with the real mouse and keyboard: a click on the Start button, a Windows-key tap while the UI is frozen
+    /// (the safety net must open Windows' own menu), and a tap when the masking key is sabotaged (the failsafe must switch the
+    /// replacement off). Moves the pointer and clicks on the taskbar; about 50 seconds. Do not touch the mouse or keyboard.
+    /// </summary>
+    /// <summary>
+    /// Closes Windows' Start menu by tapping the Windows key again (it toggles). NEVER with Esc: Esc goes to whatever window is in front,
+    /// and when that is the Claude Code window it interrupts the running session, which cut two earlier runs of this test short.
+    /// </summary>
+    private static void CloseOfficial()
+    {
+        for (int i = 0; i < 3 && OfficialStart.IsOpen(); i++)
+        {
+            Tap(0x5B);
+            Thread.Sleep(700);
+        }
+    }
+
+    private static void FailsafeScenarios(string exe, string root)
+    {
+        if (Process.GetProcessesByName("Apparatus").Length > 0) { Report.Add("SKIP  failsafe: an Apparatus instance is already running"); return; }
+        GetCursorPos(out var home);
+        try
+        {
+            // ---- 0) positive control: the detector must see Windows' own menu when it is really open (Windows 11 26300 hosts it in
+            //         SearchHost, window "Pesquisar"); "Windows' menu stays closed" checks mean nothing unless this passes
+            Step("scenario 0: control, open Windows' Start with Ctrl+Esc");
+            OfficialStart.Open();
+            bool seen = OfficialStart.OpensWithin(TimeSpan.FromMilliseconds(1500), TimeSpan.FromMilliseconds(30));
+            Check("[control] the detector sees Windows' own Start menu when it is open", seen, "not seen");
+            CloseOfficial();
+            Check("[control] and sees it closed again", !OfficialStart.IsOpen(), "still reported open");
+
+            Step("scenario 1: click on the Start button");
+            using (var s = new Scenario(exe, Path.Combine(root, "click"), StartOn))
+            {
+                Thread.Sleep(4500);   // the locator finds the button within ~1.5 s of the hook starting
+                var rects = StartButtonLocator.FindNow();
+                if (rects.Count == 0) { Check("[click] the Start button was found", false, "none"); }
+                else
+                {
+                    var r = rects[0];
+                    Click((r.Left + r.Right) / 2, (r.Top + r.Bottom) / 2);
+                    Thread.Sleep(1500);
+                    Check("[click] a click on the Start button opens Apparatus' menu", s.LogText().Contains("Start menu shown"), "no 'Start menu shown'");
+                    Check("[click] and Windows' own menu stays closed", !OfficialStart.IsOpen(), "Windows' menu is open");
+                    Click((r.Left + r.Right) / 2, (r.Top + r.Bottom) / 2);   // a second click closes it
+                    Thread.Sleep(900);
+                    Check("[click] a second click closes it", Regex(s.LogText(), "Start menu hidden") >= 1, "not hidden");
+                    Check("[click] it counted as working (nothing tripped)", !File.Exists(Path.Combine(s.Profile, "data", "start-failsafe.json"))
+                        || !File.ReadAllText(Path.Combine(s.Profile, "data", "start-failsafe.json")).Contains("\"TrippedReason\": \"o"), "tripped");
+                }
+            }
+
+            // ---- 2) a frozen Apparatus must not leave the user without a Start menu
+            Step("scenario 2: frozen UI");
+            using (var s = new Scenario(exe, Path.Combine(root, "freeze"), StartOn, new() { ["APPARATUS_DEBUG_FREEZE_UI_MS"] = "14000" }))
+            {
+                Thread.Sleep(4000 + 3500);   // frozen from second 4 on; the hooks notice after 2 s of silence
+                int shownBefore = Regex(s.LogText(), "Start menu shown");
+                Step("[frozen] tapping the Windows key");
+                Tap(0x5B);
+                Thread.Sleep(1500);
+                Step("[frozen] looking for Windows' menu");
+                bool official = OfficialStart.IsOpen();
+                Check("[frozen] with the UI frozen, the Windows key opens Windows' own menu", official, "Windows' menu did not open");
+                Check("[frozen] and Apparatus' menu is not even attempted", Regex(s.LogText(), "Start menu shown") == shownBefore, "Apparatus tried to show it");
+                CloseOfficial();
+            }
+
+            // ---- 3) if an update breaks the masking, the failsafe hands the menu back to Windows by itself
+            Step("scenario 3: masking sabotaged");
+            using (var s = new Scenario(exe, Path.Combine(root, "nomask"), StartOn, new() { ["APPARATUS_DEBUG_NO_MASK"] = "1" }))
+            {
+                Thread.Sleep(3500);
+                Step("[failsafe] tapping the Windows key (masking sabotaged)");
+                Tap(0x5B);
+                Thread.Sleep(2500);
+                Step("[failsafe] reading the outcome");
+                bool tripped = s.LogText().Contains("Start failsafe tripped");
+                Check("[failsafe] both menus opening at once is noticed and trips the failsafe", tripped, "no trip in the log");
+                Check("[failsafe] the replacement is switched off in the settings", s.SettingsText().Contains("\"StartMenuEnabled\": false"), "still enabled");
+                Check("[failsafe] the reason is kept", File.Exists(Path.Combine(s.Profile, "data", "start-failsafe.json"))
+                    && File.ReadAllText(Path.Combine(s.Profile, "data", "start-failsafe.json")).Contains("TrippedReason"), "no state file");
+                Step("[failsafe] closing Windows' menu if it is still open");
+                CloseOfficial();
+
+                // and from now on the Windows key is plainly Windows' again
+                Thread.Sleep(800);
+                Step("[failsafe] tapping the Windows key after the trip");
+                Tap(0x5B);
+                Thread.Sleep(1500);
+                Step("[failsafe] looking for Windows' menu after the trip");
+                bool officialNow = OfficialStart.IsOpen();
+                Check("[failsafe] afterwards the Windows key opens Windows' menu again", officialNow, "it did not");
+                CloseOfficial();
+            }
+            Step("done");
+        }
+        finally
+        {
+            SetCursorPos(home.X, home.Y);
+        }
     }
 
     // ---------------------------------------------------------------- hook
@@ -173,9 +379,9 @@ internal static class Program
             Check("and Windows' own Start menu does not open",
                 front is not ("StartMenuExperienceHost" or "SearchHost" or "SearchApp"), front);
 
-            Tap(0x1B);   // Esc closes it
+            Tap(0x5B);   // the Windows key again closes it (never Esc: see CloseOfficial)
             Thread.Sleep(600);
-            Check("Esc closes the menu", Log(profile).Contains("Start menu hidden"), "no 'Start menu hidden' in the log");
+            Check("a second tap closes the menu", Log(profile).Contains("Start menu hidden"), "no 'Start menu hidden' in the log");
 
             Tap(0x5B);
             Thread.Sleep(1200);

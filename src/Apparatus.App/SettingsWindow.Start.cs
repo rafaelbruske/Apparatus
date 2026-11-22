@@ -20,7 +20,81 @@ public sealed partial class SettingsWindow
         Select(StartPositionBox, s.StartPosition);
         StartColumnsBox.Value = Math.Clamp(s.StartColumns, 4, 8);
         StartRecentSwitch.IsOn = s.StartShowRecent;
+        StartClickSwitch.IsOn = s.StartButtonClick;
         BuildTweakRows();
+        HookStartStatus();
+        RefreshStartStatus();
+    }
+
+    private bool _startStatusHooked;
+
+    private void HookStartStatus()
+    {
+        if (_startStatusHooked || _services.StartHost is not { } host) return;
+        _startStatusHooked = true;
+        void OnTripped(string _) => DispatcherQueue.TryEnqueue(RefreshStartStatus);
+        host.FailsafeTripped += OnTripped;
+        Closed += (_, _) => host.FailsafeTripped -= OnTripped;
+
+        // The location of the Start button is found in the background; look again shortly after opening.
+        var timer = DispatcherQueue.CreateTimer();
+        timer.Interval = TimeSpan.FromSeconds(2);
+        timer.Tick += (_, _) => RefreshStartStatus();
+        timer.Start();
+        Closed += (_, _) => timer.Stop();
+    }
+
+    /// <summary>What the Windows-key/click replacement is doing, and the failsafe's say in it.</summary>
+    private void RefreshStartStatus()
+    {
+        if (_services.StartHost is not { } host) return;
+        var f = host.Failsafe;
+        bool enabled = _services.Settings.Current.StartMenuEnabled;
+
+        if (f.IsTripped)
+        {
+            var retry = new Button { Content = "Tentar de novo" };
+            retry.Click += (_, _) =>
+            {
+                _services.ApplySettings(s => s.StartMenuEnabled = true);
+                StartKeySwitch.IsOn = true;
+                RefreshStartStatus();
+            };
+            StartStatus.ActionButton = retry;
+            StartStatus.Severity = InfoBarSeverity.Warning;
+            StartStatus.Title = "Desligado automaticamente — o menu do Windows está em uso";
+            StartStatus.Message = $"Motivo: {f.TrippedReason}";
+        }
+        else if (enabled)
+        {
+            StartStatus.ActionButton = null;
+            StartStatus.Severity = f.InProbation ? InfoBarSeverity.Informational : InfoBarSeverity.Success;
+            StartStatus.Title = f.InProbation
+                ? $"Ativo — observando o Windows {f.CurrentBuild}"
+                : $"Ativo — funcionando no Windows {f.CurrentBuild}";
+            StartStatus.Message = f.InProbation
+                ? "Nas primeiras vezes depois de uma atualização do Windows, qualquer falha devolve o menu ao Windows automaticamente."
+                : "Se uma atualização do Windows quebrar a substituição, o menu do Windows volta sozinho.";
+        }
+        else
+        {
+            StartStatus.IsOpen = false;
+            StartDiag.Text = "";
+            return;
+        }
+        StartStatus.IsOpen = true;
+
+        int buttons = host.ButtonRects.Count;
+        StartDiag.Text = !enabled || !_services.Settings.Current.StartButtonClick ? ""
+            : buttons > 0 ? $"Botão Iniciar da barra de tarefas localizado ({buttons})."
+            : "Procurando o botão Iniciar da barra de tarefas… (se não for encontrado, só a tecla Windows abre o menu do Apparatus)";
+    }
+
+    private void OnStartClickToggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _services.ApplySettings(s => s.StartButtonClick = StartClickSwitch.IsOn);
+        RefreshStartStatus();
     }
 
     private static void Select(ComboBox box, string tag)
@@ -37,6 +111,7 @@ public sealed partial class SettingsWindow
     {
         if (_loading) return;
         _services.ApplySettings(s => s.StartMenuEnabled = StartKeySwitch.IsOn);
+        RefreshStartStatus();
     }
 
     private void OnStartAppearanceChanged(object sender, SelectionChangedEventArgs e)

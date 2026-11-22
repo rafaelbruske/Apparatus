@@ -43,6 +43,7 @@ public sealed class AppServices : IDisposable
         Tweaks = new TweakService(new RegistryTweakStore(), AppPaths.TweakBackupFile);
         Backup = new BackupService(Settings, Snippets, Actions, StartLayout);
         Sync = new SyncService(this, Backup);
+        Updates = new UpdateService(this);
         Extensions = new ExtensionHost(AppPaths.ExtensionsDirectory,
             () => Settings.Current.EnabledExtensions, () => Settings.Current.GlobalExtensions,
             (title, message) => host.ShowBalloon(title, message));
@@ -95,6 +96,9 @@ public sealed class AppServices : IDisposable
 
     /// <summary>Keeps a backup in the sync folder, when one is chosen.</summary>
     public SyncService Sync { get; }
+
+    /// <summary>Looks for and installs newer versions of this program.</summary>
+    public UpdateService Updates { get; }
 
     /// <summary>The Start menu; set once the UI thread exists.</summary>
     public StartMenuService? StartHost { get; set; }

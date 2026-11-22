@@ -152,7 +152,20 @@ public sealed unsafe class WinKeyInterceptor : IDisposable
     /// <summary>Raised on the hook thread when a lone tap of the Windows key is detected. Must return quickly.</summary>
     public event Action? Tapped;
 
-    public WinKeyInterceptor(KeyboardHub hub) => _hub = hub;
+    /// <summary>Test aid (APPARATUS_DEBUG_NO_MASK=1): skip the masking key, which is what an update of Windows could break, so the failsafe can be exercised for real.</summary>
+    private static readonly bool DebugNoMask = Environment.GetEnvironmentVariable("APPARATUS_DEBUG_NO_MASK") == "1";
+
+    private readonly Func<bool> _canIntercept;
+
+    /// <param name="canIntercept">
+    /// Asked on every tap. When it says no (the UI is frozen, or the failsafe gave the menu back to Windows) the tap is left
+    /// alone, so Windows opens its own Start menu.
+    /// </param>
+    public WinKeyInterceptor(KeyboardHub hub, Func<bool>? canIntercept = null)
+    {
+        _hub = hub;
+        _canIntercept = canIntercept ?? (() => true);
+    }
 
     public bool IsActive => _subscription is not null;
 
@@ -176,10 +189,11 @@ public sealed unsafe class WinKeyInterceptor : IDisposable
 
         var outcome = _detector.Feed(e.VirtualKey, e.IsDown);
         if (!outcome.Tapped) return false;
+        if (!_canIntercept()) return false;   // not hidden from Windows: its own menu opens
 
         // Windows decides "open Start" on the Win release only if nothing else was pressed meanwhile: press an unassigned
         // key now, before the release reaches it.
-        if (outcome.MaskWindowsKey) InjectMask();
+        if (outcome.MaskWindowsKey && !DebugNoMask) InjectMask();
         Tapped?.Invoke();
         return false;   // the release itself must still arrive, or the system would think Win is stuck down
     }

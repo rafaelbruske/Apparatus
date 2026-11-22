@@ -37,6 +37,9 @@ public static class AppPaths
     /// <summary>What is pinned in the Start menu, and how it is grouped.</summary>
     public static string StartLayoutFile => Path.Combine(Roaming, "start.json");
 
+    /// <summary>Which Windows build the Start replacement was seen working on, and why it switched itself off, if it did.</summary>
+    public static string StartFailsafeFile => Path.Combine(Local, "start-failsafe.json");
+
     /// <summary>The original values of the Windows settings Apparatus changed, so each can be undone exactly.</summary>
     public static string TweakBackupFile => Path.Combine(Roaming, "windows-tweaks-backup.json");
 

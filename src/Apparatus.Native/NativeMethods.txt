@@ -91,3 +91,16 @@ WM_NULL
 WM_QUIT
 WM_SYSKEYDOWN
 WM_SYSKEYUP
+FindWindow
+CUIAutomation
+IUIAutomation
+IUIAutomationElement
+IUIAutomationElementArray
+IUIAutomationCondition
+MSLLHOOKSTRUCT
+WM_LBUTTONDOWN
+WM_LBUTTONUP
+WM_MOUSEMOVE
+CoCreateInstance
+CoInitializeEx
+CoUninitialize

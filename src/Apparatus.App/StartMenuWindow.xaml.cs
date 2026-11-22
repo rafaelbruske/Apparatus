@@ -85,6 +85,11 @@ public sealed partial class StartMenuWindow : Window
 
     public bool IsMenuVisible { get; private set; }
 
+    private int _actionCount;
+
+    /// <summary>How many times the menu has been shown or hidden. A watchdog uses it to tell that a request was carried out.</summary>
+    public int ActionCount => Volatile.Read(ref _actionCount);
+
     public void AllowClose() => _allowClose = true;
 
     // ---------------------------------------------------------- show/hide
@@ -126,6 +131,7 @@ public sealed partial class StartMenuWindow : Window
 
         IsMenuVisible = true;
         _shownAtUtc = DateTime.UtcNow;
+        Interlocked.Increment(ref _actionCount);
         AppLog.Info("Start menu shown");
         AppWindow.Show();
         Activate();
@@ -151,6 +157,7 @@ public sealed partial class StartMenuWindow : Window
     {
         if (!IsMenuVisible) return;
         IsMenuVisible = false;
+        Interlocked.Increment(ref _actionCount);
         AppLog.Info("Start menu hidden");
         _searchCts?.Cancel();
         AppWindow.Hide();

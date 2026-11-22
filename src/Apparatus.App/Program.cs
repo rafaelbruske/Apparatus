@@ -10,6 +10,16 @@ public static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        // Must come first: when the installer or updater starts this program with one of its hooks (install, update, uninstall)
+        // Velopack runs it and exits; on an ordinary start it does nothing.
+        Velopack.VelopackApp.Build()
+            .OnBeforeUninstallFastCallback(_ =>
+            {
+                // The start-up entry must not outlive the program. Settings and data in %LOCALAPPDATA%\Apparatus are left alone.
+                try { AutoStart.Set(false); } catch (Exception) { /* nothing more to do while uninstalling */ }
+            })
+            .Run();
+
         WinRT.ComWrappersSupport.InitializeComWrappers();
 
         using var instance = SingleInstance.Acquire();
@@ -21,7 +31,7 @@ public static class Program
         }
 
         AppLog.Initialize(AppPaths.LogsDirectory);
-        AppLog.Info($"Apparatus starting (args: {string.Join(' ', args)})");
+        AppLog.Info($"Apparatus {typeof(Program).Assembly.GetName().Version?.ToString(3)} starting (args: {string.Join(' ', args)})");
 
         Application.Start(_ =>
         {

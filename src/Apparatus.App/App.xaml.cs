@@ -65,6 +65,9 @@ public partial class App : Application
         var registration = _services.RegisterConfiguredHotkey();
         _services.StartBackgroundWork();
         _services.Sync.Start();
+        _services.Updates.Start();
+        FreezeUiForTesting();
+        if (_args.Contains("--update-now", StringComparer.OrdinalIgnoreCase)) _ = UpdateNowAsync();
         ExtensionRunner.InstallSampleOnce(_services);
         _instance.Listen(() => _ui.TryEnqueue(() => _launcher.ShowLauncher()));
 
@@ -95,6 +98,37 @@ public partial class App : Application
                 _launcher.ShowLauncher(ArgValue("--query"));
             }
         });
+    }
+
+    /// <summary>"--update-now": checks the update source and, if there is a newer version, installs it and restarts (for scripts and tests).</summary>
+    private async Task UpdateNowAsync()
+    {
+        try
+        {
+            if (await _services!.Updates.CheckAsync() is not null) await _services.Updates.InstallAndRestartAsync();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("--update-now failed", ex);
+        }
+    }
+
+    /// <summary>
+    /// Test aid: with APPARATUS_DEBUG_FREEZE_UI_MS=n the UI thread blocks for n ms, a few seconds after start-up, so the safety net
+    /// (Windows' own Start menu opens when this program is frozen) can be exercised for real. Does nothing otherwise.
+    /// </summary>
+    private void FreezeUiForTesting()
+    {
+        if (!int.TryParse(Environment.GetEnvironmentVariable("APPARATUS_DEBUG_FREEZE_UI_MS"), out int ms) || ms <= 0) return;
+        var timer = _ui.CreateTimer();
+        timer.Interval = TimeSpan.FromSeconds(4);
+        timer.IsRepeating = false;
+        timer.Tick += (_, _) =>
+        {
+            AppLog.Warn($"[test aid] freezing the UI thread for {ms} ms");
+            Thread.Sleep(ms);
+        };
+        timer.Start();
     }
 
     /// <summary>Value following a command-line switch ("--query chrome"), or null.</summary>

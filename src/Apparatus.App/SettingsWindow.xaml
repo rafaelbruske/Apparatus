@@ -313,6 +313,14 @@
                         FontSize="12"
                         Opacity="0.65"
                         TextWrapping="Wrap" />
+                    <ToggleSwitch
+                        x:Name="StartClickSwitch"
+                        Header="O clique no botão Iniciar da barra de tarefas também abre o menu do Apparatus"
+                        OnContent="Ativado"
+                        OffContent="Desativado"
+                        Toggled="OnStartClickToggled" />
+                    <InfoBar x:Name="StartStatus" IsOpen="False" IsClosable="False" />
+                    <TextBlock x:Name="StartDiag" FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal" Spacing="24">
                         <ComboBox x:Name="StartThemeBox" Header="Tema" MinWidth="150" SelectionChanged="OnStartAppearanceChanged">
                             <ComboBoxItem Content="Como o sistema" Tag="system" />
@@ -416,6 +424,32 @@
                     </StackPanel>
                     <TextBlock x:Name="SyncStatusText" FontSize="12" Opacity="0.75" TextWrapping="Wrap" />
                     <InfoBar x:Name="BackupInfo" IsOpen="False" IsClosable="True" />
+                </StackPanel>
+            </Border>
+
+            <!-- updates -->
+            <TextBlock Text="Atualizações" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="VersionText" />
+                    <TextBox
+                        x:Name="UpdateSourceBox"
+                        Header="De onde vêm as atualizações (pasta ou endereço web com os arquivos de release)"
+                        PlaceholderText="por exemplo D:\releases ou https://exemplo.com/apparatus"
+                        LostFocus="OnUpdateSourceLostFocus" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Verificar agora" Click="OnCheckUpdates" />
+                        <Button x:Name="InstallUpdateButton" Content="Instalar e reiniciar" Click="OnInstallUpdate" Visibility="Collapsed" />
+                    </StackPanel>
+                    <TextBlock x:Name="UpdateStatusText" FontSize="12" Opacity="0.75" TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="Sem uma fonte, nada é baixado. Quando há uma versão nova, o Apparatus avisa e você decide quando instalar; suas configurações e dados não são tocados."
+                        FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 

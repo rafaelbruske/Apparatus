@@ -87,8 +87,14 @@ public sealed class AppSettings
     /// <summary>"taskbar" (next to the Start button, following the taskbar), "center" or "left".</summary>
     public string StartPosition { get; set; } = "taskbar";
 
+    /// <summary>Clicking the Start button of the taskbar opens Apparatus' menu too (only while <see cref="StartMenuEnabled"/> is on).</summary>
+    public bool StartButtonClick { get; set; } = true;
+
     /// <summary>A folder kept in sync by OneDrive, Dropbox or similar. When set, a backup file is written there after changes. Empty means off.</summary>
     public string SyncFolder { get; set; } = "";
+
+    /// <summary>Where updates come from: a folder or a web address that holds the releases made by the packer. Empty means no automatic updates.</summary>
+    public string UpdateSource { get; set; } = "";
 
     public string DefaultSearchEngine { get; set; } = "g";
 

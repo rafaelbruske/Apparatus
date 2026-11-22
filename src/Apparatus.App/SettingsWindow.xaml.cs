@@ -70,6 +70,7 @@ public sealed partial class SettingsWindow : Window
         LoadPhase4();
         LoadStart();
         LoadBackup();
+        LoadUpdates();
     }
 
     // ------------------------------------------------------------ hotkey

@@ -59,7 +59,7 @@ SQLite, com exportar e importar para backup.
 
 ## 5. Fases
 
-Status: **Fase 0 concluída** ([resultados](FASE0-RESULTADOS.md)); **Fase 1 concluída** ([detalhes](FASE1.md)); **Fase 2 concluída** ([detalhes](FASE2.md)); **Fase 3 concluída** ([detalhes](FASE3.md)); **Fase 4 concluída** ([detalhes](FASE4.md), [guia de extensões](EXTENSOES.md)); **Fase 5 concluída** ([detalhes](FASE5.md)); **Fase 6 concluída, sem o AppBar** ([detalhes](FASE6.md)).
+Status: **Fase 0 concluída** ([resultados](FASE0-RESULTADOS.md)); **Fase 1 concluída** ([detalhes](FASE1.md)); **Fase 2 concluída** ([detalhes](FASE2.md)); **Fase 3 concluída** ([detalhes](FASE3.md)); **Fase 4 concluída** ([detalhes](FASE4.md), [guia de extensões](EXTENSOES.md)); **Fase 5 concluída** ([detalhes](FASE5.md)); **Fase 6 concluída, sem o AppBar** ([detalhes](FASE6.md)); **Fase 7 (uso diário) concluída, exceto janelas elevadas** ([detalhes](FASE7.md)).
 
 | Fase | Entrega | Critério de saída |
 |---|---|---|
