@@ -75,6 +75,8 @@ public sealed partial class ActionsWindow : Window
     private bool _dirty;
     private bool _revertingSelection;
     private bool _recording;
+    private long _menuGuardUntil;
+    private readonly KeyMenuSuppressor _keyMenu;
     private StepListItem? _editingStep;
 
     public ObservableCollection<ActionListItem> Items { get; } = new();
@@ -85,6 +87,9 @@ public sealed partial class ActionsWindow : Window
         _services = services;
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
+
+        // Recording a hotkey that uses Alt+Space must not also open this window's system menu.
+        _keyMenu = new KeyMenuSuppressor(_hwnd, () => _recording || Environment.TickCount64 < _menuGuardUntil);
 
         AppWindow.SetIcon(AppPaths.AssetPath("apparatus.ico"));
         double scale = WindowHelpers.GetScale(_hwnd);
@@ -100,6 +105,7 @@ public sealed partial class ActionsWindow : Window
             if (_services.ActionHost is { } h) h.StatusChanged -= OnStatusChanged;
             if (_recording) StopRecording();
             AbortMacroRecording();
+            _keyMenu.Dispose();
         };
 
         RefreshCategories();
@@ -344,6 +350,7 @@ public sealed partial class ActionsWindow : Window
 
     private void StopRecording()
     {
+        _menuGuardUntil = Environment.TickCount64 + 800;
         _recording = false;
         RecordButton.Content = "Gravar";
         HotkeyText.Text = _current.Hotkey.Length > 0 ? _current.Hotkey : "(sem atalho)";

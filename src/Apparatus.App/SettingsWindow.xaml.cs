@@ -21,12 +21,17 @@ public sealed partial class SettingsWindow : Window
     private readonly ObservableCollection<string> _roots = new();
     private bool _loading = true;
     private bool _capturing;
+    private long _menuGuardUntil;   // the system-menu request follows the key by a few milliseconds: keep dropping it briefly after recording
+    private readonly KeyMenuSuppressor _keyMenu;
 
     public SettingsWindow(AppServices services)
     {
         _services = services;
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
+
+        // Recording "Alt+Space" must not also open this window's system menu (Windows does that after the app has seen the key).
+        _keyMenu = new KeyMenuSuppressor(_hwnd, () => _capturing || Environment.TickCount64 < _menuGuardUntil);
 
         AppWindow.SetIcon(AppPaths.AssetPath("apparatus.ico"));
         double scale = WindowHelpers.GetScale(_hwnd);
@@ -40,6 +45,7 @@ public sealed partial class SettingsWindow : Window
         Closed += (_, _) =>
         {
             _services.Index.StatusChanged -= OnIndexStatusChanged;
+            _keyMenu.Dispose();
             if (_capturing)
             {
                 _services.ResumeHotkey();
@@ -96,6 +102,7 @@ public sealed partial class SettingsWindow : Window
 
     private void StopCapturing(bool resume)
     {
+        _menuGuardUntil = Environment.TickCount64 + 800;
         _capturing = false;
         ChangeHotkeyButton.Content = "Alterar";
         HotkeyHelp.Text = "Clique em Alterar e pressione a nova combinação.";

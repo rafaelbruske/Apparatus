@@ -14,7 +14,7 @@ public sealed class WebSearchEngine
 public sealed class AppSettings
 {
     /// <summary>Global hotkey that opens the launcher. Configurable in the settings window.</summary>
-    public string Hotkey { get; set; } = "Ctrl+Alt+Space";
+    public string Hotkey { get; set; } = "Alt+Space";
 
     public bool RunAtStartup { get; set; }
 

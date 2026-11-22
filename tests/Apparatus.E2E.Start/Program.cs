@@ -68,6 +68,7 @@ internal static class Program
             if (args.Length >= 3 && args[0] == "--inject-win") WinTapChecks(args[1], args[2]);
             if (args.Length >= 3 && args[0] == "--sync") SyncChecks(args[1], args[2]);
             if (args.Length >= 1 && args[0] == "--record") RecordChecks();
+            KeyMenuChecks();
         }
         finally
         {
@@ -394,6 +395,63 @@ internal static class Program
         {
             try { app.Kill(true); app.WaitForExit(3000); } catch (InvalidOperationException) { }
         }
+    }
+
+    // ------------------------------------------- Alt+Space and the system menu
+
+    [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] private static extern bool GetGUIThreadInfo(uint threadId, ref GUITHREADINFO info);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct GUITHREADINFO
+    {
+        public int cbSize, flags;
+        public IntPtr hwndActive, hwndFocus, hwndCapture, hwndMenuOwner, hwndMoveSize, hwndCaret;
+        public int L, T, R, B;
+    }
+
+    /// <summary>
+    /// What Windows does after Alt+Space is a request in the window procedure (WM_SYSCOMMAND / SC_KEYMENU, or WM_SYSCHAR for the space);
+    /// that request is posted straight to a form of this process, with no key injected, once without and once with the suppressor.
+    /// The first case is the control: without the suppressor the system menu must really open, or the second case proves nothing.
+    /// </summary>
+    private static void KeyMenuChecks()
+    {
+        const uint WM_SYSCHAR = 0x0106, WM_SYSCOMMAND = 0x0112, WM_CANCELMODE = 0x001F;
+        const int GUI_INMENUMODE = 0x4, GUI_SYSTEMMENUMODE = 0x8;
+
+        bool InMenu(System.Windows.Forms.Form f)
+        {
+            var info = new GUITHREADINFO { cbSize = Marshal.SizeOf<GUITHREADINFO>() };
+            return GetGUIThreadInfo(GetWindowThreadProcessId(f.Handle, out _), ref info) && (info.flags & (GUI_INMENUMODE | GUI_SYSTEMMENUMODE)) != 0;
+        }
+
+        bool Attempt(uint message, IntPtr wParam, bool suppress)
+        {
+            using var form = new System.Windows.Forms.Form { Text = "key menu target", Width = 300, Height = 160, ShowInTaskbar = false };
+            KeyMenuSuppressor? guard = null;
+            bool inMenu = false;
+            form.Shown += async (_, _) =>
+            {
+                if (suppress) guard = new KeyMenuSuppressor(form.Handle, () => true);
+                PostMessage(form.Handle, message, wParam, message == WM_SYSCOMMAND ? (IntPtr)' ' : IntPtr.Zero);
+                await Task.Delay(500);
+                inMenu = InMenu(form);
+                PostMessage(form.Handle, WM_CANCELMODE, IntPtr.Zero, IntPtr.Zero);
+                await Task.Delay(100);
+                form.Close();
+            };
+            System.Windows.Forms.Application.Run(form);
+            guard?.Dispose();
+            return inMenu;
+        }
+
+        const int SC_KEYMENU = 0xF100;
+        bool plain = Attempt(WM_SYSCOMMAND, (IntPtr)SC_KEYMENU, suppress: false);
+        Check("[system menu] control: without the suppressor the request opens the window's system menu", plain, "the menu did not open, so the next check proves nothing");
+        if (!plain) return;
+        Check("[system menu] with the suppressor the SC_KEYMENU request is dropped", !Attempt(WM_SYSCOMMAND, (IntPtr)SC_KEYMENU, suppress: true), "the menu opened anyway");
+        Check("[system menu] and so is the space that follows Alt (WM_SYSCHAR)", !Attempt(WM_SYSCHAR, (IntPtr)' ', suppress: true), "the menu opened anyway");
     }
 
     // --------------------------------------------------- macro recording

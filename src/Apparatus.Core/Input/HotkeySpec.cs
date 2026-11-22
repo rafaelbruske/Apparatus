@@ -14,7 +14,8 @@ public enum HotkeyModifiers
 /// <summary>A global hotkey such as "Ctrl+Alt+Space". Parses from / formats to its text form.</summary>
 public readonly record struct HotkeySpec(HotkeyModifiers Modifiers, uint VirtualKey)
 {
-    public static readonly HotkeySpec Default = new(HotkeyModifiers.Control | HotkeyModifiers.Alt, 0x20);
+    /// <summary>Alt+Space, like Raycast and the old Windows launchers. (It also takes over the window system menu's own Alt+Space.)</summary>
+    public static readonly HotkeySpec Default = new(HotkeyModifiers.Alt, 0x20);
 
     private static readonly (string Name, uint Vk)[] NamedKeys =
     {

@@ -239,18 +239,18 @@ public class SettingsStoreTests
         using var t = new TempDir();
         var path = Path.Combine(t.Path, "settings.json");
         var store = new SettingsStore(path);
-        Assert.Equal("Ctrl+Alt+Space", store.Current.Hotkey);
+        Assert.Equal("Alt+Space", store.Current.Hotkey);
 
         AppSettings? seen = null;
         store.Changed += (_, s) => seen = s;
         var next = store.Current.Clone();
-        next.Hotkey = "Alt+Space";
+        next.Hotkey = "Ctrl+Alt+Space";
         next.IndexRoots = new() { @"D:\" };
         store.Update(next);
 
-        Assert.Equal("Alt+Space", seen?.Hotkey);
+        Assert.Equal("Ctrl+Alt+Space", seen?.Hotkey);
         var reloaded = new SettingsStore(path);
-        Assert.Equal("Alt+Space", reloaded.Current.Hotkey);
+        Assert.Equal("Ctrl+Alt+Space", reloaded.Current.Hotkey);
         Assert.Equal(new[] { @"D:\" }, reloaded.Current.IndexRoots);
         Assert.Contains(reloaded.Current.SearchEngines, e => e.Keyword == "yt");
     }
@@ -262,7 +262,7 @@ public class SettingsStoreTests
         var path = Path.Combine(t.Path, "settings.json");
         File.WriteAllText(path, "{ this is not json");
         var store = new SettingsStore(path);
-        Assert.Equal("Ctrl+Alt+Space", store.Current.Hotkey);
+        Assert.Equal("Alt+Space", store.Current.Hotkey);
         Assert.True(File.Exists(path + ".broken"));
     }
 }

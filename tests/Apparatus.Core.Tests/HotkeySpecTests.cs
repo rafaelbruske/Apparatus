@@ -5,10 +5,18 @@ namespace Apparatus.Core.Tests;
 public class HotkeySpecTests
 {
     [Fact]
-    public void Default_IsCtrlAltSpace()
+    public void Default_IsAltSpace()
     {
-        Assert.Equal("Ctrl+Alt+Space", HotkeySpec.Default.ToString());
+        Assert.Equal("Alt+Space", HotkeySpec.Default.ToString());
         Assert.True(HotkeySpec.Default.IsValid);
+    }
+
+    [Fact]
+    public void TheDefaultSetting_AndTheDefaultSpec_AreTheSameKeys()
+    {
+        // "Padrão" in the settings applies HotkeySpec.Default; a fresh install uses AppSettings.Hotkey: they must not drift apart.
+        Assert.True(HotkeySpec.TryParse(new Core.Settings.AppSettings().Hotkey, out var fromSettings));
+        Assert.Equal(HotkeySpec.Default, fromSettings);
     }
 
     [Theory]

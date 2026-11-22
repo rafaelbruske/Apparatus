@@ -2,7 +2,7 @@
 
 Um utilitário para Windows 11 que reúne, em um só programa residente na bandeja:
 
-- **Launcher** (estilo Raycast): `Ctrl+Alt+Space` (configurável) abre uma caixa que pesquisa aplicativos, arquivos, configurações do Windows, histórico da área de transferência, snippets, ações e extensões, e faz contas e conversões.
+- **Launcher** (estilo Raycast): `Alt+Space` (configurável) abre uma caixa que pesquisa aplicativos, arquivos, configurações do Windows, histórico da área de transferência, snippets, ações e extensões, e faz contas e conversões.
 - **Snippets** (estilo TextExpander): `;email` vira o seu e-mail em qualquer programa, com variáveis (`{date}`, `{clipboard}`, `{cursor}`) e campos preenchíveis.
 - **Ações e macros** (estilo AutoHotkey): atalhos globais ou por programa que abrem coisas, enviam teclas, gerenciam janelas, controlam volume e brilho. Macros podem ser **gravadas** pelo teclado.
 - **Menu Iniciar próprio** (estilo StartAllBack): fixados em seções, todos os aplicativos, pesquisa, atalhos e energia, aberto pela tecla Windows ou pelo botão Iniciar. A barra de tarefas continua sendo a do Windows.
