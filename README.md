@@ -54,7 +54,7 @@ O Windows impede que um programa comum veja as teclas digitadas em janelas eleva
 
 ## Mais
 
-`docs/PLANO.md` descreve o plano e as decisões; `docs/FASE0-RESULTADOS.md` a `docs/FASE7.md` o que cada fase entregou, como foi verificado e o que ficou de fora. `docs/EXTENSOES.md` explica como escrever uma extensão.
+`docs/PLANO.md` descreve o plano e as decisões; `docs/FASE0-RESULTADOS.md` a `docs/FASE7.md` o que cada fase entregou, como foi verificado e o que ficou de fora. `docs/EXTENSOES.md` explica como escrever uma extensão. `docs/PENDENCIAS.md` lista o que ainda falta (inclusive o uso em janelas de administrador) e `docs/ASSINATURA.md` explica a assinatura de código.
 
 ## Testes
 
