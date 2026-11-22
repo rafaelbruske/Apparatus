@@ -98,6 +98,29 @@ public static class AutoStart
         return key?.GetValue(ValueName) is string;
     }
 
+    /// <summary>True for a copy installed by the installer (the updater, Update.exe, sits in the folder above the program).</summary>
+    public static bool IsInstalledBuild()
+    {
+        string? exe = Environment.ProcessPath;
+        string? parent = exe is null ? null : Directory.GetParent(Path.GetDirectoryName(exe)!)?.FullName;
+        return parent is not null && File.Exists(Path.Combine(parent, "Update.exe"));
+    }
+
+    /// <summary>
+    /// Makes the start-up entry match the setting, for an installed copy only (a build run from a folder must not overwrite it with its own
+    /// path). The entry can be missing or point at an old place even though the setting is on, for example after a reinstall.
+    /// Returns true when it had to be rewritten.
+    /// </summary>
+    public static bool Reconcile(bool wanted)
+    {
+        if (!wanted || !IsInstalledBuild()) return false;
+        string expected = $"\"{Environment.ProcessPath}\" --background";
+        using var key = Registry.CurrentUser.OpenSubKey(RunKey);
+        if (key?.GetValue(ValueName) is string current && string.Equals(current, expected, StringComparison.OrdinalIgnoreCase)) return false;
+        Set(true);
+        return true;
+    }
+
     public static void Set(bool enabled)
     {
         using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true) ?? Registry.CurrentUser.CreateSubKey(RunKey);
@@ -159,8 +182,12 @@ public sealed class SingleInstance : IDisposable
         thread.Start();
     }
 
+    private int _disposed;
+
     public void Dispose()
     {
+        // Called both when the app quits and when Main ends: the second call must do nothing (it used to throw ObjectDisposedException).
+        if (Interlocked.Exchange(ref _disposed, 1) == 1) return;
         _cts.Cancel();
         if (IsFirst) { try { _mutex.ReleaseMutex(); } catch (ApplicationException) { } }
         _mutex.Dispose();

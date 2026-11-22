@@ -64,6 +64,14 @@ public partial class App : Application
 
         var registration = _services.RegisterConfiguredHotkey();
         _services.StartBackgroundWork();
+        try
+        {
+            if (AutoStart.Reconcile(_services.Settings.Current.RunAtStartup)) AppLog.Info("Start-up entry was missing or outdated: rewritten");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Checking the start-up entry failed: {ex.Message}");
+        }
         _services.Sync.Start();
         _services.Updates.Start();
         FreezeUiForTesting();

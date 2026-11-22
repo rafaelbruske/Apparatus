@@ -17,7 +17,7 @@ dotnet tool install -g vpk --version 1.2.161
 .\build\release.ps1 -Version 0.7.0
 ```
 
-O instalador sai em `artifacts\releases\ApparatusApp-win-Setup.exe` (cerca de 80 MB). Ele instala em `%LOCALAPPDATA%\ApparatusApp` e não precisa de administrador. Suas configurações e dados ficam em `%APPDATA%\Apparatus` e `%LOCALAPPDATA%\Apparatus`, **fora** da pasta de instalação: desinstalar ou atualizar não os apaga.
+**Instale com um duplo clique no `Setup.exe`, no Explorador de Arquivos.** Não o execute a partir de um terminal ou de ferramentas de dentro do aplicativo Claude: o que roda ali fica em uma cópia privada que o Windows não enxerga (veja `docs/PENDENCIAS.md`). O instalador sai em `artifacts\releases\ApparatusApp-win-Setup.exe` (cerca de 80 MB). Ele instala em `%LOCALAPPDATA%\ApparatusApp` e não precisa de administrador. Suas configurações e dados ficam em `%APPDATA%\Apparatus` e `%LOCALAPPDATA%\Apparatus`, **fora** da pasta de instalação: desinstalar ou atualizar não os apaga.
 
 Sem assinatura de código, o SmartScreen avisa na primeira execução ("Mais informações → Executar assim mesmo"). Para assinar, passe `-SignParams` ao script.
 

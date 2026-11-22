@@ -40,6 +40,19 @@ O que o código e os testes cobrem está nas fases; o que **nunca foi exercitado
 - **O teste de snippets** (`tests/Apparatus.E2E.Snippets`) não pôde ser repetido na última rodada (a janela de teste não conseguiu o
   primeiro plano; ele aborta sem digitar). Passou 12/12 antes da fase 7.
 
+## 2.1 Incidente de 22/11/2026: instalação que só existia dentro do sandbox do Claude
+O 0.7.2/0.7.4 "instalado" nesta sessão foi executado por uma ferramenta do aplicativo Claude, que roda dentro de um pacote MSIX:
+tudo o que ele gravou em `%LOCALAPPDATA%`, `%APPDATA%` e `HKCU` (pasta do programa, "iniciar com o Windows", entrada em "Aplicativos
+instalados", dados e configurações) ficou numa cópia privada, em `%LOCALAPPDATA%\Packages\Claude_*\LocalCache`, invisível para o
+Windows. Por isso, depois do reinício: o atalho "não encontrava o programa", o app não aparecia em Aplicativos instalados e não
+abria com o Windows. Nada foi desinstalado pelo Windows.
+- **Os dados do usuário (configurações, snippets, ações, fixados) estão nessa cópia privada**; as pastas reais têm só o que um
+  Apparatus aberto fora do sandbox criou (padrões). `build\migrar-dados.ps1 -Aplicar`, rodado num PowerShell do próprio usuário,
+  guarda um backup das pastas reais e copia a cópia privada sobre elas. Depois, instalar com um duplo clique no `Setup.exe`.
+- Corrigido junto, na 0.7.5: o início automático é refeito sozinho se a configuração está ligada mas a entrada sumiu ou aponta
+  para outro lugar (`AutoStart.Reconcile`, só em cópia instalada); e um erro ao sair (`SingleInstance.Dispose` chamado duas vezes).
+- Regra para o futuro: instaladores e verificações de instalação "de verdade" devem ser feitos pelo usuário, fora do aplicativo Claude.
+
 ## 3. Funcionalidades que ficaram de fora
 - **Barra de tarefas própria (AppBar, módulo A2).** Deliberadamente não feita: a bandeja do sistema não tem API pública para ser
   hospedada, a barra original precisa ser escondida e quebra a cada atualização do Windows. O plano a marcava como opcional.
