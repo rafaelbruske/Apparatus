@@ -26,6 +26,9 @@ Sem ela o SmartScreen avisa na primeira execução do instalador e a opção A a
 custos, caminhos). Decisão: assinar ou não, e com qual serviço.
 
 ## 2. Verificação que ainda não foi feita com cliques reais
+**Já confirmado pelo dono do projeto, no app instalado (0.7.4, 21/11/2026):** `Alt+Space` abre a busca; regravar o atalho em
+Configurações → Atalho do launcher não abre mais o menu do sistema da janela (Restaurar/Mover/Tamanho).
+
 O que o código e os testes cobrem está nas fases; o que **nunca foi exercitado com mouse e teclado de verdade**:
 - Menu Iniciar do Apparatus: arrastar tiles (reordenar e mover entre seções), menu de contexto dos tiles, diálogos de renomear e
   "nova seção", menu de energia, ordem de rolagem com a roda do mouse.

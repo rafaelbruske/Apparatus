@@ -111,6 +111,13 @@ Nada disso foi implementado: (1) exige um certificado e uma instalação em Prog
   digitar nada); ele havia passado 12/12 depois da troca para o gancho compartilhado, e nada nos snippets mudou desde então.
 - Atualização portátil 0.7.0 → 0.7.1, instalação e desinstalação (descritas acima).
 
+### Depois da fase: atalho padrão `Alt+Space` (0.7.4)
+O atalho padrão do launcher passou de `Ctrl+Alt+Space` para `Alt+Space` (quem já tinha um atalho salvo o mantém). Ao gravá-lo
+nas Configurações, o Windows abria o menu do sistema da janela (Restaurar/Mover/Tamanho), porque `Alt+Space` é o atalho dele:
+as janelas de Configurações e de Ações agora descartam esse pedido (`KeyMenuSuppressor`) enquanto um atalho é gravado. Verificado
+por teste automático (com controle: sem a proteção o menu abre) e, no app instalado, pelo dono do projeto: `Alt+Space` abre a
+busca e regravar o atalho não abre mais o menu.
+
 ### Lição sobre os testes com teclado
 Os testes antigos fechavam menus com **Esc**. Uma tecla Esc injetada vai para a janela em primeiro plano, e quando essa é a do
 Claude Code ela **interrompe a sessão em andamento**: foi o que fez duas execuções parecerem travadas por muito tempo. Agora os
