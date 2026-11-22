@@ -141,8 +141,14 @@ public static class AutoStart
 /// <summary>Only one Apparatus runs; a second launch just asks the first one to show the launcher.</summary>
 public sealed class SingleInstance : IDisposable
 {
-    private const string MutexName = @"Local\Apparatus.SingleInstance";
-    private const string SignalName = @"Local\Apparatus.ShowLauncher";
+    // A copy started with its own profile folder (APPARATUS_PROFILE_DIR: tests, portable use) is a separate instance: it must not
+    // hand over to, or be mistaken for, the copy that runs with the user's normal profile.
+    private static readonly string Suffix = Environment.GetEnvironmentVariable("APPARATUS_PROFILE_DIR") is { Length: > 0 } dir
+        ? "." + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(dir.ToLowerInvariant())))[..12]
+        : "";
+
+    private static readonly string MutexName = @"Local\Apparatus.SingleInstance" + Suffix;
+    private static readonly string SignalName = @"Local\Apparatus.ShowLauncher" + Suffix;
 
     private readonly Mutex _mutex;
     private readonly EventWaitHandle _signal;

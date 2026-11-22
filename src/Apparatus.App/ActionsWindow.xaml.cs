@@ -237,11 +237,21 @@ public sealed partial class ActionsWindow : Window
         StepEditor.Visibility = Visibility.Collapsed;
         Status.IsOpen = false;
         _dirty = false;
+        _baseline = Fingerprint();
         _loading = false;
 
         if (Steps.Count > 0) StepsList.SelectedIndex = 0;
         UpdateDerived();
     }
+
+    // WinUI raises TextChanged and friends later than the assignment that caused them, after _loading is false again, so they used to
+    // mark a freshly loaded action as edited ("Alterações não salvas" at every change of selection). "Edited" is therefore decided
+    // by comparing what the editor holds now with what it held when the action was loaded.
+    private string? _baseline;   // null = never saved (a new template or a duplicate): always counts as unsaved
+
+    private string Fingerprint() => System.Text.Json.JsonSerializer.Serialize(ReadEditor());
+
+    private bool HasUnsavedChanges() => _dirty && (_baseline is null || Fingerprint() != _baseline);
 
     private void BeginNew(StepKind? firstStep)
     {
@@ -252,6 +262,7 @@ public sealed partial class ActionsWindow : Window
         ActionList.SelectedItem = null;
         _loading = false;
         _dirty = true;   // a template is already something worth saving once it has a name
+        _baseline = null;
         UpdateDerived();
         NameBox.Focus(FocusState.Programmatic);
     }
@@ -278,7 +289,7 @@ public sealed partial class ActionsWindow : Window
     private void OnEdited(object sender, object e)
     {
         if (_loading) return;
-        _dirty = true;
+        _dirty = _baseline is null || Fingerprint() != _baseline;   // a late event that changed nothing is not an edit
         UpdateDerived();
     }
 
@@ -778,7 +789,7 @@ public sealed partial class ActionsWindow : Window
 
     private async void OnDuplicate(object sender, RoutedEventArgs e)
     {
-        if (_current.Id == 0 && !_dirty) return;
+        if (_current.Id == 0 && !HasUnsavedChanges()) return;
         if (!await ConfirmLeaveAsync()) return;
         var copy = (_services.Actions.Get(_current.Id) ?? _current).Clone();
         copy.Id = 0;
@@ -791,6 +802,7 @@ public sealed partial class ActionsWindow : Window
         ActionList.SelectedItem = null;
         _loading = false;
         _dirty = true;
+        _baseline = null;   // not saved yet
         UpdateDerived();
         NameBox.Focus(FocusState.Programmatic);
     }
@@ -813,7 +825,11 @@ public sealed partial class ActionsWindow : Window
 
     private async Task<bool> ConfirmLeaveAsync()
     {
-        if (!_dirty) return true;
+        if (!HasUnsavedChanges())
+        {
+            _dirty = false;
+            return true;
+        }
         var dialog = new ContentDialog
         {
             XamlRoot = Root.XamlRoot, Title = "Alterações não salvas",

@@ -185,9 +185,22 @@ public sealed partial class SnippetsWindow : Window
         ContentBox.Text = snippet.Content;
         Status.IsOpen = false;
         _dirty = false;
+        _baseline = Fingerprint();
         _loading = false;
         UpdateDerived();
     }
+
+    // WinUI raises TextChanged later than the assignment that caused it, after _loading is already false again. Those late events
+    // used to mark every freshly loaded snippet as edited, and "Alterações não salvas" then appeared at every change of selection.
+    // So "edited" is decided by comparing what the controls hold now with what they held when the snippet was loaded.
+    private string? _baseline;   // null = never saved (a duplicate): always counts as unsaved
+
+    private string Fingerprint() => string.Join("\u001f",
+        NameBox.Text, TriggerBox.Text.Trim(), AutoExpandSwitch.IsOn, CategoryBox.Text.Trim(),
+        string.Join(",", TagsBox.Text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)),
+        ModeBox.SelectedIndex, FavoriteSwitch.IsOn, ContentBox.Text);
+
+    private bool HasUnsavedChanges() => _dirty && (_baseline is null || Fingerprint() != _baseline);
 
     private void BeginNew()
     {
@@ -221,7 +234,7 @@ public sealed partial class SnippetsWindow : Window
     private void OnEdited(object sender, object e)
     {
         if (_loading) return;
-        _dirty = true;
+        _dirty = _baseline is null || Fingerprint() != _baseline;   // a late event that changed nothing is not an edit
         UpdateDerived();
     }
 
@@ -327,7 +340,7 @@ public sealed partial class SnippetsWindow : Window
 
     private async void OnDuplicate(object sender, RoutedEventArgs e)
     {
-        if (_current.Id == 0 && !_dirty) return;
+        if (_current.Id == 0 && !HasUnsavedChanges()) return;
         if (!await ConfirmLeaveAsync()) return;
         var copy = _services.Snippets.Get(_current.Id)?.Clone() ?? _current.Clone();
         copy.Id = 0;
@@ -340,6 +353,7 @@ public sealed partial class SnippetsWindow : Window
         SnippetList.SelectedItem = null;
         _loading = false;
         _dirty = true;
+        _baseline = null;   // not saved yet
         UpdateDerived();
         NameBox.Focus(FocusState.Programmatic);
     }
@@ -367,7 +381,11 @@ public sealed partial class SnippetsWindow : Window
     /// <summary>Asks what to do with unsaved edits. True means it is fine to move on.</summary>
     private async Task<bool> ConfirmLeaveAsync()
     {
-        if (!_dirty) return true;
+        if (!HasUnsavedChanges())
+        {
+            _dirty = false;
+            return true;
+        }
         var dialog = new ContentDialog
         {
             XamlRoot = Root.XamlRoot,
