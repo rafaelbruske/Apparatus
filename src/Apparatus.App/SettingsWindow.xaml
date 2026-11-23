@@ -232,6 +232,123 @@
                 </StackPanel>
             </Border>
 
+            <!-- assistant -->
+            <TextBlock Text="Assistente de IA" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <ToggleSwitch
+                        x:Name="AssistantSwitch"
+                        Header="Responder perguntas e sugerir ações com uma IA (traga a sua própria chave)"
+                        OnContent="Ativado"
+                        OffContent="Desativado"
+                        Toggled="OnAssistantToggled" />
+                    <InfoBar
+                        IsOpen="True"
+                        IsClosable="False"
+                        Severity="Warning"
+                        Title="O que você digitar no assistente é enviado ao provedor escolhido."
+                        Message="Vão junto a conversa em andamento e a lista de páginas de configurações do Windows; nunca o histórico da área de transferência, seus snippets, arquivos ou caminhos. Os nomes das suas ações só se você permitir abaixo. Com o Ollama nada sai do computador. Nos planos gratuitos alguns provedores (o Google, por exemplo) podem usar o conteúdo para melhorar os produtos deles: confira os termos." />
+
+                    <ComboBox
+                        x:Name="AssistantProviderBox"
+                        Header="Provedor"
+                        MinWidth="340"
+                        DisplayMemberPath="Label"
+                        SelectionChanged="OnAssistantProviderChanged" />
+                    <TextBlock x:Name="AssistantProviderNote" FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+
+                    <TextBox
+                        x:Name="AssistantUrlBox"
+                        Header="Endereço do servidor (formato OpenAI, termina em /v1)"
+                        PlaceholderText="http://localhost:1234/v1"
+                        Visibility="Collapsed"
+                        LostFocus="OnAssistantUrlLostFocus" />
+
+                    <StackPanel x:Name="AssistantKeyPanel" Spacing="8">
+                        <PasswordBox
+                            x:Name="AssistantKeyBox"
+                            Header="Chave de API"
+                            PlaceholderText="Cole a chave aqui"
+                            Width="420"
+                            HorizontalAlignment="Left"
+                            PasswordChanged="OnAssistantKeyChanged" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="AssistantSaveKeyButton" Content="Salvar chave" IsEnabled="False" Click="OnAssistantSaveKey" />
+                            <Button x:Name="AssistantRemoveKeyButton" Content="Remover chave" Click="OnAssistantRemoveKey" />
+                            <HyperlinkButton x:Name="AssistantGetKeyLink" Content="Obter uma chave" />
+                        </StackPanel>
+                        <TextBlock x:Name="AssistantKeyStatus" TextWrapping="Wrap" />
+                        <TextBlock
+                            Text="A chave fica só neste computador, cifrada com a sua conta do Windows (DPAPI). Não entra em backups, na pasta de sincronização nem no settings.json, e nunca é mostrada de volta. Isso protege contra outro usuário ou um backup copiado, não contra um programa rodando como você."
+                            FontSize="12"
+                            Opacity="0.65"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox
+                            x:Name="AssistantModelBox"
+                            Header="Modelo"
+                            PlaceholderText="nome do modelo, por exemplo gemini-3.5-flash-lite"
+                            Width="340"
+                            KeyDown="OnAssistantModelKeyDown"
+                            LostFocus="OnAssistantModelLostFocus" />
+                        <Button x:Name="AssistantListButton" Content="Atualizar lista" VerticalAlignment="Bottom" Click="OnAssistantListModels" />
+                    </StackPanel>
+                    <ComboBox
+                        x:Name="AssistantModelList"
+                        Header="Modelos encontrados"
+                        Width="340"
+                        Visibility="Collapsed"
+                        SelectionChanged="OnAssistantModelPicked" />
+                    <TextBlock
+                        x:Name="AssistantModelNote"
+                        Text="Os modelos “flash-lite” do Gemini são os mais rápidos. A lista mostra só modelos de conversa; você também pode digitar o nome de qualquer modelo."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button x:Name="AssistantTestButton" Content="Testar conexão" Click="OnAssistantTest" />
+                        <ProgressRing x:Name="AssistantBusy" IsActive="False" Width="20" Height="20" />
+                    </StackPanel>
+                    <TextBlock x:Name="AssistantStatus" FontSize="12" Opacity="0.75" TextWrapping="Wrap" />
+                    <InfoBar x:Name="AssistantResult" IsOpen="False" IsClosable="True" />
+
+                    <ToggleSwitch
+                        x:Name="AssistantKeepSwitch"
+                        Header="Quando o launcher some, o que fazer com a conversa"
+                        OnContent="Guardar por 15 minutos"
+                        OffContent="Sempre começar do zero"
+                        Toggled="OnAssistantKeepToggled" />
+                    <TextBlock
+                        Text="A conversa fica só na memória: nunca é gravada em disco e some quando o Apparatus fecha. Para usar o assistente, pressione Tab com a caixa de pesquisa vazia. Ctrl+N começa uma conversa nova."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+
+                    <ToggleSwitch
+                        x:Name="AssistantShareSwitch"
+                        Header="Enviar os nomes das minhas ações ao provedor"
+                        OnContent="Enviar"
+                        OffContent="Não enviar"
+                        Toggled="OnAssistantShareToggled" />
+                    <TextBlock
+                        Text="Permite que o assistente sugira executar uma das suas ações pelo nome. Só os nomes são enviados, nunca os passos, e nada é executado sem o seu clique."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+
+                    <TextBlock x:Name="AssistantPromptText" FontSize="12" Opacity="0.65" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                    <Button Content="Abrir a pasta das instruções" HorizontalAlignment="Left" Click="OnAssistantOpenPromptFolder" />
+                </StackPanel>
+            </Border>
+
             <!-- quicklinks -->
             <TextBlock Text="Quicklinks e buscas na web" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border

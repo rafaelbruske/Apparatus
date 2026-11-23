@@ -1,5 +1,6 @@
 using Apparatus.Core;
 using Apparatus.Core.Actions;
+using Apparatus.Core.Assistant;
 using Apparatus.Core.Backup;
 using Apparatus.Core.Clipboard;
 using Apparatus.Core.Extensions;
@@ -38,6 +39,9 @@ public sealed class AppServices : IDisposable
         Actions = new ActionStore(AppPaths.ActionsFile);
         Actions.SeedExamplesOnce();
         ClipboardStore = CreateClipboardStore();
+        AssistantKeys = AssistantKeyStore.CreateDefault(AppPaths.AssistantKeysFile);
+        AssistantProviders = ProviderCatalog.LoadEmbedded();
+        Assistant = new AssistantChat(CreateAssistantEngine, new AssistantSession(idleTimeout: AssistantIdleTimeout));
         Keyboard = new KeyboardHub();
         StartLayout = new StartLayoutStore(AppPaths.StartLayoutFile);
         Tweaks = new TweakService(new RegistryTweakStore(), AppPaths.TweakBackupFile);
@@ -111,6 +115,65 @@ public sealed class AppServices : IDisposable
     public SnippetStore Snippets { get; }
     public ActionStore Actions { get; }
     public ClipboardHistoryStore ClipboardStore { get; }
+
+    /// <summary>API keys of the AI providers (DPAPI file). Keys are read only to build a client and never leave this store otherwise.</summary>
+    public AssistantKeyStore AssistantKeys { get; }
+
+    /// <summary>The providers the user can pick (assistant-providers.json).</summary>
+    public ProviderCatalog AssistantProviders { get; }
+
+    /// <summary>How long a conversation is kept in memory after the last message, when the user chose to keep it.</summary>
+    public static readonly TimeSpan AssistantIdleTimeout = TimeSpan.FromMinutes(15);
+
+    /// <summary>The conversation with the AI assistant (memory only).</summary>
+    public AssistantChat Assistant { get; }
+
+    private SettingsCatalog? _settingsCatalog;
+
+    /// <summary>Null when the assistant is switched on and complete; otherwise what is missing, for the user.</summary>
+    public string? AssistantMissing =>
+        AssistantSetup.WhatIsMissing(AssistantSetup.Resolve(Settings.Current, AssistantProviders, AssistantKeys));
+
+    /// <summary>"Provider · model", for the launcher footer (so it is always clear where a question goes).</summary>
+    public string AssistantDescription()
+    {
+        var c = AssistantSetup.Resolve(Settings.Current, AssistantProviders, AssistantKeys);
+        return c is null ? "" : c.Model.Length > 0 ? $"{c.Provider.Name} · {c.Model}" : c.Provider.Name;
+    }
+
+    /// <summary>Called when the launcher opens: forgets the conversation when it is off, expired, or the user wants a fresh one each time.</summary>
+    public void OnLauncherShownForAssistant()
+    {
+        var s = Settings.Current;
+        if (!s.AssistantEnabled || !s.AssistantKeepConversation) Assistant.Reset();
+        else Assistant.ExpireIfIdle();
+    }
+
+    /// <summary>Builds an engine from the current settings. Throws <see cref="AssistantException"/>, worded for the user, when something is missing.</summary>
+    private AssistantEngine CreateAssistantEngine()
+    {
+        var s = Settings.Current;
+        if (!s.AssistantEnabled)
+            throw new AssistantException(AssistantErrorKind.InvalidEndpoint, "O assistente está desligado. Ligue-o nas configurações.");
+
+        var client = AssistantSetup.CreateClient(s, AssistantProviders, AssistantKeys);
+        var catalog = _settingsCatalog ??= SettingsCatalog.LoadEmbedded();
+        var version = typeof(AppServices).Assembly.GetName().Version?.ToString(3) ?? "?";
+        var prompt = new SystemPromptBuilder(catalog, version, Environment.OSVersion.Version.Build.ToString(), AppPaths.AssistantPromptFile);
+
+        var shared = s.AssistantShareActionNames
+            ? Actions.All.Where(a => a.Enabled).ToList()
+            : new List<ActionDefinition>();
+        var tools = new AssistantTools(catalog, new AssistantToolOptions
+        {
+            UserActions = shared,
+            ValidateAction = Actions.Validate,
+            ValidateSnippetTrigger = t => Snippets.ValidateTrigger(t),
+        });
+
+        // Tools only SUGGEST: each valid call becomes a button that does nothing until the user picks it.
+        return new AssistantEngine(client, prompt, tools, Assistant.Session, () => shared.Select(a => a.Name).ToList());
+    }
     public ExtensionHost Extensions { get; }
 
     /// <summary>Records and pastes clipboard history; set once the UI thread exists.</summary>

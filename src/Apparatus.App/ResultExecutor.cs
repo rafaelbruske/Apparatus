@@ -15,8 +15,14 @@ public sealed class ResultExecutor
     private readonly Action<bool> _openSnippets;   // true = start a new snippet
     private readonly Action<bool> _openActions;    // true = start a new action
 
-    public ResultExecutor(AppServices services, Action openSettings, Action quit, Action<bool> openSnippets, Action<bool> openActions)
+    private readonly Action<Apparatus.Core.Actions.ActionDefinition>? _openActionDraft;
+    private readonly Action<Apparatus.Core.Snippets.Snippet>? _openSnippetDraft;
+
+    public ResultExecutor(AppServices services, Action openSettings, Action quit, Action<bool> openSnippets, Action<bool> openActions,
+        Action<Apparatus.Core.Actions.ActionDefinition>? openActionDraft = null, Action<Apparatus.Core.Snippets.Snippet>? openSnippetDraft = null)
     {
+        _openActionDraft = openActionDraft;
+        _openSnippetDraft = openSnippetDraft;
         _openActions = openActions;
         _services = services;
         _openSettings = openSettings;
@@ -66,6 +72,46 @@ public sealed class ResultExecutor
         {
             AppLog.Error($"Running '{result.Title}' failed", ex);
             _services.Host.ShowBalloon("Não foi possível abrir", $"{result.Title}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Carries out a button of the assistant. Only called after the user picked it. Every kind maps to code that already exists
+    /// (the same launch paths as a search result); drafts only open an editor, they never save anything.
+    /// </summary>
+    public void RunSuggestion(Apparatus.Core.Assistant.SuggestedAction s)
+    {
+        try
+        {
+            switch (s.Kind)
+            {
+                case Apparatus.Core.Assistant.SuggestionKind.OpenWindowsSetting:
+                case Apparatus.Core.Assistant.SuggestionKind.OpenUrl:
+                    ShellLauncher.Open(s.Payload);
+                    break;
+                case Apparatus.Core.Assistant.SuggestionKind.OpenApparatusScreen:
+                    switch (s.Payload)
+                    {
+                        case "settings" or "extensions": _openSettings(); break;
+                        case "snippets": _openSnippets(false); break;
+                        case "actions": _openActions(false); break;
+                    }
+                    break;
+                case Apparatus.Core.Assistant.SuggestionKind.RunMyAction:
+                    _services.ActionHost?.Run(s.ActionId, _services.Expander?.LauncherTarget ?? 0);
+                    break;
+                case Apparatus.Core.Assistant.SuggestionKind.ProposeAction when s.ActionDraft is { } draft:
+                    if (_openActionDraft is not null) _openActionDraft(draft); else _openActions(true);
+                    break;
+                case Apparatus.Core.Assistant.SuggestionKind.ProposeSnippet when s.SnippetDraft is { } snippet:
+                    if (_openSnippetDraft is not null) _openSnippetDraft(snippet); else _openSnippets(true);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error($"Running the assistant's suggestion '{s.Title}' failed", ex);
+            _services.Host.ShowBalloon("Não foi possível abrir", $"{s.Title}: {ex.Message}");
         }
     }
 

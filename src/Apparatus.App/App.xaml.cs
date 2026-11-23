@@ -44,7 +44,8 @@ public partial class App : Application
         _services.ActionHost = new ActionService(_services, _ui);
         _services.ExtensionRunner = new ExtensionRunner(_services, _ui);
         _services.ClipboardHost = new ClipboardService(_services);
-        var executor = new ResultExecutor(_services, OpenSettings, Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction));
+        var executor = new ResultExecutor(_services, OpenSettings, Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction),
+            draft => OpenActions(true, draft), draft => OpenSnippets(true, draft));
         _launcher = new LauncherWindow(_services, executor);
         _services.ShowLauncher = query => _ui.TryEnqueue(() => _launcher.ShowLauncher(string.IsNullOrEmpty(query) ? null : query));
         _services.StartHost = new StartMenuService(_services, _ui, executor);
@@ -202,7 +203,7 @@ public partial class App : Application
         WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_settings));
     }
 
-    public void OpenSnippets(bool startNew = false)
+    public void OpenSnippets(bool startNew = false, Apparatus.Core.Snippets.Snippet? draft = null)
     {
         if (_services is null) return;
         _launcher?.HideLauncher();
@@ -213,10 +214,10 @@ public partial class App : Application
         }
         _snippetsWindow.Activate();
         WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_snippetsWindow));
-        if (startNew && _snippetsWindow is not null) _snippetsWindow.StartNewSnippet();
+        if (startNew && _snippetsWindow is not null) _snippetsWindow.StartNewSnippet(draft);
     }
 
-    public void OpenActions(bool startNew = false)
+    public void OpenActions(bool startNew = false, Apparatus.Core.Actions.ActionDefinition? draft = null)
     {
         if (_services is null) return;
         _launcher?.HideLauncher();
@@ -227,7 +228,7 @@ public partial class App : Application
         }
         _actionsWindow.Activate();
         WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_actionsWindow));
-        if (startNew) _actionsWindow.StartNewAction();
+        if (startNew) _actionsWindow.StartNewAction(draft);
     }
 
     private void Quit()

@@ -63,6 +63,7 @@ public sealed partial class LauncherWindow : Window
             HideLauncher();
         };
         services.Index.StatusChanged += (_, _) => DispatcherQueue.TryEnqueue(UpdateIndexStatus);
+        HookAssistant();
     }
 
     public bool IsLauncherVisible { get; private set; }
@@ -106,6 +107,8 @@ public sealed partial class LauncherWindow : Window
         _services.Expander?.RememberLauncherTarget(Native.KeyTranslator.ForegroundWindow());
         IsLauncherVisible = true;
         _shownAtUtc = DateTime.UtcNow;
+        _services.OnLauncherShownForAssistant();   // forgets the conversation when it expired or the user wants a fresh one each time
+        LeaveAiVisuals();
         SearchBox.Text = initialQuery ?? "";   // TextChanged runs the search when the text is not empty
         PositionOnActiveMonitor();
 
@@ -162,7 +165,8 @@ public sealed partial class LauncherWindow : Window
     {
         double scale = WindowHelpers.GetScale(_hwnd);
         double height = SearchRowDip;
-        if (Items.Count > 0) height += 1 + Items.Count * ResultRowDip + ListPaddingDip + FooterDip;
+        if (_aiMode) height += 1 + ChatDip + FooterDip;
+        else if (Items.Count > 0) height += 1 + Items.Count * ResultRowDip + ListPaddingDip + FooterDip;
         AppWindow.ResizeClient(new SizeInt32((int)(WidthDip * scale), (int)(height * scale)));
     }
 
@@ -171,6 +175,11 @@ public sealed partial class LauncherWindow : Window
     private async void OnTextChanged(object sender, TextChangedEventArgs e)
     {
         if (!IsLauncherVisible && !_prewarming) return;
+        if (_aiMode)   // in AI mode the box holds a question, not a search
+        {
+            UpdateAiFooter();   // Enter means "run the button" only while the box is empty
+            return;
+        }
         await RunSearchAsync(SearchBox.Text);
     }
 
@@ -199,6 +208,7 @@ public sealed partial class LauncherWindow : Window
 
     private void ShowResults(IReadOnlyList<Core.Search.SearchResult> results)
     {
+        if (_aiMode) return;   // a late search must not bring the list back over the conversation
         Items.Clear();
         foreach (var r in results)
         {
@@ -269,6 +279,11 @@ public sealed partial class LauncherWindow : Window
     private void OnSearchPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
         bool ctrl = IsDown(VirtualKey.Control), shift = IsDown(VirtualKey.Shift);
+        if (_aiMode)
+        {
+            OnAiKeyDown(e, ctrl, shift);
+            return;
+        }
         switch (e.Key)
         {
             case VirtualKey.Down:
@@ -280,7 +295,8 @@ public sealed partial class LauncherWindow : Window
                 e.Handled = true;
                 break;
             case VirtualKey.Tab:
-                MoveSelection(shift ? -1 : +1);
+                if (!shift && CanEnterAiMode()) EnterAiMode();
+                else MoveSelection(shift ? -1 : +1);
                 e.Handled = true;
                 break;
             case VirtualKey.Enter:

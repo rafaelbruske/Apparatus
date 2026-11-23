@@ -96,6 +96,26 @@ public sealed class AppSettings
     /// <summary>Where updates come from: a folder or a web address that holds the releases made by the packer. Empty means no automatic updates.</summary>
     public string UpdateSource { get; set; } = "";
 
+    // ---- AI assistant. Never holds a secret: API keys live in assistant.keys (DPAPI), outside settings.json, backups and the sync folder.
+
+    /// <summary>Opt-in: what is typed to the assistant is sent to the chosen provider.</summary>
+    public bool AssistantEnabled { get; set; }
+
+    /// <summary>Id from assistant-providers.json ("gemini", "ollama", "custom"...).</summary>
+    public string AssistantProvider { get; set; } = "gemini";
+
+    /// <summary>The address of a "custom" provider. Built-in providers use the address in the catalog.</summary>
+    public string AssistantBaseUrl { get; set; } = "";
+
+    /// <summary>The model chosen for each provider (provider id to model id); a provider not listed uses its catalog default.</summary>
+    public Dictionary<string, string> AssistantModels { get; set; } = new();
+
+    /// <summary>Send the names of the user's own actions to the provider, so the assistant can suggest running them.</summary>
+    public bool AssistantShareActionNames { get; set; }
+
+    /// <summary>Keep the conversation in memory for a while after the launcher hides (true), or start a new one every time it opens (false). Nothing is ever written to disk.</summary>
+    public bool AssistantKeepConversation { get; set; } = true;
+
     public string DefaultSearchEngine { get; set; } = "g";
 
     public List<WebSearchEngine> SearchEngines { get; set; } = DefaultEngines();

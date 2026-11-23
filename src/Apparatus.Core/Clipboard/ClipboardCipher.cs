@@ -12,15 +12,29 @@ public interface IKeyProtector
     byte[] Unprotect(byte[] data);
 }
 
-/// <summary>Windows DPAPI, scoped to the current user. (Apparatus runs on Windows only, so the platform analyzer is silenced here.)</summary>
+/// <summary>
+/// Windows DPAPI, scoped to the current user. (Apparatus runs on Windows only, so the platform analyzer is silenced here.)
+/// The entropy is a purpose label: data wrapped for one purpose cannot be unwrapped by another, even by the same user.
+/// </summary>
 public sealed class DpapiKeyProtector : IKeyProtector
 {
-    private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("Apparatus.clipboard.v1");
+    /// <summary>The label the clipboard key has always used. Changing it would make existing clipboard keys unreadable.</summary>
+    public const string ClipboardPurpose = "Apparatus.clipboard.v1";
+
+    private readonly byte[] _entropy;
+
+    public DpapiKeyProtector() : this(ClipboardPurpose) { }
+
+    public DpapiKeyProtector(string purpose)
+    {
+        if (string.IsNullOrWhiteSpace(purpose)) throw new ArgumentException("A purpose label is required.", nameof(purpose));
+        _entropy = Encoding.UTF8.GetBytes(purpose);
+    }
 
 #pragma warning disable CA1416
-    public byte[] Protect(byte[] data) => ProtectedData.Protect(data, Entropy, DataProtectionScope.CurrentUser);
+    public byte[] Protect(byte[] data) => ProtectedData.Protect(data, _entropy, DataProtectionScope.CurrentUser);
 
-    public byte[] Unprotect(byte[] data) => ProtectedData.Unprotect(data, Entropy, DataProtectionScope.CurrentUser);
+    public byte[] Unprotect(byte[] data) => ProtectedData.Unprotect(data, _entropy, DataProtectionScope.CurrentUser);
 #pragma warning restore CA1416
 }
 

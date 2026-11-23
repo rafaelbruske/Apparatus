@@ -74,6 +74,7 @@ public sealed partial class SettingsWindow : Window
         UpdateRootsVisibility();
         UpdateIndexStatus();
         LoadPhase4();
+        LoadAssistant();
         LoadStart();
         LoadBackup();
         LoadUpdates();

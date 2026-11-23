@@ -55,5 +55,11 @@ public static class AppPaths
     /// <summary>The Windows-protected key that encrypts the clipboard history.</summary>
     public static string ClipboardKeyFile => Path.Combine(Local, "clipboard.key");
 
+    /// <summary>The AI assistant's API keys, wrapped by Windows (DPAPI). Local, so they never roam; never part of a backup or the sync folder.</summary>
+    public static string AssistantKeysFile => Path.Combine(Local, "assistant.keys");
+
+    /// <summary>Optional instructions the user adds to (or, with a first line "&lt;!-- replace --&gt;", uses instead of) the assistant's built-in prompt.</summary>
+    public static string AssistantPromptFile => Path.Combine(Roaming, "assistant", "system_prompt.md");
+
     public static string AssetPath(string name) => Path.Combine(AppContext.BaseDirectory, "Assets", name);
 }

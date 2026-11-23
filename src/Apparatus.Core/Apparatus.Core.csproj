@@ -7,12 +7,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="11.0.1" />
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\windows-settings.json" LogicalName="windows-settings.json" />
+    <EmbeddedResource Include="Resources\assistant-system-prompt.md" LogicalName="assistant-system-prompt.md" />
+    <EmbeddedResource Include="Resources\assistant-providers.json" LogicalName="assistant-providers.json" />
     <InternalsVisibleTo Include="Apparatus.Core.Tests" />
   </ItemGroup>
 

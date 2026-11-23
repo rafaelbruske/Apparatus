@@ -213,9 +213,20 @@ public sealed partial class SnippetsWindow : Window
     }
 
     /// <summary>Opens the window ready to type a new snippet (used by the "Novo snippet" command).</summary>
-    public async void StartNewSnippet()
+    /// <param name="draft">A snippet to start from (the assistant's proposal). It is shown as unsaved; nothing is stored until the user saves.</param>
+    public async void StartNewSnippet(Snippet? draft = null)
     {
-        if (await ConfirmLeaveAsync()) BeginNew();
+        if (!await ConfirmLeaveAsync()) return;
+        if (draft is null) { BeginNew(); return; }
+
+        LoadEditor(draft.Clone());
+        _loading = true;
+        SnippetList.SelectedItem = null;
+        _loading = false;
+        _dirty = true;
+        _baseline = null;   // never saved: counts as unsaved
+        UpdateDerived();
+        NameBox.Focus(FocusState.Programmatic);
     }
 
 

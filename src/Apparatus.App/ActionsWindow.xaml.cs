@@ -268,9 +268,20 @@ public sealed partial class ActionsWindow : Window
     }
 
     /// <summary>Opens the window ready to define a new action (the launcher's "Nova ação" command).</summary>
-    public async void StartNewAction()
+    /// <param name="draft">An action to start from (the assistant's proposal). It is shown as unsaved; nothing is stored until the user saves.</param>
+    public async void StartNewAction(ActionDefinition? draft = null)
     {
-        if (await ConfirmLeaveAsync()) BeginNew(null);
+        if (!await ConfirmLeaveAsync()) return;
+        if (draft is null) { BeginNew(null); return; }
+
+        LoadEditor(draft.Clone());
+        _loading = true;
+        ActionList.SelectedItem = null;
+        _loading = false;
+        _dirty = true;
+        _baseline = null;   // never saved: counts as unsaved
+        UpdateDerived();
+        NameBox.Focus(FocusState.Programmatic);
     }
 
 

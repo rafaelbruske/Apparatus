@@ -195,7 +195,7 @@ public sealed class BackupService
 
     // --------------------------------------------------------------- settings
 
-    /// <summary>What does not travel between computers: the startup entry, the folders to index and the extension switches.</summary>
+    /// <summary>What does not travel between computers: the startup entry, the folders to index, the extension switches and the assistant's on/off and server address (its API key never leaves this computer).</summary>
     internal static AppSettings ForExport(AppSettings current)
     {
         var copy = current.Clone();
@@ -205,6 +205,8 @@ public sealed class BackupService
         copy.UpdateSource = "";
         copy.EnabledExtensions = new();
         copy.GlobalExtensions = new();
+        copy.AssistantEnabled = false;   // the key does not travel, so neither does the switch
+        copy.AssistantBaseUrl = "";
         return copy;
     }
 
@@ -225,6 +227,8 @@ public sealed class BackupService
         imported.EnabledExtensions = current.EnabledExtensions;
         imported.GlobalExtensions = current.GlobalExtensions;
         imported.ExtensionSampleInstalled = current.ExtensionSampleInstalled;
+        imported.AssistantEnabled = current.AssistantEnabled;
+        imported.AssistantBaseUrl = current.AssistantBaseUrl;
         return imported;
     }
 
