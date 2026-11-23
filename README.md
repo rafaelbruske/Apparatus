@@ -50,6 +50,7 @@ O Windows impede que um programa comum veja as teclas digitadas em janelas eleva
 - Extensões são programas que rodam com as suas permissões e nunca rodam sem você ativá-las.
 - Ações importadas podem executar programas: importe só o que for de confiança.
 - A gravação de macros ignora campos de senha do Windows, mas **não** detecta os de navegadores.
+- O **assistente de IA** é opcional e vem desligado. Ligado, o que você digita depois do `Tab` no launcher é enviado ao provedor que você escolheu (ou ao Ollama local, que não sai do PC); os nomes das suas ações só vão se você permitir. A chave de API fica criptografada pelo DPAPI em `assistant.keys`, fora das configurações, do backup e da pasta de sincronização. O assistente só *sugere*: nada roda sem você clicar no cartão. Veja `docs/ASSISTENTE-IA.md`.
 - O backup `.apparatus` e a pasta de sincronização não incluem o histórico da área de transferência e não são criptografados.
 
 ## Mais

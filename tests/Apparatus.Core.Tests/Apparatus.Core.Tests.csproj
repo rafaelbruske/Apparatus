@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="assistant-eval.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- The sample extension doubles as a test fixture. -->
     <Content Include="..\..\src\Apparatus.App\Samples\**\*" LinkBase="Samples" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

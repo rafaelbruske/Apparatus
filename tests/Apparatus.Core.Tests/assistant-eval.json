@@ -1,0 +1,26 @@
+{
+  "_comment": "Perguntas de referência para avaliar o assistente com um provedor real. 'tool' é a ferramenta esperada; 'uri' (open_windows_setting) tem de existir no catálogo; 'screen' (open_apparatus_screen) tem de ser uma tela permitida. Validado por AssistantEvalTests; a execução real é opt-in (APPARATUS_TEST_GEMINI_KEY).",
+  "cases": [
+    { "q": "como mudo o brilho da tela?", "tool": "open_windows_setting", "uri": "ms-settings:display" },
+    { "q": "quero adicionar uma impressora", "tool": "open_windows_setting", "uri": "ms-settings:printers" },
+    { "q": "onde troco o papel de parede?", "tool": "open_windows_setting", "uri": "ms-settings:personalization-background" },
+    { "q": "ativar modo escuro", "tool": "open_windows_setting", "uri": "ms-settings:colors" },
+    { "q": "mudar o volume por aplicativo", "tool": "open_windows_setting", "uri": "ms-settings:apps-volume" },
+    { "q": "conectar no wifi", "tool": "open_windows_setting", "uri": "ms-settings:network-wifi" },
+    { "q": "procurar atualizações do windows", "tool": "open_windows_setting", "uri": "ms-settings:windowsupdate" },
+    { "q": "desinstalar um programa", "tool": "open_windows_setting", "uri": "ms-settings:appsfeatures" },
+    { "q": "quais apps iniciam com o windows?", "tool": "open_windows_setting", "uri": "ms-settings:startupapps" },
+    { "q": "mudar o fuso horário", "tool": "open_windows_setting", "uri": "ms-settings:dateandtime" },
+    { "q": "mudar o navegador padrão", "tool": "open_windows_setting", "uri": "ms-settings:defaultapps" },
+    { "q": "ativar a luz noturna", "tool": "open_windows_setting", "uri": "ms-settings:nightlight" },
+    { "q": "abrir o gerenciador de dispositivos", "tool": "open_windows_setting", "uri": "devmgmt.msc" },
+    { "q": "editar variáveis de ambiente", "tool": "open_windows_setting", "uri": "rundll32.exe sysdm.cpl,EditEnvironmentVariables" },
+    { "q": "quero ver meus snippets", "tool": "open_apparatus_screen", "screen": "snippets" },
+    { "q": "abrir as configurações do Apparatus", "tool": "open_apparatus_screen", "screen": "settings" },
+    { "q": "onde crio uma ação nova?", "tool": "open_apparatus_screen", "screen": "actions" },
+    { "q": "abra o site do github", "tool": "open_url" },
+    { "q": "crie uma ação que abra o bloco de notas e a calculadora", "tool": "propose_action" },
+    { "q": "crie um snippet 'att' que escreva 'Atenciosamente, Rafael'", "tool": "propose_snippet" },
+    { "q": "quanto é a capital da França?", "tool": "none" }
+  ]
+}

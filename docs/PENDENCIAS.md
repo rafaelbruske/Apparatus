@@ -37,6 +37,7 @@ O que o código e os testes cobrem está nas fases; o que **nunca foi exercitado
 - Ações e atalhos: o fluxo de "Gravar uma macro do teclado" pela interface (o gravador foi testado por teclas reais, a janela não).
 - Launcher: `Ctrl+D`, `Shift+Del`, `Enter` em resultados de extensão e da área de transferência, `Ctrl+P` para fixar.
 - Tray: o menu de contexto.
+- **Assistente de IA** (branch `feature/assistente-ia`): roteiro manual em `docs/FASE8.md`; nunca testado com chave real dentro do launcher, cliques nos cartões, DPI alto, `run_my_action` real, nem o tamanho do instalador com as DLLs do assistente. Perguntas de referência: `tests/Apparatus.Core.Tests/assistant-eval.json`.
 - **O teste de snippets** (`tests/Apparatus.E2E.Snippets`) não pôde ser repetido na última rodada (a janela de teste não conseguiu o
   primeiro plano; ele aborta sem digitar). Passou 12/12 antes da fase 7.
 

@@ -163,6 +163,15 @@ tests/Apparatus.Core.Tests/Assistant*Tests.cs
 | **4. Ferramentas e cartões** | Cartões, `open_windows_setting`, `open_apparatus_screen`, `open_launcher`, `open_url`, `run_my_action`; depois `propose_action` e `propose_snippet` com rascunho nos editores | "Como altero as configurações de impressoras" mostra o cartão `ms-settings:printers`; nada executa sem clique; entradas inválidas do modelo são descartadas |
 | **5. Acabamento (opcional)** | Janela de chat própria, Markdown, histórico opcional, modo "JSON no texto" para modelos pequenos | À parte |
 
+**Decisões sobre a Fase 5 (planejamento, nada implementado):**
+- Janela própria: descartada. Meio-termo **decidido (a implementar)**: opção `AssistantKeepOpen` (padrão `false`, em Configurações → Assistente, entra no backup). Ligada, e só enquanto o modo conversa estiver ativo, o launcher não se esconde ao perder o foco (`OnActivated`); fora do modo conversa tudo igual a hoje.
+  - Saída: `Esc` sai do modo conversa (e depois fecha), a hotkey alterna, e um botão "×" discreto aparece no modo conversa.
+  - Ao voltar pela hotkey o foco cai na caixa de texto. Executar um cartão e abrir o Menu Iniciar continuam escondendo o launcher; a janela fixa não fica por cima do Menu Iniciar.
+  - Teste de entrada real (com aviso ao usuário): ligar a opção, entrar no modo conversa, clicar fora, conferir que a janela segue visível e sair pelo `Esc`.
+- Markdown: desejado (versão mínima: negrito, listas, `código`, blocos de código).
+- Histórico em disco: sem interesse agora; possível no futuro (teria de ser criptografado, como o da área de transferência).
+- Modo "JSON no texto" para modelos locais pequenos: ideia para o futuro; o usuário não pretende usar Ollama no curto prazo.
+
 Estimativa grosseira, só para ordem de grandeza: fases 0 a 4 são algo entre uma e duas semanas de trabalho concentrado; a
 parte mais incerta é o modo conversa na janela do launcher (altura dinâmica, foco, esconder ao perder foco).
 
