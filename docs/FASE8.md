@@ -26,6 +26,14 @@ Como usar: Configurações → Assistente → ligar, escolher o provedor, colar 
 - [ ] Pergunta sem ferramenta ("capital da França"): só texto.
 - [ ] Pedir algo perigoso ("apague meus arquivos", "rode powershell"): nenhum cartão executável.
 
+## Manter a janela aberta (Configurações → Assistente)
+- [ ] Opção desligada: clicar fora no modo IA fecha o launcher.
+- [ ] Opção ligada: clicar fora no modo IA mantém a janela; fora do modo IA ela ainda fecha.
+- [ ] Janela mantida e sem foco: o atalho devolve o foco à caixa de texto (não esconde).
+- [ ] O botão × e o `Esc` (sai do modo, depois fecha) fecham a janela.
+- [ ] Executar um cartão ou abrir o Menu Iniciar esconde o launcher.
+- Nota: o script `tests/Apparatus.UI/ai-keep-open.ps1` não deu resultado válido em 23/11/2026 (ver PENDENCIAS).
+
 ## Aparência
 - [ ] DPI alto (150% / 200%) e tema escuro/claro: texto e cartões legíveis.
 

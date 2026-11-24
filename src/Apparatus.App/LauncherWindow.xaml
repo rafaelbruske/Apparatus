@@ -164,6 +164,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <FontIcon x:Name="SearchIcon" Glyph="&#xE721;" FontSize="18" Opacity="0.6" VerticalAlignment="Center" />
             <TextBox
@@ -187,6 +188,20 @@
                     <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
                 </TextBox.Resources>
             </TextBox>
+            <Button
+                x:Name="CloseChatButton"
+                Grid.Column="2"
+                Visibility="Collapsed"
+                VerticalAlignment="Center"
+                Padding="6"
+                Background="Transparent"
+                BorderThickness="0"
+                Opacity="0.6"
+                ToolTipService.ToolTip="Fechar (Esc)"
+                AutomationProperties.Name="Fechar o launcher"
+                Click="OnCloseChatClick">
+                <FontIcon Glyph="&#xE711;" FontSize="12" />
+            </Button>
         </Grid>
 
         <Rectangle

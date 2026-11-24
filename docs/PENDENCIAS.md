@@ -38,6 +38,7 @@ O que o código e os testes cobrem está nas fases; o que **nunca foi exercitado
 - Launcher: `Ctrl+D`, `Shift+Del`, `Enter` em resultados de extensão e da área de transferência, `Ctrl+P` para fixar.
 - Tray: o menu de contexto.
 - **Assistente de IA** (branch `feature/assistente-ia`): roteiro manual em `docs/FASE8.md`; nunca testado com chave real dentro do launcher, cliques nos cartões, DPI alto, `run_my_action` real, nem o tamanho do instalador com as DLLs do assistente. Perguntas de referência: `tests/Apparatus.Core.Tests/assistant-eval.json`.
+- **Opção "manter a janela aberta" no modo IA** (`AssistantKeepOpen`): implementada e coberta por teste unitário (padrão, clonagem, backup), mas **não verificada na tela**. O script `tests/Apparatus.UI/ai-keep-open.ps1` (atalho, Tab e um Bloco de Notas que toma o foco) abre o launcher e entra no modo IA, mas em 23/11/2026 o launcher não se escondeu nem sem a opção e sem o modo IA, com o app iniciado de um perfil descartável pelas ferramentas; o resultado não prova nada. Falta confirmar à mão (clicar fora com a opção desligada e ligada, atalho com a janela sem foco, botão ×) ou descobrir por que o teste não vê o launcher esconder.
 - **O teste de snippets** (`tests/Apparatus.E2E.Snippets`) não pôde ser repetido na última rodada (a janela de teste não conseguiu o
   primeiro plano; ele aborta sem digitar). Passou 12/12 antes da fase 7.
 

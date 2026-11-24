@@ -333,6 +333,18 @@
                         TextWrapping="Wrap" />
 
                     <ToggleSwitch
+                        x:Name="AssistantKeepOpenSwitch"
+                        Header="Ao clicar fora durante a conversa com a IA"
+                        OnContent="Manter a janela aberta"
+                        OffContent="Fechar a janela"
+                        Toggled="OnAssistantKeepOpenToggled" />
+                    <TextBlock
+                        Text="Com a janela mantida aberta, ela fica por cima das outras até você pressionar Esc, usar o atalho do launcher ou clicar no ×. Vale só no modo IA; a pesquisa comum sempre fecha ao clicar fora."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+
+                    <ToggleSwitch
                         x:Name="AssistantShareSwitch"
                         Header="Enviar os nomes das minhas ações ao provedor"
                         OnContent="Enviar"

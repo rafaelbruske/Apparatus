@@ -37,6 +37,7 @@ public sealed partial class SettingsWindow
             AssistantSwitch.IsOn = s.AssistantEnabled;
             AssistantShareSwitch.IsOn = s.AssistantShareActionNames;
             AssistantKeepSwitch.IsOn = s.AssistantKeepConversation;
+            AssistantKeepOpenSwitch.IsOn = s.AssistantKeepOpen;
 
             var items = _services.AssistantProviders.All.Select(p => new AssistantProviderItem(p)).ToList();
             AssistantProviderBox.ItemsSource = items;
@@ -148,6 +149,12 @@ public sealed partial class SettingsWindow
     {
         if (_loading || _assistantLoading) return;
         _services.ApplySettings(s => s.AssistantKeepConversation = AssistantKeepSwitch.IsOn);
+    }
+
+    private void OnAssistantKeepOpenToggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading || _assistantLoading) return;
+        _services.ApplySettings(s => s.AssistantKeepOpen = AssistantKeepOpenSwitch.IsOn);
     }
 
     private void OnAssistantShareToggled(object sender, RoutedEventArgs e)

@@ -424,4 +424,13 @@ public class AssistantChatTests
         Assert.False(s.Clone().AssistantKeepConversation);
         await Task.CompletedTask;
     }
+
+    [Fact]
+    public void KeepOpenSetting_DefaultsToOff_SurvivesCloning_AndTravelsInBackups()
+    {
+        Assert.False(new Apparatus.Core.Settings.AppSettings().AssistantKeepOpen);
+        var s = new Apparatus.Core.Settings.AppSettings { AssistantKeepOpen = true };
+        Assert.True(s.Clone().AssistantKeepOpen);
+        Assert.True(Apparatus.Core.Backup.BackupService.ForExport(s).AssistantKeepOpen);
+    }
 }

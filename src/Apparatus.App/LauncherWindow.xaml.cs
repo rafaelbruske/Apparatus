@@ -94,6 +94,14 @@ public sealed partial class LauncherWindow : Window
 
     public void ToggleLauncher()
     {
+        // A kept-open AI window that lost focus: the hotkey brings it back to the text box instead of hiding it.
+        if (IsLauncherVisible && _aiMode && !_isActive && _services.Settings.Current.AssistantKeepOpen)
+        {
+            Activate();
+            WindowHelpers.BringToForeground(_hwnd);
+            DispatcherQueue.TryEnqueue(() => SearchBox.Focus(FocusState.Programmatic));
+            return;
+        }
         if (IsLauncherVisible) HideLauncher();
         else ShowLauncher();
     }
@@ -138,8 +146,10 @@ public sealed partial class LauncherWindow : Window
     {
         // Clicking elsewhere dismisses the launcher, like Spotlight/Raycast. The grace period avoids
         // closing it during the focus churn right after it opens.
+        _isActive = args.WindowActivationState != WindowActivationState.Deactivated;
         if (args.WindowActivationState == WindowActivationState.Deactivated && IsLauncherVisible &&
-            (DateTime.UtcNow - _shownAtUtc).TotalMilliseconds > 300)
+            (DateTime.UtcNow - _shownAtUtc).TotalMilliseconds > 300 &&
+            !(_aiMode && _services.Settings.Current.AssistantKeepOpen))
         {
             HideLauncher();
         }

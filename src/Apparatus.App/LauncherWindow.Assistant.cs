@@ -22,6 +22,7 @@ public sealed partial class LauncherWindow
     private const double ChatDip = 380;
 
     private bool _aiMode;
+    private bool _isActive;   // the window has the focus (kept by OnActivated)
 
     private AssistantChat Chat => _services.Assistant;
 
@@ -50,6 +51,7 @@ public sealed partial class LauncherWindow
         ChatPanel.Visibility = Visibility.Visible;
         Footer.Visibility = Visibility.Visible;
         SearchIcon.Glyph = ChatGlyph;
+        CloseChatButton.Visibility = Visibility.Visible;
         UpdateSearchPlaceholder();
         UpdateChatEmpty();
         UpdateAiFooter();
@@ -69,6 +71,7 @@ public sealed partial class LauncherWindow
     {
         _aiMode = false;
         ChatPanel.Visibility = Visibility.Collapsed;
+        CloseChatButton.Visibility = Visibility.Collapsed;
         SearchIcon.Glyph = SearchGlyph;
         UpdateSearchPlaceholder();
         UpdateHints();
@@ -118,6 +121,8 @@ public sealed partial class LauncherWindow
     }
 
     // ------------------------------------------------------------------------------------------ buttons
+
+    private void OnCloseChatClick(object sender, RoutedEventArgs e) => HideLauncher();
 
     private void OnSuggestionClick(object sender, RoutedEventArgs e)
     {

@@ -116,6 +116,9 @@ public sealed class AppSettings
     /// <summary>Keep the conversation in memory for a while after the launcher hides (true), or start a new one every time it opens (false). Nothing is ever written to disk.</summary>
     public bool AssistantKeepConversation { get; set; } = true;
 
+    /// <summary>While the launcher is in AI mode, clicking elsewhere does not hide it (it closes with Esc, the hotkey or the × button). Off by default: the launcher always hides when it loses focus.</summary>
+    public bool AssistantKeepOpen { get; set; }
+
     public string DefaultSearchEngine { get; set; } = "g";
 
     public List<WebSearchEngine> SearchEngines { get; set; } = DefaultEngines();
