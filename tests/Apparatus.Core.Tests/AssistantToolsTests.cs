@@ -39,6 +39,51 @@ public class AssistantToolsTests : IDisposable
         Assert.Contains("ms-settings:printers — ", _catalog.ToPromptLines());
     }
 
+    [Fact]
+    public void ModernPages_ComeFromTheCatalog_AreRealMsSettingsPages_AndNeverPointAtThemselves()
+    {
+        var withModern = _catalog.Pages.Where(p => p.ModernUri is not null).ToList();
+        Assert.True(withModern.Count >= 4);
+        foreach (var p in withModern)
+        {
+            Assert.StartsWith("ms-settings:", p.ModernUri, StringComparison.OrdinalIgnoreCase);
+            Assert.NotNull(_catalog.Find(p.ModernUri));
+            Assert.NotEqual(p.Uri, p.ModernUri, StringComparer.OrdinalIgnoreCase);
+            Assert.False(p.Uri.StartsWith("ms-settings:", StringComparison.OrdinalIgnoreCase), $"{p.Uri} já é uma página moderna");
+        }
+        Assert.Equal("ms-settings:appsfeatures", _catalog.Find("appwiz.cpl")!.ModernUri);
+        Assert.Null(_catalog.Find("devmgmt.msc")!.ModernUri);   // no modern equivalent: nothing is invented
+    }
+
+    [Fact]
+    public void TheModernLink_IsNotPartOfThePrompt_SoTheModelNeverSeesIt()
+    {
+        string lines = _catalog.ToPromptLines();
+        Assert.Contains("appwiz.cpl — ", lines);
+        Assert.DoesNotContain("moderna", lines, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("modern", lines, StringComparison.OrdinalIgnoreCase);
+        var line = lines.Split('\n').Single(l => l.StartsWith("appwiz.cpl — "));
+        Assert.DoesNotContain("appsfeatures", line);
+    }
+
+    [Fact]
+    public void ModernAlternative_OnlyForClassicToolsWithAModernPage()
+    {
+        var tools = Tools();
+        SuggestedAction Offer(string uri) => Run("open_windows_setting", JsonSerializer.Serialize(new { uri })).Action!;
+
+        var extra = tools.ModernAlternative(Offer("appwiz.cpl"))!;
+        Assert.Equal("ms-settings:appsfeatures", extra.Payload);
+        Assert.Equal(SuggestionKind.OpenWindowsSetting, extra.Kind);
+        Assert.Equal(SuggestionRisk.Low, extra.Risk);
+        Assert.Equal("call_1+modern", extra.CallId);
+        Assert.StartsWith("Abrir: ", extra.Title);
+
+        Assert.Null(tools.ModernAlternative(Offer("devmgmt.msc")));            // no modern page known
+        Assert.Null(tools.ModernAlternative(Offer("ms-settings:appsfeatures"))); // already modern
+        Assert.Null(tools.ModernAlternative(Run("open_apparatus_screen", """{"screen":"snippets"}""").Action!));
+    }
+
     // ------------------------------------------------------------------------ open_windows_setting
 
     [Fact]

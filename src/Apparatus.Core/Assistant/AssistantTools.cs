@@ -193,6 +193,21 @@ public sealed class AssistantTools
         return results;
     }
 
+    /// <summary>
+    /// The modern Windows 11 page that does the job of a classic tool the model suggested (appwiz.cpl → "Installed apps"), as an
+    /// extra button for the app to show right after it. Null when <paramref name="offered"/> is not a classic tool with a known
+    /// modern page. It comes from the catalog, never from the model, it is not part of the conversation history, and it does
+    /// not count toward <see cref="MaxSuggestionsPerAnswer"/>.
+    /// </summary>
+    public SuggestedAction? ModernAlternative(SuggestedAction offered)
+    {
+        if (offered.Kind != SuggestionKind.OpenWindowsSetting) return null;
+        if (_settings.Find(offered.Payload)?.ModernUri is not { } uri) return null;
+        if (_settings.Find(uri) is not { } modern || string.Equals(modern.Uri, offered.Payload, StringComparison.OrdinalIgnoreCase)) return null;
+        return new SuggestedAction(offered.CallId + "+modern", SuggestionKind.OpenWindowsSetting, $"Abrir: {modern.Name}",
+            "Alternativa moderna · Configurações do Windows", SuggestionRisk.Low, modern.Uri);
+    }
+
     public SuggestionResult Evaluate(AssistantToolCall call)
     {
         try

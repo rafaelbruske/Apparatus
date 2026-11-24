@@ -122,11 +122,18 @@ public sealed class AssistantEngine
                 r.Accepted ? AssistantTools.SuggestedResult : $"Rejected: {r.Rejection}")).ToList());
             answered = true;
 
+            // A classic tool (appwiz.cpl) is followed by its modern page, unless the model already suggested that page.
+            var shown = results.Where(r => r.Accepted).Select(r => r.Action!.Payload).ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var r in results)
             {
-                yield return r.Accepted
-                    ? new SuggestionOffered(r.Action!)
-                    : new SuggestionRejected(r.Call.Name, r.Rejection ?? "");
+                if (!r.Accepted)
+                {
+                    yield return new SuggestionRejected(r.Call.Name, r.Rejection ?? "");
+                    continue;
+                }
+                yield return new SuggestionOffered(r.Action!);
+                if (_tools.ModernAlternative(r.Action!) is { } modern && shown.Add(modern.Payload))
+                    yield return new SuggestionOffered(modern);
             }
         }
         finally

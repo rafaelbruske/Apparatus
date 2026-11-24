@@ -4,7 +4,8 @@ using System.Text.Json.Serialization;
 
 namespace Apparatus.Core.Assistant;
 
-public sealed record SettingsPage(string Name, string Uri);
+/// <param name="ModernUri">For a classic tool (a .cpl, say), the catalog URI of the modern Windows 11 page that does the same job; null when there is none.</param>
+public sealed record SettingsPage(string Name, string Uri, string? ModernUri = null);
 
 /// <summary>
 /// The Windows pages the assistant may point to: the same curated list the launcher searches (windows-settings.json).
@@ -15,7 +16,8 @@ public sealed class SettingsCatalog
 {
     private sealed record Entry(
         [property: JsonPropertyName("n")] string[] N,
-        [property: JsonPropertyName("u")] string U);
+        [property: JsonPropertyName("u")] string U,
+        [property: JsonPropertyName("m")] string? M = null);
 
     private readonly Dictionary<string, SettingsPage> _byUri;
 
@@ -51,6 +53,6 @@ public sealed class SettingsCatalog
         var raw = JsonSerializer.Deserialize<List<Entry>>(json) ?? new();
         return new SettingsCatalog(raw
             .Where(e => e.N is { Length: > 0 } && !string.IsNullOrWhiteSpace(e.U))
-            .Select(e => new SettingsPage(e.N[0], e.U)));
+            .Select(e => new SettingsPage(e.N[0], e.U, string.IsNullOrWhiteSpace(e.M) ? null : e.M.Trim())));
     }
 }

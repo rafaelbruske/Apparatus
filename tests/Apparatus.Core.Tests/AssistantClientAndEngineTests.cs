@@ -294,6 +294,51 @@ public class AssistantEngineTests : IDisposable
     }
 
     [Fact]
+    public async Task AClassicTool_IsFollowedByItsModernPage_AndTheHistoryKnowsOnlyTheModelsCall()
+    {
+        _client.Reply(new TextDelta("Aqui."), Tool("c1", "open_windows_setting", """{"uri":"appwiz.cpl"}"""));
+        var engine = Engine();
+
+        var events = await Ask(engine, "como desinstalo um programa?");
+
+        var offered = events.OfType<SuggestionOffered>().Select(o => o.Action).ToList();
+        Assert.Equal(new[] { "appwiz.cpl", "ms-settings:appsfeatures" }, offered.Select(a => a.Payload));
+        Assert.Contains("Alternativa moderna", offered[1].Description);
+        Assert.Equal(SuggestionKind.OpenWindowsSetting, offered[1].Kind);
+        // The extra button is the app's, not the model's: one call, one acknowledgement in the history.
+        AssistantSessionTests.AssertValidForTheApi(engine.Session.Messages);
+        Assert.Single(engine.Session.Messages, m => m.Role == AssistantRole.Tool);
+        // And the prompt did not change to explain it.
+        Assert.DoesNotContain("moderna", _client.Requests.Single().SystemPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task TheModernPage_IsNotDuplicated_WhenTheModelAlreadySuggestedIt_InEitherOrder()
+    {
+        _client.Reply(Tool("c1", "open_windows_setting", """{"uri":"ms-settings:appsfeatures"}"""), Tool("c2", "open_windows_setting", """{"uri":"appwiz.cpl"}"""));
+        var events = await Ask(Engine(), "desinstalar");
+        Assert.Equal(new[] { "ms-settings:appsfeatures", "appwiz.cpl" },
+            events.OfType<SuggestionOffered>().Select(o => o.Action.Payload));
+
+        _client.Reply(Tool("c1", "open_windows_setting", """{"uri":"appwiz.cpl"}"""), Tool("c2", "open_windows_setting", """{"uri":"ms-settings:appsfeatures"}"""));
+        events = await Ask(Engine(), "desinstalar");
+        Assert.Equal(new[] { "appwiz.cpl", "ms-settings:appsfeatures" },
+            events.OfType<SuggestionOffered>().Select(o => o.Action.Payload));
+    }
+
+    [Fact]
+    public async Task ModernPages_DoNotCountTowardTheLimit_AndToolsWithoutOneGetNoExtra()
+    {
+        _client.Reply(
+            Tool("c1", "open_windows_setting", """{"uri":"appwiz.cpl"}"""),
+            Tool("c2", "open_windows_setting", """{"uri":"mmsys.cpl"}"""),
+            Tool("c3", "open_windows_setting", """{"uri":"devmgmt.msc"}"""));
+        var events = await Ask(Engine(), "vários");
+        Assert.Equal(new[] { "appwiz.cpl", "ms-settings:appsfeatures", "mmsys.cpl", "ms-settings:sound", "devmgmt.msc" },
+            events.OfType<SuggestionOffered>().Select(o => o.Action.Payload));
+    }
+
+    [Fact]
     public async Task TheRequest_CarriesThePrompt_TheCatalog_TheQuestion_AndTheTools()
     {
         _client.Reply(new TextDelta("ok"));
