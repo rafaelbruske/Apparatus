@@ -1,5 +1,5 @@
 {
-  "_comment": "Perguntas de referência para avaliar o assistente com um provedor real. 'tool' é a ferramenta esperada; 'uri' (open_windows_setting) tem de existir no catálogo; 'screen' (open_apparatus_screen) tem de ser uma tela permitida. Validado por AssistantEvalTests; a execução real é opt-in (APPARATUS_TEST_GEMINI_KEY).",
+  "_comment": "Perguntas de referência para avaliar o assistente com um provedor real. 'tool' é a ferramenta esperada; 'uri' (open_windows_setting) tem de existir no catálogo, e 'alt' lista outras entradas do catálogo que respondem igualmente bem; 'screen' (open_apparatus_screen) tem de ser uma tela permitida. Validado por AssistantEvalTests; a execução real (Integration_RealProvider_...) é opt-in: só roda com APPARATUS_TEST_GEMINI_KEY (ou APPARATUS_TEST_EVAL_PROVIDER + APPARATUS_TEST_EVAL_KEY) no ambiente.",
   "cases": [
     { "q": "como mudo o brilho da tela?", "tool": "open_windows_setting", "uri": "ms-settings:display" },
     { "q": "quero adicionar uma impressora", "tool": "open_windows_setting", "uri": "ms-settings:printers" },
@@ -8,7 +8,7 @@
     { "q": "mudar o volume por aplicativo", "tool": "open_windows_setting", "uri": "ms-settings:apps-volume" },
     { "q": "conectar no wifi", "tool": "open_windows_setting", "uri": "ms-settings:network-wifi" },
     { "q": "procurar atualizações do windows", "tool": "open_windows_setting", "uri": "ms-settings:windowsupdate" },
-    { "q": "desinstalar um programa", "tool": "open_windows_setting", "uri": "ms-settings:appsfeatures" },
+    { "q": "desinstalar um programa", "tool": "open_windows_setting", "uri": "ms-settings:appsfeatures", "alt": ["appwiz.cpl"] },
     { "q": "quais apps iniciam com o windows?", "tool": "open_windows_setting", "uri": "ms-settings:startupapps" },
     { "q": "mudar o fuso horário", "tool": "open_windows_setting", "uri": "ms-settings:dateandtime" },
     { "q": "mudar o navegador padrão", "tool": "open_windows_setting", "uri": "ms-settings:defaultapps" },

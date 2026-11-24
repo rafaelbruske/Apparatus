@@ -18,7 +18,7 @@ Como usar: Configurações → Assistente → ligar, escolher o provedor, colar 
 - [ ] Resposta longa não estoura a janela.
 
 ## Cartões e ferramentas
-- [ ] Rodar `assistant-eval.json` à mão (20 perguntas): anotar quantas viram o cartão esperado.
+- [ ] Rodar as 21 perguntas de `assistant-eval.json` contra o provedor real e anotar quantas viram o cartão esperado. Não precisa ser à mão: o teste `Integration_RealProvider_AnswersTheReferenceQuestions_WhenAKeyIsInTheEnvironment` faz isso e grava `assistant-eval-report.txt` (veja "Perguntas de referência" em `docs/ASSISTENTE-IA.md`).
 - [ ] Clique do mouse num cartão executa o mesmo que Enter.
 - [ ] `open_windows_setting`: abre a página certa.
 - [ ] `propose_action` / `propose_snippet`: abre o editor preenchido, nada é salvo sem você confirmar.
