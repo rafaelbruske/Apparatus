@@ -3,7 +3,7 @@
   Browsing the snippets or actions list must not raise "Alterações não salvas" unless something was really edited.
 
 .DESCRIPTION
-  Starts Apparatus with a throw-away profile (APPARATUS_PROFILE_DIR) and drives its Snippets or Actions page (in the launcher's panel) through
+  Starts Apparatus with a throw-away profile (APPARATUS_PROFILE_DIR) and drives its Snippets or Actions page (a page of the settings window) through
   UI Automation: no mouse, no keys. First a CONTROL (edit the name, change the selection: the dialog must appear, which proves
   that the detection works), then eight changes of selection without editing: no dialog may appear.
   It runs next to a normal Apparatus (a separate instance) and touches only the process it starts.
@@ -30,7 +30,7 @@ $win = $null
 for ($i = 0; $i -lt 60 -and -not $win; $i++) { Start-Sleep -Milliseconds 500; foreach ($w in (ProcWindows)) { if (-not $w.Current.IsOffscreen) { $win = $w } } }
 if (-not $win) { L "no window"; try { $p.Kill() } catch {}; $log | Out-File $Out -Encoding utf8; exit 3 }
 Start-Sleep 2
-# the snippets and the actions are pages of the launcher's panel: look only to the right of the side bar
+# the snippets and the actions are pages of the settings window: look only to the right of the side bar
 function InPage($e) { $e.Current.BoundingRectangle.X -gt ($win.Current.BoundingRectangle.X + $win.Current.BoundingRectangle.Width * 0.2) }
 function Named($name) { $win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))) | Where-Object { InPage $_ } | Select-Object -First 1 }
 function PageItems() { @($win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) | Where-Object { InPage $_ }) }

@@ -69,6 +69,15 @@ public sealed partial class LauncherWindow : Window
 
     public void AllowClose() => _allowClose = true;
 
+    /// <summary>Asks the app to open the settings window on a page (the launcher hides itself first).</summary>
+    public Action<string>? SettingsRequested { get; set; }
+
+    private void OpenSettings(string page)
+    {
+        HideLauncher();
+        SettingsRequested?.Invoke(page);
+    }
+
     // ---------------------------------------------------------- show/hide
 
     /// <summary>
@@ -93,34 +102,20 @@ public sealed partial class LauncherWindow : Window
 
     public void ToggleLauncher()
     {
-        if (_macroHidden) return;   // a macro is being recorded: the window is hidden on purpose
-        if (IsLauncherVisible && _panelMode && _isActive)
-        {
-            _ = ConfirmThenHideAsync();   // closing the panel with the hotkey asks about unsaved edits too
-            return;
-        }
         // A kept-open AI window that lost focus: the hotkey brings it back to the text box instead of hiding it.
-        if (IsLauncherVisible && !_isActive && (_panelMode || (_aiMode && _services.Settings.Current.AssistantKeepOpen)))
+        if (IsLauncherVisible && !_isActive && _aiMode && _services.Settings.Current.AssistantKeepOpen)
         {
             Activate();
             WindowHelpers.BringToForeground(_hwnd);
-            DispatcherQueue.TryEnqueue(() => (_panelMode ? (Control)PanelNav : SearchBox).Focus(FocusState.Programmatic));
+            DispatcherQueue.TryEnqueue(() => SearchBox.Focus(FocusState.Programmatic));
             return;
         }
         if (IsLauncherVisible) HideLauncher();
         else ShowLauncher();
     }
 
-    public void ShowLauncher(string? initialQuery = null, string? panelPage = null)
+    public void ShowLauncher(string? initialQuery = null)
     {
-        if (panelPage is not null && _panelMode && IsLauncherVisible)
-        {
-            OpenSettingsPanel(panelPage);
-            Activate();
-            WindowHelpers.BringToForeground(_hwnd);
-            return;
-        }
-        LeavePanel(search: false);   // a fresh show always starts from the search
         if (_prewarming) AppWindow.Hide();
         _ = _services.RefreshAppsAsync();
 
@@ -136,11 +131,6 @@ public sealed partial class LauncherWindow : Window
         AppWindow.Show();
         Activate();
         WindowHelpers.BringToForeground(_hwnd);
-        if (panelPage is not null)
-        {
-            EnterPanel(panelPage);
-            return;
-        }
         DispatcherQueue.TryEnqueue(() =>
         {
             SearchBox.Focus(FocusState.Programmatic);
@@ -157,7 +147,6 @@ public sealed partial class LauncherWindow : Window
         if (!IsLauncherVisible) return;
         IsLauncherVisible = false;
         _searchCts?.Cancel();
-        LeavePanel(search: false);
         AppWindow.Hide();
     }
 
@@ -168,7 +157,7 @@ public sealed partial class LauncherWindow : Window
         _isActive = args.WindowActivationState != WindowActivationState.Deactivated;
         if (args.WindowActivationState == WindowActivationState.Deactivated && IsLauncherVisible &&
             (DateTime.UtcNow - _shownAtUtc).TotalMilliseconds > 300 &&
-            !_panelMode && !(_aiMode && _services.Settings.Current.AssistantKeepOpen))
+            !(_aiMode && _services.Settings.Current.AssistantKeepOpen))
         {
             HideLauncher();
         }
@@ -192,7 +181,6 @@ public sealed partial class LauncherWindow : Window
 
     private void ResizeToContent()
     {
-        if (_panelMode) return;
         double scale = WindowHelpers.GetScale(_hwnd);
         double height = SearchRowDip;
         if (_aiMode) height += 1 + ChatDip + FooterDip;
@@ -266,7 +254,7 @@ public sealed partial class LauncherWindow : Window
 
     private void ShowResults(IReadOnlyList<Core.Search.SearchResult> results)
     {
-        if (_aiMode || _panelMode) return;   // a late search must not bring the list back over the conversation
+        if (_aiMode) return;   // a late search must not bring the list back over the conversation
         Items.Clear();
         foreach (var r in results)
         {
@@ -345,7 +333,7 @@ public sealed partial class LauncherWindow : Window
         switch (e.Key)
         {
             case (VirtualKey)188 when ctrl:   // Ctrl+,
-                OpenSettingsPanel("general");
+                OpenSettings("general");
                 e.Handled = true;
                 break;
             case VirtualKey.Down:

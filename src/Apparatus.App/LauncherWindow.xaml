@@ -297,47 +297,5 @@
                 </StackPanel>
             </Button>
         </Grid>
-
-        <!-- Settings panel: replaces the search UI while it is open (see LauncherWindow.Panel.cs). -->
-        <Grid
-            x:Name="PanelHost"
-            Grid.RowSpan="4"
-            Visibility="Collapsed"
-            PreviewKeyDown="OnPanelPreviewKeyDown">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="244" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Grid Padding="10,12,6,10" RowSpacing="8">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Button
-                    x:Name="PanelBackButton"
-                    Padding="10,6"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="OnPanelBackClick"
-                    AutomationProperties.Name="Voltar à pesquisa">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE72B;" FontSize="14" />
-                        <TextBlock Text="Voltar (Esc)" FontSize="13" />
-                    </StackPanel>
-                </Button>
-                <ListView
-                    x:Name="PanelNav"
-                    Grid.Row="1"
-                    SelectionMode="Single"
-                    SelectionChanged="OnPanelNavChanged" />
-            </Grid>
-            <ContentControl
-                x:Name="PanelContent"
-                AutomationProperties.AutomationId="PanelContent"
-                Grid.Column="1"
-                HorizontalContentAlignment="Stretch"
-                VerticalContentAlignment="Stretch"
-                IsTabStop="False" />
-        </Grid>
     </Grid>
 </Window>

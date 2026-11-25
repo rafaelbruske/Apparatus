@@ -1,0 +1,30 @@
+<Window
+    x:Class="Apparatus.App.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Configurações — Apparatus">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <!-- Side bar of groups plus the page (settings, snippets or actions); see SettingsWindow.xaml.cs. -->
+    <Grid x:Name="Root">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="244" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <ListView
+            x:Name="PanelNav"
+            Margin="10,12,6,10"
+            SelectionMode="Single"
+            SelectionChanged="OnPanelNavChanged" />
+        <ContentControl
+            x:Name="PanelContent"
+            AutomationProperties.AutomationId="PanelContent"
+            Grid.Column="1"
+            HorizontalContentAlignment="Stretch"
+            VerticalContentAlignment="Stretch"
+            IsTabStop="False" />
+    </Grid>
+</Window>

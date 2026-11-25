@@ -23,7 +23,7 @@ sem pacote MSIX), instalador pelo Velopack. Licença 0BSD. Só a branch `master`
 | `docs/` | Plano, notas por fase, guias e pendências. |
 
 Como as telas se ligam: configurações são páginas do `SettingsView` (`PageIds`/`PageTitles` em `SettingsView.xaml.cs`, uma `Page_<id>` no XAML e uma
-entrada em `Navigation` de `LauncherWindow.Panel.cs`); os serviços ficam pendurados em `AppServices` e são criados em `App.xaml.cs`;
+entrada em `Navigation` de `SettingsWindow.xaml.cs`, a janela de configurações); os serviços ficam pendurados em `AppServices` e são criados em `App.xaml.cs`;
 atalhos globais passam pelo `MessageHost` (cada recurso tem seus ids: launcher `0xA990`, captura `0xA991`/`0xA992`, ações `0x1000`–`0xBFFF`).
 
 ## Comandos

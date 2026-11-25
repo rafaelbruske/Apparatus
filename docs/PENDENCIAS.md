@@ -62,16 +62,17 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
 - **Janela de chat própria:** descartada; a opção `AssistantKeepOpen` cobre a necessidade.
 - Mais pares clássico → moderno no catálogo (`ncpa.cpl`, disco), ao custo de aumentar o prompt.
 
-## 2.3 Painel dentro do launcher (em andamento)
-- **Feito:** configurações, snippets e ações deixaram de ser janelas. `SettingsView`, `SnippetsView` e `ActionsView` (UserControls) são
-  hospedadas no próprio launcher, que cresce para 1280×780 com uma barra lateral por grupo (Apparatus, Módulos, Menu Iniciar,
-  Assistente de IA, Windows). `Esc` ou "Voltar" volta à pesquisa; o painel não se esconde ao perder o foco; sair de uma página com edição
-  não salva (Esc, Voltar, trocar de página ou o atalho do launcher) pergunta antes; gravar uma macro esconde o launcher e o mostra de novo.
-  `Ctrl+,` e a engrenagem do rodapé abrem. Os comandos "Novo snippet", "Nova ação" e as propostas do assistente abrem a página certa.
-- **Verificado pela automação de interface:** o painel abre nas três áreas, as páginas trocam, "Voltar" restaura o launcher e
+## 2.3 Janela de configurações (em andamento)
+- **Feito:** `SettingsView`, `SnippetsView` e `ActionsView` (UserControls) são páginas de uma **janela própria do Windows**, a `SettingsWindow`
+  (barra de título, minimizar, maximizar, item na barra de tarefas, 1280×780), com uma barra lateral por grupo (Apparatus, Módulos, Menu
+  Iniciar, Assistente de IA, Windows). Entre 24/11 e 25/11/2026 elas ficaram dentro do launcher (commit 4611f66); em 25/11 voltaram a uma janela
+  separada, como antes. O launcher só pesquisa e conversa: `Ctrl+,`, a engrenagem do rodapé, a bandeja e os comandos o escondem e abrem a janela.
+  Sair de uma página com edição não salva (trocar de página ou fechar a janela) pergunta antes; gravar uma macro esconde a janela e a mostra de novo;
+  "Capturar agora" a minimiza. Os comandos "Novo snippet", "Nova ação" e as propostas do assistente abrem a página certa.
+- **Verificado (25/11/2026, build local, perfil isolado):** a janela abre pelo `--settings` com a barra lateral e a página Geral; `Esc` não a fecha;
   `tests/Apparatus.UI/browse-without-edits.ps1` passa para snippets e ações (controle com diálogo, 0 diálogos ao navegar).
-  **Não verificado:** aparência, `Esc` com o teclado real, DPI alto, gravação de atalho e de macro dentro do painel, seletores de arquivo,
-  o aviso ao trocar de página com edição pendente.
+  **Não verificado desde a mudança:** abrir pela engrenagem, por `Ctrl+,` e pela bandeja; fechar com edição pendente; gravação de atalho e de macro;
+  seletores de arquivo; "Capturar agora"; DPI alto; o app instalado.
 - **Falta:** redesenhar Snippets e Ações como lista + pré-visualização + `Ctrl+K`; página das Configurações do Windows (catálogo do
   assistente) e links diretos de páginas para o assistente; busca dentro das configurações; categorias Privacidade, Atalhos de teclado
   e Avançado.

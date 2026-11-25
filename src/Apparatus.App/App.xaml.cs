@@ -16,6 +16,7 @@ public partial class App : Application
     private MessageHost? _host;
     private AppServices? _services;
     private LauncherWindow? _launcher;
+    private SettingsWindow? _settings;
 
     public App(SingleInstance instance, string[] args)
     {
@@ -44,7 +45,7 @@ public partial class App : Application
         _services.CaptureHost = new CaptureService(_services, _ui);
         var executor = new ResultExecutor(_services, page => OpenSettings(page), Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction),
             draft => OpenActions(true, draft), draft => OpenSnippets(true, draft));
-        _launcher = new LauncherWindow(_services, executor);
+        _launcher = new LauncherWindow(_services, executor) { SettingsRequested = page => OpenSettings(page) };
         _services.ShowLauncher = query => _ui.TryEnqueue(() => _launcher.ShowLauncher(string.IsNullOrEmpty(query) ? null : query));
         _services.StartHost = new StartMenuService(_services, _ui, executor);
         _services.StartHost.Prewarm(done: () =>
@@ -197,25 +198,46 @@ public partial class App : Application
         }
     }
 
-    /// <summary>Opens the settings, which live inside the launcher window (a side bar of groups plus a page).</summary>
-    public void OpenSettings(string page = "general")
+    /// <summary>The settings window (a side bar of groups plus a page); one at a time, created on demand and dropped when it is closed.</summary>
+    private SettingsWindow EnsureSettingsWindow()
     {
-        if (_services is null || _launcher is null) return;
-        _launcher.ShowLauncher(panelPage: page);
+        if (_settings is null)
+        {
+            _settings = new SettingsWindow(_services!);
+            _settings.Closed += (_, _) => _settings = null;
+        }
+        return _settings;
     }
 
-    /// <summary>Opens the snippets, which live in the settings panel of the launcher window.</summary>
-    public void OpenSnippets(bool startNew = false, Apparatus.Core.Snippets.Snippet? draft = null) =>
-        _launcher?.ShowSnippets(startNew, draft);
+    /// <summary>Opens the settings window on a page, as an ordinary window apart from the launcher.</summary>
+    public void OpenSettings(string page = "general")
+    {
+        if (_services is null) return;
+        _launcher?.HideLauncher();
+        EnsureSettingsWindow().ShowPage(page);
+    }
 
-    /// <summary>Opens the actions, which live in the settings panel of the launcher window.</summary>
-    public void OpenActions(bool startNew = false, Apparatus.Core.Actions.ActionDefinition? draft = null) =>
-        _launcher?.ShowActions(startNew, draft);
+    /// <summary>Opens the snippets page of the settings window.</summary>
+    public void OpenSnippets(bool startNew = false, Apparatus.Core.Snippets.Snippet? draft = null)
+    {
+        if (_services is null) return;
+        _launcher?.HideLauncher();
+        EnsureSettingsWindow().ShowSnippets(startNew, draft);
+    }
 
-    /// <summary>"Capturar agora" in the settings: hides the launcher (which holds the settings), then starts the capture.</summary>
+    /// <summary>Opens the actions page of the settings window.</summary>
+    public void OpenActions(bool startNew = false, Apparatus.Core.Actions.ActionDefinition? draft = null)
+    {
+        if (_services is null) return;
+        _launcher?.HideLauncher();
+        EnsureSettingsWindow().ShowActions(startNew, draft);
+    }
+
+    /// <summary>"Capturar agora" in the settings: minimizes the settings window, then starts the capture.</summary>
     public void CaptureFromSettings()
     {
         _launcher?.HideLauncher();
+        _settings?.Minimize();
         // Give Windows a moment to repaint the screen without the launcher before it is read.
         var timer = _ui.CreateTimer();
         timer.Interval = TimeSpan.FromMilliseconds(250);
@@ -229,6 +251,7 @@ public partial class App : Application
         AppLog.Info("Apparatus exiting");
         _launcher?.AllowClose();
         _services?.StartHost?.Close();
+        _settings?.CloseNow();
         _launcher?.Close();
         _host?.Dispose();
         _services?.Dispose();

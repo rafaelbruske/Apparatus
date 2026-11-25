@@ -102,7 +102,7 @@ public sealed partial class LauncherWindow
             : SetupMessage;
     }
 
-    private void OnChatSetupClick(object sender, RoutedEventArgs e) => OpenSettingsPanel("assistant");
+    private void OnChatSetupClick(object sender, RoutedEventArgs e) => OpenSettings("assistant");
 
     /// <summary>True when Enter (with an empty box) would run a button of the assistant instead of sending a question.</summary>
     private bool EnterRunsSuggestion => !Chat.IsBusy && SearchBox.Text.Trim().Length == 0 && Chat.SelectedSuggestion is not null;
@@ -224,9 +224,9 @@ public sealed partial class LauncherWindow
         StatusText.Text = "Resposta copiada";
     }
 
-    private void OnSettingsButtonClick(object sender, RoutedEventArgs e) => OpenSettingsPanel("general");
+    private void OnSettingsButtonClick(object sender, RoutedEventArgs e) => OpenSettings("general");
 
-    private void OpenAssistantSettings() => OpenSettingsPanel("assistant");
+    private void OpenAssistantSettings() => OpenSettings("assistant");
 
     // ------------------------------------------------------------------------------------------ keyboard
 
