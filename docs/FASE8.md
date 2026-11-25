@@ -18,9 +18,10 @@ Como usar: Configurações → Assistente → ligar, escolher o provedor, colar 
 - [ ] Resposta longa não estoura a janela.
 
 ## Cartões e ferramentas
-- [ ] Rodar as 21 perguntas de `assistant-eval.json` contra o provedor real e anotar quantas viram o cartão esperado. Não precisa ser à mão: o teste `Integration_RealProvider_AnswersTheReferenceQuestions_WhenAKeyIsInTheEnvironment` faz isso e grava `assistant-eval-report.txt` (veja "Perguntas de referência" em `docs/ASSISTENTE-IA.md`).
+- [x] Rodar as 21 perguntas de `assistant-eval.json` contra o provedor real (feito em 24/11/2026: Groq 21/21 duas vezes, Gemini 19/21; resultados em `docs/ASSISTENTE-IA.md`). Para repetir, não precisa ser à mão: o teste `Integration_RealProvider_AnswersTheReferenceQuestions_WhenAKeyIsInTheEnvironment` faz isso e grava `assistant-eval-report.txt` (veja "Perguntas de referência" em `docs/ASSISTENTE-IA.md`).
 - [ ] Clique do mouse num cartão executa o mesmo que Enter.
 - [ ] `open_windows_setting`: abre a página certa.
+- [ ] "Desinstalar um programa" (ou som, data e hora, energia): aparece o cartão clássico e, logo depois, "Alternativa moderna" com a página do Windows 11.
 - [ ] `propose_action` / `propose_snippet`: abre o editor preenchido, nada é salvo sem você confirmar.
 - [ ] `run_my_action` (com "compartilhar nomes das ações" ligado): cartão de uma ação real executa.
 - [ ] Pergunta sem ferramenta ("capital da França"): só texto.

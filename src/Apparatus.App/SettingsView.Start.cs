@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 namespace Apparatus.App;
 
 /// <summary>The Start menu and Windows-tweak cards of the settings window.</summary>
-public sealed partial class SettingsWindow
+public sealed partial class SettingsView
 {
     private readonly Dictionary<string, (ComboBox Box, Button Restore, TextBlock Status)> _tweakRows = new();
 

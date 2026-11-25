@@ -14,7 +14,7 @@ using WinRT.Interop;
 
 namespace Apparatus.App;
 
-public sealed partial class SettingsWindow : Window
+public sealed partial class SettingsView : UserControl
 {
     private readonly AppServices _services;
     private readonly nint _hwnd;
@@ -24,18 +24,14 @@ public sealed partial class SettingsWindow : Window
     private long _menuGuardUntil;   // the system-menu request follows the key by a few milliseconds: keep dropping it briefly after recording
     private readonly KeyMenuSuppressor _keyMenu;
 
-    public SettingsWindow(AppServices services)
+    public SettingsView(AppServices services, nint hwnd)
     {
         _services = services;
+        _hwnd = hwnd;
         InitializeComponent();
-        _hwnd = WindowNative.GetWindowHandle(this);
 
-        // Recording "Alt+Space" must not also open this window's system menu (Windows does that after the app has seen the key).
+        // Recording "Alt+Space" must not also open the host window's system menu (Windows does that after the app has seen the key).
         _keyMenu = new KeyMenuSuppressor(_hwnd, () => _capturing || Environment.TickCount64 < _menuGuardUntil);
-
-        AppWindow.SetIcon(AppPaths.AssetPath("apparatus.ico"));
-        double scale = WindowHelpers.GetScale(_hwnd);
-        AppWindow.Resize(new SizeInt32((int)(860 * scale), (int)(920 * scale)));
 
         RootsList.ItemsSource = _roots;
         DataPathText.Text = $"{AppPaths.DataDirectory}\nConfiguração: {AppPaths.SettingsFile}";
@@ -53,6 +49,39 @@ public sealed partial class SettingsWindow : Window
             }
         };
         _loading = false;
+        ShowPage(PageIds[0]);
+    }
+
+    /// <summary>Raised by <see cref="Close"/>: the host is done with this view, so everything it subscribed to must be released.</summary>
+    public event EventHandler? Closed;
+
+    public void Close() => Closed?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>True while the user is recording a new launcher hotkey: the host must leave the keys alone (Esc cancels the recording).</summary>
+    public bool IsCapturing => _capturing;
+
+    /// <summary>The pages of the settings, in the order of the side bar. Each is a group of cards of the long page this used to be.</summary>
+    public static readonly IReadOnlyList<string> PageIds = new[]
+    {
+        "general", "search", "backup", "about", "snippets", "clipboard", "extensions", "start", "assistant", "windows",
+    };
+
+    private static readonly Dictionary<string, string> PageTitles = new()
+    {
+        ["general"] = "Geral", ["search"] = "Pesquisa", ["backup"] = "Backup e sincronização", ["about"] = "Atualizações e dados",
+        ["snippets"] = "Snippets", ["clipboard"] = "Área de transferência", ["extensions"] = "Extensões", ["start"] = "Menu Iniciar do Apparatus",
+        ["assistant"] = "Assistente de IA", ["windows"] = "Windows",
+    };
+
+    /// <summary>Shows one page and hides the others.</summary>
+    public void ShowPage(string id)
+    {
+        if (!PageIds.Contains(id)) id = PageIds[0];
+        foreach (var page in PageIds)
+            if (FindName("Page_" + page) is UIElement element)
+                element.Visibility = page == id ? Visibility.Visible : Visibility.Collapsed;
+        PageTitle.Text = PageTitles[id];
+        Root.ChangeView(null, 0, null, disableAnimation: true);
     }
 
     private void LoadFromSettings()

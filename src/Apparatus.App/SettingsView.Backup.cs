@@ -8,7 +8,7 @@ using WinRT.Interop;
 namespace Apparatus.App;
 
 /// <summary>The backup and sync-folder card of the settings window.</summary>
-public sealed partial class SettingsWindow
+public sealed partial class SettingsView
 {
     private bool _syncHooked;
 

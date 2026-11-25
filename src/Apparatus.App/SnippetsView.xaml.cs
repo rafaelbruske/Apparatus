@@ -26,7 +26,7 @@ public sealed class SnippetListItem
     public Visibility FavoriteVisibility { get; }
 }
 
-public sealed partial class SnippetsWindow : Window
+public sealed partial class SnippetsView : UserControl
 {
     private const string AllCategories = "Todas as categorias";
 
@@ -54,15 +54,11 @@ public sealed partial class SnippetsWindow : Window
 
     public ObservableCollection<SnippetListItem> Items { get; } = new();
 
-    public SnippetsWindow(AppServices services)
+    public SnippetsView(AppServices services, nint hwnd)
     {
         _services = services;
+        _hwnd = hwnd;
         InitializeComponent();
-        _hwnd = WindowNative.GetWindowHandle(this);
-
-        AppWindow.SetIcon(AppPaths.AssetPath("apparatus.ico"));
-        double scale = Native.WindowHelpers.GetScale(_hwnd);
-        AppWindow.Resize(new SizeInt32((int)(1180 * scale), (int)(860 * scale)));
 
         foreach (var (label, text) in _variables)
         {
@@ -79,6 +75,14 @@ public sealed partial class SnippetsWindow : Window
         if (Items.Count > 0) SnippetList.SelectedIndex = 0;
         else BeginNew();
     }
+
+    /// <summary>Raised by <see cref="Close"/>: the host is done with this view, so everything it subscribed to must be released.</summary>
+    public event EventHandler? Closed;
+
+    public void Close() => Closed?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>True when the editor holds edits that were not saved.</summary>
+    public bool HasUnsaved => HasUnsavedChanges();
 
     // ------------------------------------------------------------- list
 
@@ -390,7 +394,7 @@ public sealed partial class SnippetsWindow : Window
     }
 
     /// <summary>Asks what to do with unsaved edits. True means it is fine to move on.</summary>
-    private async Task<bool> ConfirmLeaveAsync()
+    public async Task<bool> ConfirmLeaveAsync()
     {
         if (!HasUnsavedChanges())
         {

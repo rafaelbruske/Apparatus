@@ -37,7 +37,7 @@ O que o código e os testes cobrem está nas fases; o que **nunca foi exercitado
 - Ações e atalhos: o fluxo de "Gravar uma macro do teclado" pela interface (o gravador foi testado por teclas reais, a janela não).
 - Launcher: `Ctrl+D`, `Shift+Del`, `Enter` em resultados de extensão e da área de transferência, `Ctrl+P` para fixar.
 - Tray: o menu de contexto.
-- **Assistente de IA** (branch `feature/assistente-ia`): roteiro manual em `docs/FASE8.md`; nunca testado com chave real dentro do launcher, cliques nos cartões, DPI alto, `run_my_action` real, nem o tamanho do instalador com as DLLs do assistente. Perguntas de referência: `tests/Apparatus.Core.Tests/assistant-eval.json`.
+- **Assistente de IA** (branch `feature/assistente-ia`): roteiro manual em `docs/FASE8.md`. Já medido com provedor real pelo executor das perguntas de referência (24/11/2026: Groq 21/21 e 21/21, Gemini 19/21 com o prompt novo; ver `docs/ASSISTENTE-IA.md`). **Ainda não verificado:** respostas dentro do launcher com chave real, clique do mouse nos cartões, DPI alto, `run_my_action` real, cartão "Alternativa moderna" na tela e a mudança do tamanho do instalador (0.8.0 já inclui o assistente; comparar com os 80 MB). Acompanhar: o Gemini às vezes responde `propose_action` onde bastava `open_url`.
 - **Opção "manter a janela aberta" no modo IA** (`AssistantKeepOpen`): implementada e coberta por teste unitário (padrão, clonagem, backup), mas **não verificada na tela**. O script `tests/Apparatus.UI/ai-keep-open.ps1` (atalho, Tab e um Bloco de Notas que toma o foco) abre o launcher e entra no modo IA, mas em 23/11/2026 o launcher não se escondeu nem sem a opção e sem o modo IA, com o app iniciado de um perfil descartável pelas ferramentas; o resultado não prova nada. Falta confirmar à mão (clicar fora com a opção desligada e ligada, atalho com a janela sem foco, botão ×) ou descobrir por que o teste não vê o launcher esconder.
 - **O teste de snippets** (`tests/Apparatus.E2E.Snippets`) não pôde ser repetido na última rodada (a janela de teste não conseguiu o
   primeiro plano; ele aborta sem digitar). Passou 12/12 antes da fase 7.
@@ -54,6 +54,27 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
 - Corrigido junto, na 0.7.5: o início automático é refeito sozinho se a configuração está ligada mas a entrada sumiu ou aponta
   para outro lugar (`AutoStart.Reconcile`, só em cópia instalada); e um erro ao sair (`SingleInstance.Dispose` chamado duas vezes).
 - Regra para o futuro: instaladores e verificações de instalação "de verdade" devem ser feitos pelo usuário, fora do aplicativo Claude.
+
+## 2.2 Ideias para depois (assistente)
+- **Markdown nas respostas** (versão mínima: negrito, listas, `código`): desejado, não feito.
+- **Histórico de conversas em disco:** sem interesse agora; teria de ser criptografado como o da área de transferência.
+- **Modo "JSON no texto"** para modelos locais pequenos (Ollama): ideia futura.
+- **Janela de chat própria:** descartada; a opção `AssistantKeepOpen` cobre a necessidade.
+- Mais pares clássico → moderno no catálogo (`ncpa.cpl`, disco), ao custo de aumentar o prompt.
+
+## 2.3 Painel dentro do launcher (em andamento)
+- **Feito:** configurações, snippets e ações deixaram de ser janelas. `SettingsView`, `SnippetsView` e `ActionsView` (UserControls) são
+  hospedadas no próprio launcher, que cresce para 1280×780 com uma barra lateral por grupo (Apparatus, Módulos, Menu Iniciar,
+  Assistente de IA, Windows). `Esc` ou "Voltar" volta à pesquisa; o painel não se esconde ao perder o foco; sair de uma página com edição
+  não salva (Esc, Voltar, trocar de página ou o atalho do launcher) pergunta antes; gravar uma macro esconde o launcher e o mostra de novo.
+  `Ctrl+,` e a engrenagem do rodapé abrem. Os comandos "Novo snippet", "Nova ação" e as propostas do assistente abrem a página certa.
+- **Verificado pela automação de interface:** o painel abre nas três áreas, as páginas trocam, "Voltar" restaura o launcher e
+  `tests/Apparatus.UI/browse-without-edits.ps1` passa para snippets e ações (controle com diálogo, 0 diálogos ao navegar).
+  **Não verificado:** aparência, `Esc` com o teclado real, DPI alto, gravação de atalho e de macro dentro do painel, seletores de arquivo,
+  o aviso ao trocar de página com edição pendente.
+- **Falta:** redesenhar Snippets e Ações como lista + pré-visualização + `Ctrl+K`; página das Configurações do Windows (catálogo do
+  assistente) e links diretos de páginas para o assistente; busca dentro das configurações; categorias Privacidade, Atalhos de teclado
+  e Avançado.
 
 ## 3. Funcionalidades que ficaram de fora
 - **Barra de tarefas própria (AppBar, módulo A2).** Deliberadamente não feita: a bandeja do sistema não tem API pública para ser
@@ -91,7 +112,7 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (491 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (710 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

@@ -64,7 +64,7 @@ public sealed class StepListItem : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 }
 
-public sealed partial class ActionsWindow : Window
+public sealed partial class ActionsView : UserControl
 {
     private const string AllCategories = "Todas as categorias";
 
@@ -82,18 +82,14 @@ public sealed partial class ActionsWindow : Window
     public ObservableCollection<ActionListItem> Items { get; } = new();
     public ObservableCollection<StepListItem> Steps { get; } = new();
 
-    public ActionsWindow(AppServices services)
+    public ActionsView(AppServices services, nint hwnd)
     {
         _services = services;
+        _hwnd = hwnd;
         InitializeComponent();
-        _hwnd = WindowNative.GetWindowHandle(this);
 
         // Recording a hotkey that uses Alt+Space must not also open this window's system menu.
         _keyMenu = new KeyMenuSuppressor(_hwnd, () => _recording || Environment.TickCount64 < _menuGuardUntil);
-
-        AppWindow.SetIcon(AppPaths.AssetPath("apparatus.ico"));
-        double scale = WindowHelpers.GetScale(_hwnd);
-        AppWindow.Resize(new SizeInt32((int)(1260 * scale), (int)(940 * scale)));
 
         BuildMenus();
 
@@ -113,6 +109,22 @@ public sealed partial class ActionsWindow : Window
         if (Items.Count > 0) ActionList.SelectedIndex = 0;
         else BeginNew(null);
     }
+
+    /// <summary>Raised by <see cref="Close"/>: the host is done with this view, so everything it subscribed to must be released.</summary>
+    public event EventHandler? Closed;
+
+    public void Close() => Closed?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>The host hides itself while a macro is being recorded, and shows itself again when it ends.</summary>
+    public Action? RecordingStarted { get; set; }
+
+    public Action? RecordingFinished { get; set; }
+
+    /// <summary>True while a hotkey is being recorded: the host must leave the keys alone (Esc cancels the recording).</summary>
+    public bool IsCapturing => _recording;
+
+    /// <summary>True when the editor holds edits that were not saved.</summary>
+    public bool HasUnsaved => HasUnsavedChanges();
 
     // ------------------------------------------------------------- menus
 
@@ -494,7 +506,7 @@ public sealed partial class ActionsWindow : Window
             _macro = new MacroRecordingSession(_services.Keyboard);
             _macro.StopRequested += () => DispatcherQueue.TryEnqueue(FinishMacroRecording);
             _banner = new RecordingBanner(() => _macro?.StepCount ?? 0, () => DispatcherQueue.TryEnqueue(FinishMacroRecording));
-            ((OverlappedPresenter)AppWindow.Presenter).Minimize();
+            RecordingStarted?.Invoke();
             _macro.Start();
             _banner.ShowAtTop();
         }
@@ -512,9 +524,7 @@ public sealed partial class ActionsWindow : Window
         int skipped = session.SkippedKeys, passwordKeys = session.PasswordKeysIgnored;
         AbortMacroRecording();
 
-        ((OverlappedPresenter)AppWindow.Presenter).Restore();
-        Activate();
-        WindowHelpers.BringToForeground(_hwnd);
+        RecordingFinished?.Invoke();
 
         if (steps.Count == 0)
         {
@@ -834,7 +844,7 @@ public sealed partial class ActionsWindow : Window
         else BeginNew(null);
     }
 
-    private async Task<bool> ConfirmLeaveAsync()
+    public async Task<bool> ConfirmLeaveAsync()
     {
         if (!HasUnsavedChanges())
         {

@@ -160,7 +160,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Padding="22,0,18,0" ColumnSpacing="14">
+        <Grid x:Name="SearchRow" Grid.Row="0" Padding="22,0,18,0" ColumnSpacing="14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -225,15 +225,25 @@
             Visibility="Collapsed" />
 
         <Grid x:Name="ChatPanel" Grid.Row="2" Visibility="Collapsed">
-            <TextBlock
-                x:Name="ChatEmpty"
+            <StackPanel
+                x:Name="ChatEmptyPanel"
                 Margin="32,0"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                TextAlignment="Center"
-                TextWrapping="Wrap"
-                FontSize="14"
-                Opacity="0.65" />
+                Spacing="14">
+                <TextBlock
+                    x:Name="ChatEmpty"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap"
+                    FontSize="14"
+                    Opacity="0.65" />
+                <Button
+                    x:Name="ChatSetupButton"
+                    Content="Abrir as configurações do assistente"
+                    HorizontalAlignment="Center"
+                    Visibility="Collapsed"
+                    Click="OnChatSetupClick" />
+            </StackPanel>
             <ScrollViewer
                 x:Name="ChatScroll"
                 VerticalScrollBarVisibility="Auto"
@@ -250,8 +260,13 @@
             x:Name="Footer"
             Grid.Row="3"
             Height="36"
-            Padding="22,0"
+            Padding="22,0,12,0"
             Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
             <TextBlock
                 x:Name="HintsText"
                 Text="↵ Abrir     Ctrl+↵ Mostrar na pasta     Esc Fechar"
@@ -260,10 +275,69 @@
                 VerticalAlignment="Center" />
             <TextBlock
                 x:Name="StatusText"
+                Grid.Column="1"
                 FontSize="11"
                 Opacity="0.55"
-                HorizontalAlignment="Right"
+                Margin="12,0,6,0"
                 VerticalAlignment="Center" />
+            <Button
+                x:Name="SettingsButton"
+                Grid.Column="2"
+                Padding="6,4"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderThickness="0"
+                IsTabStop="False"
+                ToolTipService.ToolTip="Configurações do Apparatus (Ctrl+,)"
+                AutomationProperties.Name="Configurações do Apparatus"
+                Click="OnSettingsButtonClick">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE713;" FontSize="14" Opacity="0.75" />
+                    <TextBlock Text="Configurações (Ctrl + ,)" FontSize="11" Opacity="0.55" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Settings panel: replaces the search UI while it is open (see LauncherWindow.Panel.cs). -->
+        <Grid
+            x:Name="PanelHost"
+            Grid.RowSpan="4"
+            Visibility="Collapsed"
+            PreviewKeyDown="OnPanelPreviewKeyDown">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="244" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid Padding="10,12,6,10" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Button
+                    x:Name="PanelBackButton"
+                    Padding="10,6"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="OnPanelBackClick"
+                    AutomationProperties.Name="Voltar à pesquisa">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72B;" FontSize="14" />
+                        <TextBlock Text="Voltar (Esc)" FontSize="13" />
+                    </StackPanel>
+                </Button>
+                <ListView
+                    x:Name="PanelNav"
+                    Grid.Row="1"
+                    SelectionMode="Single"
+                    SelectionChanged="OnPanelNavChanged" />
+            </Grid>
+            <ContentControl
+                x:Name="PanelContent"
+                AutomationProperties.AutomationId="PanelContent"
+                Grid.Column="1"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"
+                IsTabStop="False" />
         </Grid>
     </Grid>
 </Window>

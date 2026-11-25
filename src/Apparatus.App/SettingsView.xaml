@@ -1,18 +1,14 @@
-<Window
-    x:Class="Apparatus.App.SettingsWindow"
+<UserControl
+    x:Class="Apparatus.App.SettingsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Configurações — Apparatus">
-
-    <Window.SystemBackdrop>
-        <MicaBackdrop />
-    </Window.SystemBackdrop>
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ScrollViewer x:Name="Root" PreviewKeyDown="OnRootPreviewKeyDown">
         <StackPanel Padding="32,24,32,32" Spacing="8" MaxWidth="760" HorizontalAlignment="Stretch">
 
-            <TextBlock Text="Configurações" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,8" />
+            <TextBlock x:Name="PageTitle" Text="Configurações" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,8" />
 
+            <StackPanel x:Name="Page_general" Spacing="8">
             <!-- hotkey -->
             <TextBlock Text="Atalho do launcher" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,12,0,0" />
             <Border
@@ -104,6 +100,9 @@
                 </StackPanel>
             </Border>
 
+            </StackPanel>
+
+            <StackPanel x:Name="Page_snippets" Spacing="8">
             <!-- snippets -->
             <TextBlock Text="Snippets" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -135,6 +134,9 @@
                 </StackPanel>
             </Border>
 
+            </StackPanel>
+
+            <StackPanel x:Name="Page_search" Spacing="8">
             <!-- files -->
             <TextBlock Text="Arquivos e pastas" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -183,6 +185,40 @@
                 </StackPanel>
             </Border>
 
+            <!-- quicklinks -->
+            <TextBlock Text="Quicklinks e buscas na web" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Com {query} no destino, o atalho vira uma busca (“yt lofi” pesquisa no YouTube). Sem {query}, é um atalho que abre um site, uma pasta, um arquivo ou um programa quando você escolhe o nome no launcher."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <ListView
+                        x:Name="QuicklinksList"
+                        SelectionMode="Single"
+                        MinHeight="80"
+                        MaxHeight="220"
+                        BorderThickness="1"
+                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        CornerRadius="6" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Adicionar…" Click="OnAddQuicklink" />
+                        <Button Content="Editar…" Click="OnEditQuicklink" />
+                        <Button Content="Remover" Click="OnRemoveQuicklink" />
+                        <Button Content="Restaurar padrões" Click="OnResetQuicklinks" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            </StackPanel>
+
+            <StackPanel x:Name="Page_clipboard" Spacing="8">
             <!-- clipboard -->
             <TextBlock Text="Área de transferência" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -232,6 +268,9 @@
                 </StackPanel>
             </Border>
 
+            </StackPanel>
+
+            <StackPanel x:Name="Page_assistant" Spacing="8">
             <!-- assistant -->
             <TextBlock Text="Assistente de IA" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -361,37 +400,9 @@
                 </StackPanel>
             </Border>
 
-            <!-- quicklinks -->
-            <TextBlock Text="Quicklinks e buscas na web" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
-            <Border
-                Padding="16"
-                CornerRadius="8"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1">
-                <StackPanel Spacing="12">
-                    <TextBlock
-                        Text="Com {query} no destino, o atalho vira uma busca (“yt lofi” pesquisa no YouTube). Sem {query}, é um atalho que abre um site, uma pasta, um arquivo ou um programa quando você escolhe o nome no launcher."
-                        FontSize="12"
-                        Opacity="0.65"
-                        TextWrapping="Wrap" />
-                    <ListView
-                        x:Name="QuicklinksList"
-                        SelectionMode="Single"
-                        MinHeight="80"
-                        MaxHeight="220"
-                        BorderThickness="1"
-                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                        CornerRadius="6" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Adicionar…" Click="OnAddQuicklink" />
-                        <Button Content="Editar…" Click="OnEditQuicklink" />
-                        <Button Content="Remover" Click="OnRemoveQuicklink" />
-                        <Button Content="Restaurar padrões" Click="OnResetQuicklinks" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+            </StackPanel>
 
+            <StackPanel x:Name="Page_extensions" Spacing="8">
             <!-- extensions -->
             <TextBlock Text="Extensões" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -422,6 +433,9 @@
                 </StackPanel>
             </Border>
 
+            </StackPanel>
+
+            <StackPanel x:Name="Page_start" Spacing="8">
             <!-- start menu -->
             <TextBlock Text="Menu Iniciar do Apparatus" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -496,6 +510,9 @@
                 </StackPanel>
             </Border>
 
+            </StackPanel>
+
+            <StackPanel x:Name="Page_windows" Spacing="8">
             <!-- windows taskbar and start tweaks -->
             <TextBlock Text="Barra de tarefas e Iniciar do Windows" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -519,6 +536,9 @@
                 </StackPanel>
             </Border>
 
+            </StackPanel>
+
+            <StackPanel x:Name="Page_backup" Spacing="8">
             <!-- backup and sync -->
             <TextBlock Text="Backup e sincronização" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -556,6 +576,9 @@
                 </StackPanel>
             </Border>
 
+            </StackPanel>
+
+            <StackPanel x:Name="Page_about" Spacing="8">
             <!-- updates -->
             <TextBlock Text="Atualizações" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border
@@ -598,6 +621,8 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+            </StackPanel>
+
         </StackPanel>
     </ScrollViewer>
-</Window>
+</UserControl>

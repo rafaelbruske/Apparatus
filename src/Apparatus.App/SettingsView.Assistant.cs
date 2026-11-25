@@ -18,7 +18,7 @@ public sealed class AssistantProviderItem
 }
 
 /// <summary>The "Assistente de IA" card of the settings window: provider, key, model, connection test and privacy choices.</summary>
-public sealed partial class SettingsWindow
+public sealed partial class SettingsView
 {
     private readonly Dictionary<string, IReadOnlyList<string>> _modelChoices = new();
     private CancellationTokenSource? _assistantCts;

@@ -16,9 +16,6 @@ public partial class App : Application
     private MessageHost? _host;
     private AppServices? _services;
     private LauncherWindow? _launcher;
-    private SettingsWindow? _settings;
-    private SnippetsWindow? _snippetsWindow;
-    private ActionsWindow? _actionsWindow;
 
     public App(SingleInstance instance, string[] args)
     {
@@ -44,7 +41,7 @@ public partial class App : Application
         _services.ActionHost = new ActionService(_services, _ui);
         _services.ExtensionRunner = new ExtensionRunner(_services, _ui);
         _services.ClipboardHost = new ClipboardService(_services);
-        var executor = new ResultExecutor(_services, OpenSettings, Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction),
+        var executor = new ResultExecutor(_services, () => OpenSettings(), Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction),
             draft => OpenActions(true, draft), draft => OpenSnippets(true, draft));
         _launcher = new LauncherWindow(_services, executor);
         _services.ShowLauncher = query => _ui.TryEnqueue(() => _launcher.ShowLauncher(string.IsNullOrEmpty(query) ? null : query));
@@ -190,55 +187,26 @@ public partial class App : Application
         }
     }
 
-    public void OpenSettings()
+    /// <summary>Opens the settings, which live inside the launcher window (a side bar of groups plus a page).</summary>
+    public void OpenSettings(string page = "general")
     {
-        if (_services is null) return;
-        _launcher?.HideLauncher();
-        if (_settings is null)
-        {
-            _settings = new SettingsWindow(_services);
-            _settings.Closed += (_, _) => _settings = null;
-        }
-        _settings.Activate();
-        WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_settings));
+        if (_services is null || _launcher is null) return;
+        _launcher.ShowLauncher(panelPage: page);
     }
 
-    public void OpenSnippets(bool startNew = false, Apparatus.Core.Snippets.Snippet? draft = null)
-    {
-        if (_services is null) return;
-        _launcher?.HideLauncher();
-        if (_snippetsWindow is null)
-        {
-            _snippetsWindow = new SnippetsWindow(_services);
-            _snippetsWindow.Closed += (_, _) => _snippetsWindow = null;
-        }
-        _snippetsWindow.Activate();
-        WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_snippetsWindow));
-        if (startNew && _snippetsWindow is not null) _snippetsWindow.StartNewSnippet(draft);
-    }
+    /// <summary>Opens the snippets, which live in the settings panel of the launcher window.</summary>
+    public void OpenSnippets(bool startNew = false, Apparatus.Core.Snippets.Snippet? draft = null) =>
+        _launcher?.ShowSnippets(startNew, draft);
 
-    public void OpenActions(bool startNew = false, Apparatus.Core.Actions.ActionDefinition? draft = null)
-    {
-        if (_services is null) return;
-        _launcher?.HideLauncher();
-        if (_actionsWindow is null)
-        {
-            _actionsWindow = new ActionsWindow(_services);
-            _actionsWindow.Closed += (_, _) => _actionsWindow = null;
-        }
-        _actionsWindow.Activate();
-        WindowHelpers.BringToForeground(WinRT.Interop.WindowNative.GetWindowHandle(_actionsWindow));
-        if (startNew) _actionsWindow.StartNewAction(draft);
-    }
+    /// <summary>Opens the actions, which live in the settings panel of the launcher window.</summary>
+    public void OpenActions(bool startNew = false, Apparatus.Core.Actions.ActionDefinition? draft = null) =>
+        _launcher?.ShowActions(startNew, draft);
 
     private void Quit()
     {
         AppLog.Info("Apparatus exiting");
         _launcher?.AllowClose();
         _services?.StartHost?.Close();
-        _settings?.Close();
-        _snippetsWindow?.Close();
-        _actionsWindow?.Close();
         _launcher?.Close();
         _host?.Dispose();
         _services?.Dispose();

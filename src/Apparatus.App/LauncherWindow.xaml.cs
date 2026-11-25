@@ -94,20 +94,34 @@ public sealed partial class LauncherWindow : Window
 
     public void ToggleLauncher()
     {
+        if (_macroHidden) return;   // a macro is being recorded: the window is hidden on purpose
+        if (IsLauncherVisible && _panelMode && _isActive)
+        {
+            _ = ConfirmThenHideAsync();   // closing the panel with the hotkey asks about unsaved edits too
+            return;
+        }
         // A kept-open AI window that lost focus: the hotkey brings it back to the text box instead of hiding it.
-        if (IsLauncherVisible && _aiMode && !_isActive && _services.Settings.Current.AssistantKeepOpen)
+        if (IsLauncherVisible && !_isActive && (_panelMode || (_aiMode && _services.Settings.Current.AssistantKeepOpen)))
         {
             Activate();
             WindowHelpers.BringToForeground(_hwnd);
-            DispatcherQueue.TryEnqueue(() => SearchBox.Focus(FocusState.Programmatic));
+            DispatcherQueue.TryEnqueue(() => (_panelMode ? (Control)PanelNav : SearchBox).Focus(FocusState.Programmatic));
             return;
         }
         if (IsLauncherVisible) HideLauncher();
         else ShowLauncher();
     }
 
-    public void ShowLauncher(string? initialQuery = null)
+    public void ShowLauncher(string? initialQuery = null, string? panelPage = null)
     {
+        if (panelPage is not null && _panelMode && IsLauncherVisible)
+        {
+            OpenSettingsPanel(panelPage);
+            Activate();
+            WindowHelpers.BringToForeground(_hwnd);
+            return;
+        }
+        LeavePanel(search: false);   // a fresh show always starts from the search
         if (_prewarming) AppWindow.Hide();
         _ = _services.RefreshAppsAsync();
 
@@ -123,6 +137,11 @@ public sealed partial class LauncherWindow : Window
         AppWindow.Show();
         Activate();
         WindowHelpers.BringToForeground(_hwnd);
+        if (panelPage is not null)
+        {
+            EnterPanel(panelPage);
+            return;
+        }
         DispatcherQueue.TryEnqueue(() =>
         {
             SearchBox.Focus(FocusState.Programmatic);
@@ -139,6 +158,7 @@ public sealed partial class LauncherWindow : Window
         if (!IsLauncherVisible) return;
         IsLauncherVisible = false;
         _searchCts?.Cancel();
+        LeavePanel(search: false);
         AppWindow.Hide();
     }
 
@@ -149,7 +169,7 @@ public sealed partial class LauncherWindow : Window
         _isActive = args.WindowActivationState != WindowActivationState.Deactivated;
         if (args.WindowActivationState == WindowActivationState.Deactivated && IsLauncherVisible &&
             (DateTime.UtcNow - _shownAtUtc).TotalMilliseconds > 300 &&
-            !(_aiMode && _services.Settings.Current.AssistantKeepOpen))
+            !_panelMode && !(_aiMode && _services.Settings.Current.AssistantKeepOpen))
         {
             HideLauncher();
         }
@@ -173,6 +193,7 @@ public sealed partial class LauncherWindow : Window
 
     private void ResizeToContent()
     {
+        if (_panelMode) return;
         double scale = WindowHelpers.GetScale(_hwnd);
         double height = SearchRowDip;
         if (_aiMode) height += 1 + ChatDip + FooterDip;
@@ -182,9 +203,37 @@ public sealed partial class LauncherWindow : Window
 
     // -------------------------------------------------------------- search
 
+    /// <summary>
+    /// A long text (typed, pasted or put back after a failed question) must show its end, where the caret is, instead of its start.
+    /// The text box does not always scroll by itself after a paste or a programmatic change, so its inner scroller is moved here.
+    /// </summary>
+    private void KeepCaretVisible()
+    {
+        if (SearchBox.Text.Length == 0 || SearchBox.SelectionStart != SearchBox.Text.Length) return;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            var scroller = FindDescendant<ScrollViewer>(SearchBox);
+            if (scroller is null) return;
+            scroller.UpdateLayout();
+            scroller.ChangeView(scroller.ScrollableWidth, null, null, disableAnimation: true);
+        });
+    }
+
+    private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T found) return found;
+            if (FindDescendant<T>(child) is { } deeper) return deeper;
+        }
+        return null;
+    }
+
     private async void OnTextChanged(object sender, TextChangedEventArgs e)
     {
         if (!IsLauncherVisible && !_prewarming) return;
+        KeepCaretVisible();
         if (_aiMode)   // in AI mode the box holds a question, not a search
         {
             UpdateAiFooter();   // Enter means "run the button" only while the box is empty
@@ -218,7 +267,7 @@ public sealed partial class LauncherWindow : Window
 
     private void ShowResults(IReadOnlyList<Core.Search.SearchResult> results)
     {
-        if (_aiMode) return;   // a late search must not bring the list back over the conversation
+        if (_aiMode || _panelMode) return;   // a late search must not bring the list back over the conversation
         Items.Clear();
         foreach (var r in results)
         {
@@ -258,7 +307,7 @@ public sealed partial class LauncherWindow : Window
             Core.Search.ResultKind.Extension => "↵ Executar     Ctrl+↵ Alternativa     Esc Fechar",
             Core.Search.ResultKind.Command => "↵ Executar     Esc Fechar",
             _ => "↵ Abrir     Esc Fechar",
-        } + star;
+        } + star + (CanEnterAiMode() ? "     Tab Perguntar à IA" : "");
     }
 
     private async Task LoadIconAsync(ResultItemViewModel vm, string key)
@@ -296,6 +345,10 @@ public sealed partial class LauncherWindow : Window
         }
         switch (e.Key)
         {
+            case (VirtualKey)188 when ctrl:   // Ctrl+,
+                OpenSettingsPanel("general");
+                e.Handled = true;
+                break;
             case VirtualKey.Down:
                 MoveSelection(+1);
                 e.Handled = true;

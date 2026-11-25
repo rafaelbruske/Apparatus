@@ -3,7 +3,7 @@
   Browsing the snippets or actions list must not raise "Alterações não salvas" unless something was really edited.
 
 .DESCRIPTION
-  Starts Apparatus with a throw-away profile (APPARATUS_PROFILE_DIR) and drives its Snippets or Actions window through
+  Starts Apparatus with a throw-away profile (APPARATUS_PROFILE_DIR) and drives its Snippets or Actions page (in the launcher's panel) through
   UI Automation: no mouse, no keys. First a CONTROL (edit the name, change the selection: the dialog must appear, which proves
   that the detection works), then eight changes of selection without editing: no dialog may appear.
   It runs next to a normal Apparatus (a separate instance) and touches only the process it starts.
@@ -27,11 +27,14 @@ $psi.EnvironmentVariables["APPARATUS_PROFILE_DIR"] = $Profile
 $p = [System.Diagnostics.Process]::Start($psi)
 function ProcWindows() { $AE::RootElement.FindAll($TS::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $p.Id))) }
 $win = $null
-for ($i = 0; $i -lt 60 -and -not $win; $i++) { Start-Sleep -Milliseconds 500; foreach ($w in (ProcWindows)) { if ($w.Current.Name -like "$Title*") { $win = $w } } }
+for ($i = 0; $i -lt 60 -and -not $win; $i++) { Start-Sleep -Milliseconds 500; foreach ($w in (ProcWindows)) { if (-not $w.Current.IsOffscreen) { $win = $w } } }
 if (-not $win) { L "no window"; try { $p.Kill() } catch {}; $log | Out-File $Out -Encoding utf8; exit 3 }
 Start-Sleep 2
-function Named($name) { $win.FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))) }
-$items = $win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)))
+# the snippets and the actions are pages of the launcher's panel: look only to the right of the side bar
+function InPage($e) { $e.Current.BoundingRectangle.X -gt ($win.Current.BoundingRectangle.X + $win.Current.BoundingRectangle.Width * 0.2) }
+function Named($name) { $win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))) | Where-Object { InPage $_ } | Select-Object -First 1 }
+function PageItems() { @($win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) | Where-Object { InPage $_ }) }
+$items = PageItems
 $items[0].GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep 1
 $save = Named "Salvar"
 L ("Salvar enabled before edit: " + $(if ($save) { $save.Current.IsEnabled } else { "(button not found)" }))
@@ -61,7 +64,7 @@ function Click($label) {
 L ("CONTROL: dialog up after a real edit and a change of selection: " + (DialogUp))
 [void](Click "Descartar"); Start-Sleep 1
 L ("dialog gone after Descartar: " + (-not (DialogUp)))
-$items = $win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)))
+$items = PageItems
 $n = 0
 foreach ($i in 0, 2, 1, 3, 0, 2, 3, 1) { $items[$i].GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 1300; if (DialogUp) { $n++; [void](Click "Cancelar"); Start-Sleep -Milliseconds 500 } }
 L "BROWSING 8 times without editing: dialogs = $n (must be 0)"

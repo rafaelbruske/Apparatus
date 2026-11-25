@@ -10,11 +10,10 @@ namespace Apparatus.App;
 
 /// <summary>
 /// The launcher's AI mode. Tab on an empty box (or when nothing matched) swaps the result list for a conversation;
-/// the same text box stays the input. Enter sends, Esc cancels, then clears, then leaves the mode, then closes the launcher.
+/// the same text box stays the input. Enter sends, Esc cancels a pending answer, otherwise leaves the mode (the typed text stays), and Esc again closes the launcher.
 /// </summary>
 public sealed partial class LauncherWindow
 {
-    private const string DefaultPlaceholder = "Pesquisar apps, arquivos, configurações…";
     private const string SearchGlyph = "";
     private const string ChatGlyph = "";
 
@@ -28,6 +27,14 @@ public sealed partial class LauncherWindow
 
     private bool AssistantEnabled => _services.Settings.Current.AssistantEnabled;
 
+    /// <summary>Switched on and with provider, key and model in place.</summary>
+    private bool AssistantReady => AssistantEnabled && _services.AssistantMissing is null;
+
+    /// <summary>What the AI mode shows instead of the conversation while the assistant cannot answer.</summary>
+    private string SetupMessage => !AssistantEnabled
+        ? "O assistente de IA ainda não está conectado.\n\nEscolha um provedor (há opções gratuitas, como Groq e Gemini), cole a sua chave de API e ligue o assistente nas configurações."
+        : $"O assistente ainda não está pronto.\n{_services.AssistantMissing}";
+
     private void HookAssistant()
     {
         ChatItems.ItemsSource = Chat.Entries;
@@ -38,11 +45,11 @@ public sealed partial class LauncherWindow
     // ------------------------------------------------------------------------------------------ mode
 
     /// <summary>Tab opens the AI mode when the box is empty or nothing matched; otherwise Tab keeps moving through the results.</summary>
-    private bool CanEnterAiMode() => AssistantEnabled && (SearchBox.Text.Length == 0 || Items.Count == 0);
+    private bool CanEnterAiMode() => SearchBox.Text.Length == 0 || Items.Count == 0;
 
     private void EnterAiMode()
     {
-        if (_aiMode || !AssistantEnabled) return;
+        if (_aiMode) return;
         _aiMode = true;
         _searchCts?.Cancel();
 
@@ -79,19 +86,23 @@ public sealed partial class LauncherWindow
     }
 
     private void UpdateSearchPlaceholder() =>
-        SearchBox.PlaceholderText = _aiMode ? "Pergunte algo… (Enter envia)"
-            : AssistantEnabled ? "Pesquisar… ou pressione Tab para perguntar à IA"
-            : DefaultPlaceholder;
+        SearchBox.PlaceholderText = _aiMode ? (AssistantReady ? "Pergunte algo… (Enter envia)" : "Conecte uma IA para poder perguntar…")
+            : "Pesquisar… ou pressione Tab para perguntar à IA";
 
     private void UpdateChatEmpty()
     {
-        bool empty = Chat.Entries.Count == 0;
-        ChatEmpty.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        bool ready = AssistantReady;
+        bool empty = Chat.Entries.Count == 0 || !ready;
+        ChatEmptyPanel.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        ChatSetupButton.Visibility = ready ? Visibility.Collapsed : Visibility.Visible;
+        ChatScroll.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
         if (!empty) return;
-        ChatEmpty.Text = _services.AssistantMissing is { } missing
-            ? $"O assistente ainda não está pronto.\n{missing}\n\nCtrl+, abre as configurações."
-            : "Pergunte algo sobre o Windows ou o Apparatus.\nPor exemplo: “como altero as configurações de impressoras?”";
+        ChatEmpty.Text = ready
+            ? "Pergunte algo sobre o Windows ou o Apparatus.\nPor exemplo: “como altero as configurações de impressoras?”"
+            : SetupMessage;
     }
+
+    private void OnChatSetupClick(object sender, RoutedEventArgs e) => OpenSettingsPanel("assistant");
 
     /// <summary>True when Enter (with an empty box) would run a button of the assistant instead of sending a question.</summary>
     private bool EnterRunsSuggestion => !Chat.IsBusy && SearchBox.Text.Trim().Length == 0 && Chat.SelectedSuggestion is not null;
@@ -99,6 +110,12 @@ public sealed partial class LauncherWindow
     private void UpdateAiFooter()
     {
         if (!_aiMode) return;
+        if (!AssistantReady)
+        {
+            HintsText.Text = "↵ Abrir configurações     Tab Voltar";
+            StatusText.Text = "";
+            return;
+        }
         if (Chat.IsBusy)
         {
             HintsText.Text = "Esc Cancelar";
@@ -190,6 +207,7 @@ public sealed partial class LauncherWindow
         {
             SearchBox.Text = question;
             SearchBox.Select(question.Length, 0);
+            KeepCaretVisible();
         }
         UpdateChatEmpty();
         UpdateAiFooter();
@@ -206,11 +224,9 @@ public sealed partial class LauncherWindow
         StatusText.Text = "Resposta copiada";
     }
 
-    private void OpenAssistantSettings()
-    {
-        HideLauncher();
-        _executor.Run(new SearchResult("command:settings", ResultKind.Command, "Configurações", "", InternalCommands.OpenSettings), "", secondary: false);
-    }
+    private void OnSettingsButtonClick(object sender, RoutedEventArgs e) => OpenSettingsPanel("general");
+
+    private void OpenAssistantSettings() => OpenSettingsPanel("assistant");
 
     // ------------------------------------------------------------------------------------------ keyboard
 
@@ -219,13 +235,13 @@ public sealed partial class LauncherWindow
         switch (e.Key)
         {
             case VirtualKey.Enter:
-                if (EnterRunsSuggestion) RunSuggestion(Chat.SelectedSuggestion!);
+                if (!AssistantReady) OpenAssistantSettings();
+                else if (EnterRunsSuggestion) RunSuggestion(Chat.SelectedSuggestion!);
                 else _ = SendQuestionAsync();
                 e.Handled = true;
                 break;
             case VirtualKey.Escape:
                 if (Chat.IsBusy) Chat.CancelCurrent();
-                else if (SearchBox.Text.Length > 0) SearchBox.Text = "";
                 else ExitAiMode();
                 e.Handled = true;
                 break;

@@ -57,7 +57,7 @@ máquina), tratado na seção 7.
   (`ISearchProvider`). Aparece quando o assistente está ligado e a consulta começa com `?` ou `ia `, ou como último
   recurso quando nada corresponde, com pontuação baixa, ao lado do "Pesquisar no Google" (que tem −500). Enter entra no modo de conversa.
 - Modo conversa: a mesma janela, com a lista de resultados trocada por uma área rolável de mensagens + cartões de ação.
-  A caixa de texto continua em foco; Enter envia; `Esc` limpa, depois sai do modo, depois fecha; `↑/↓` com a caixa vazia
+  A caixa de texto continua em foco; Enter envia; `Esc` sai do modo (sem apagar o texto) e depois fecha; `↑/↓` com a caixa vazia
   navegam pelos cartões e Enter aciona. O app continua sendo "teclado primeiro".
 - A janela do launcher **se esconde ao perder o foco** (`LauncherWindow.OnActivated`). A conversa vive em memória num
   `AssistantSession` guardado em `AppServices`, para sobreviver ao esconder/mostrar, e é apagada ao sair do modo ou
@@ -267,7 +267,7 @@ Regras que ficaram no código, além do plano:
 ### Fase 3 (conversa no launcher): feita, só texto
 - **Entrada (decisão do usuário, no lugar do prefixo `?` do plano):** com o assistente ligado, a caixa de pesquisa mostra "Pesquisar… ou pressione Tab para perguntar à IA". **Tab** com a caixa vazia (ou quando nada correspondeu à busca) abre o modo IA; com resultados na tela, Tab continua percorrendo a lista. Não há `AssistantProvider` nem `ResultKind.Assistant`: a entrada é a tecla, não um resultado de busca.
 - **Memória (decisão do usuário):** `AssistantKeepConversation` (padrão ligado) escolhe entre guardar a conversa por 15 minutos na memória ou sempre abrir do zero. Nada vai para o disco.
-- **Teclas no modo IA:** Enter envia · Esc cancela a resposta, depois limpa a caixa, depois sai do modo, depois fecha o launcher · Tab (caixa vazia) volta à busca · Ctrl+N conversa nova · Ctrl+Shift+C copia a última resposta · Ctrl+, abre as configurações · setas e PageUp/PageDown rolam a conversa. Pergunta cancelada ou com erro volta para a caixa.
+- **Teclas no modo IA:** Enter envia · Esc cancela a resposta em andamento; sem resposta pendente, sai do modo (o texto digitado fica na caixa; para apagar use Ctrl+A e Delete) e, no modo de pesquisa, o Esc seguinte fecha o launcher · Tab (caixa vazia) volta à busca · Ctrl+N conversa nova · Ctrl+Shift+C copia a última resposta · Ctrl+, abre as configurações · setas e PageUp/PageDown rolam a conversa. Pergunta cancelada ou com erro volta para a caixa.
 - **Só texto:** o motor é criado com `offerTools: false` e o prompt ganha uma nota dizendo que não há botões. Os cartões de ação são a Fase 4.
 - Core: `AssistantChat` (linhas da conversa, ask/cancelar/reiniciar/expirar, erro vira linha na tela), `ChatEntry`, `AskOutcome`. App: `LauncherWindow.Assistant.cs`, `ChatTemplateSelector`.
 - Verificado no app real (perfil isolado + servidor falso compatível com OpenAI fazendo o papel do Ollama): dica na caixa, Tab, pergunta e resposta em streaming (o texto cresce palavra a palavra), cancelar com Esc, erro 429 traduzido, Ctrl+N, sequência de Esc, conversa guardada ao reabrir pelo atalho global, "sempre do zero", assistente sem chave (tela explica o que falta) e assistente desligado (Tab segue como antes).
