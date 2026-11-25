@@ -29,7 +29,6 @@ public sealed class SnippetFillWindow : Window
         _fields = fields;
         Title = title;
         SystemBackdrop = new DesktopAcrylicBackdrop();
-        ExtendsContentIntoTitleBar = true;
 
         var panel = new StackPanel { Spacing = 12, Padding = new Thickness(24, 20, 24, 20) };
         panel.Children.Add(new TextBlock { Text = title, Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"] });

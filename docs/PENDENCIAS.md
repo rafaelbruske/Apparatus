@@ -76,6 +76,33 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
   assistente) e links diretos de páginas para o assistente; busca dentro das configurações; categorias Privacidade, Atalhos de teclado
   e Avançado.
 
+## 2.4 Menu Iniciar no estilo clássico (24/11/2026)
+- O menu Iniciar do Apparatus passou ao layout de duas colunas (como o do StartAllBack): à esquerda os apps fixados e os mais usados
+  ("Usados recentemente"), "Todos os programas" e a busca embaixo; à direita o usuário e os locais do sistema (Documentos, Imagens,
+  Músicas, Downloads, Itens recentes, Este Computador, Painel de Controle, Configurações, Windows Update, Executar…, Configurações do
+  Apparatus) e o menu Desligar. Os dados dos fixados (seções) continuam os mesmos.
+- **Deixou de existir na tela (código removido, dados mantidos):** blocos em grade, arrastar para reordenar ou mover entre seções, botão
+  "Nova seção", renomear/mover/excluir seção pelo menu da seção, barra rápida do rodapé e o ajuste "Itens por linha" (escondido nas
+  configurações). Mover para uma seção e criar seção continuam no menu de contexto de um item fixado.
+- **Verificado:** o menu abre com os elementos esperados nas duas colunas (automação de interface). **Não verificado:** aparência,
+  clique e teclado reais, DPI alto, menu de contexto e o menu Desligar na nova posição.
+
+## 2.5 Tarefas dos aplicativos no menu Iniciar (24/11/2026)
+- Cada app com "tarefas" na lista de atalhos do Windows (Nova janela, Nova janela privativa, Nova sessão…) ganha um botão `›` na linha, no menu
+  Iniciar, que mostra essas tarefas. O Apparatus lê o arquivo `%APPDATA%\Microsoft\Windows\Recent\CustomDestinations\<hash>.customDestinations-ms`
+  do app (nome = CRC-64 do AppUserModelID em maiúsculas, UTF-16) e usa a primeira categoria, que são as tarefas (`JumpLists`, `JumpTaskReader`).
+- **Limites:** só as tarefas (não os "recentes/frequentes" do app); só apps que gravaram a lista (um app que nunca a criou não mostra o botão);
+  apps clássicos identificados por caminho (sem AppUserModelID) podem não ter arquivo; os itens usam um ícone genérico; sem teclado
+  (só clique). **Verificado:** o botão aparece e o menu lista as tarefas do AnyDesk (automação); o hash confere com os arquivos de Chrome, Edge e
+  Firefox desta máquina. **Não verificado:** executar uma tarefa, Chrome/Edge/Firefox na tela, aparência.
+
+## 2.6 Menu de contexto clássico (24/11/2026)
+- Configurações → Windows → "Menu de contexto do Windows": um interruptor liga o menu clássico do botão direito (cria a chave
+  `HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32` com o valor padrão vazio) ou volta ao do Windows 11 (apaga a
+  chave `{86ca1aa0-...}`). Depois de mudar, pergunta se reinicia o Explorer ("Reiniciar" ou "Mais tarde"). Classe `ClassicContextMenu`.
+- **Verificado** pela automação de interface num perfil descartável: ligar cria a chave com valor vazio, desligar a apaga, o diálogo aparece; o
+  Explorer não foi reiniciado. **Não verificado:** o efeito no menu depois de reiniciar o Explorer.
+
 ## 3. Funcionalidades que ficaram de fora
 - **Barra de tarefas própria (AppBar, módulo A2).** Deliberadamente não feita: a bandeja do sistema não tem API pública para ser
   hospedada, a barra original precisa ser escondida e quebra a cada atualização do Windows. O plano a marcava como opcional.

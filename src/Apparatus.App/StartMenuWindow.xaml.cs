@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using Apparatus.Core;
 using Apparatus.Core.Search;
+using Apparatus.Core.Search.Providers;
 using Apparatus.Core.Start;
 using Apparatus.Native;
 using Microsoft.UI.Dispatching;
@@ -20,15 +21,14 @@ using WinRT.Interop;
 namespace Apparatus.App;
 
 /// <summary>
-/// Apparatus' own Start menu: pinned items in named sections, the most used items, an alphabetical list of every app,
-/// inline search over the whole launcher index, quick shortcuts and the power menu.
+/// Apparatus' own Start menu, in the classic two-column layout: on the left the pinned and the most used apps, "All programs" and the
+/// search box; on the right the places of the system (folders, This PC, Control Panel, Settings...) and the power menu.
 /// </summary>
 public sealed partial class StartMenuWindow : Window
 {
-    private const double WidthDip = 640;
+    private const double WidthDip = 700;
     private const double HeightDip = 740;
     private const double GapDip = 12;
-    private const double ContentWidthDip = 584;
     private const int RecentCount = 6;
 
     private readonly AppServices _services;
@@ -36,6 +36,7 @@ public sealed partial class StartMenuWindow : Window
     private readonly IconCache _icons;
     private readonly nint _hwnd;
     private readonly RegistryTweakStore _registry = new();
+    private readonly ObservableCollection<ResultItemViewModel> _pinned = new();
     private readonly ObservableCollection<ResultItemViewModel> _results = new();
     private readonly ObservableCollection<ResultItemViewModel> _allApps = new();
     private CancellationTokenSource? _searchCts;
@@ -55,10 +56,10 @@ public sealed partial class StartMenuWindow : Window
 
         _hwnd = WindowNative.GetWindowHandle(this);
         _icons = new IconCache(DispatcherQueue);
+        PinnedList.ItemsSource = _pinned;
         ResultsList.ItemsSource = _results;
         AllAppsList.ItemsSource = _allApps;
 
-        ExtendsContentIntoTitleBar = true;
         var presenter = (OverlappedPresenter)AppWindow.Presenter;
         presenter.SetBorderAndTitleBar(false, false);
         presenter.IsResizable = false;
@@ -70,6 +71,7 @@ public sealed partial class StartMenuWindow : Window
         WindowHelpers.UseRoundedCorners(_hwnd);
 
         BuildPowerMenu();
+        BuildPlaces();
         ApplyAppearance();
 
         Activated += OnActivated;
@@ -99,7 +101,7 @@ public sealed partial class StartMenuWindow : Window
     {
         _prewarming = true;
         RebuildPinned();
-        AppWindow.MoveAndResize(new RectInt32(-12000, -12000, 640, 740));
+        AppWindow.MoveAndResize(new RectInt32(-12000, -12000, (int)WidthDip, (int)HeightDip));
         AppWindow.Show(activateWindow: false);
 
         void OnRendered(object? s, object e)
@@ -123,6 +125,7 @@ public sealed partial class StartMenuWindow : Window
         if (_prewarming) AppWindow.Hide();
         _services.Expander?.RememberLauncherTarget(KeyTranslator.ForegroundWindow());
         _ = _services.RefreshAppsAsync();
+        RefreshAvatar();
         EnsureSeeded();
 
         ResetView();
@@ -250,18 +253,22 @@ public sealed partial class StartMenuWindow : Window
         _showingAllApps = false;
         SearchBox.Text = "";
         ShowView(View.Pinned);
-        PinnedScroll.ChangeView(null, 0, null, disableAnimation: true);
+        PinnedList.SelectedIndex = -1;
+        if (_pinned.Count > 0) PinnedList.ScrollIntoView(_pinned[0]);
     }
 
     private enum View { Pinned, Results, AllApps }
 
     private void ShowView(View view)
     {
-        PinnedScroll.Visibility = view == View.Pinned ? Visibility.Visible : Visibility.Collapsed;
+        PinnedList.Visibility = view == View.Pinned ? Visibility.Visible : Visibility.Collapsed;
+        EmptyHint.Visibility = view == View.Pinned && _pinned.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ResultsList.Visibility = view == View.Results ? Visibility.Visible : Visibility.Collapsed;
         AllAppsList.Visibility = view == View.AllApps ? Visibility.Visible : Visibility.Collapsed;
         NoResults.Visibility = Visibility.Collapsed;
-        AllAppsLabel.Text = view == View.AllApps ? "‹  Voltar" : "Todos os aplicativos  ›";
+        bool back = view == View.AllApps;
+        AllAppsLabel.Text = back ? "Voltar" : "Todos os programas";
+        AllAppsChevron.Glyph = back ? "\uE76B" : "\uE76C";
     }
 
     private void OnAllAppsClick(object sender, RoutedEventArgs e)
@@ -279,7 +286,7 @@ public sealed partial class StartMenuWindow : Window
         string last = "";
         foreach (var app in _services.Apps.All.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
         {
-            var vm = new ResultItemViewModel(StartSeed.AppResult(app));
+            var vm = WithTasks(new ResultItemViewModel(StartSeed.AppResult(app)));
             string letter = LetterOf(app.Name);
             if (letter != last) { vm.Letter = letter; last = letter; }
             _allApps.Add(vm);
@@ -309,185 +316,224 @@ public sealed partial class StartMenuWindow : Window
         });
     }
 
+    /// <summary>The left list: the pinned apps (with the name of each section when there is more than one), then the most used ones.</summary>
     private void RebuildPinned()
     {
         var layout = _services.StartLayout.Snapshot();
         var settings = _services.Settings.Current;
-        int columns = Math.Clamp(settings.StartColumns, 4, 8);
-        double itemWidth = Math.Floor(ContentWidthDip / columns);
 
-        SectionsPanel.Children.Clear();
-        foreach (var section in layout.Sections) SectionsPanel.Children.Add(BuildSection(section, layout.Sections, itemWidth));
-        EmptyHint.Visibility = layout.Sections.All(s => s.Items.Count == 0) ? Visibility.Visible : Visibility.Collapsed;
-
-        BuildRecents(layout, itemWidth, settings.StartShowRecent);
-        BuildQuickBar(layout);
-    }
-
-    private UIElement BuildSection(StartSection section, IReadOnlyList<StartSection> all, double itemWidth)
-    {
-        var items = new ObservableCollection<ResultItemViewModel>();
-        foreach (var item in section.Items)
+        _pinned.Clear();
+        foreach (var section in layout.Sections)
         {
-            var vm = new ResultItemViewModel(item.ToResult());
-            items.Add(vm);
-            if (item.Icon is { } icon) _ = LoadIconAsync(vm, icon);
+            bool first = true;
+            foreach (var item in section.Items)
+            {
+                var vm = WithTasks(new ResultItemViewModel(item.ToResult()));
+                if (first && layout.Sections.Count > 1) vm.Header = section.Name;
+                first = false;
+                _pinned.Add(vm);
+                if (item.Icon is { } icon) _ = LoadIconAsync(vm, icon);
+            }
         }
 
-        var title = new TextBlock { Text = section.Name, FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Opacity = 0.8, VerticalAlignment = VerticalAlignment.Center };
-        var more = new Button
-        {
-            Style = (Style)Application.Current.Resources["SubtleButtonStyle"],
-            Content = new FontIcon { Glyph = "", FontSize = 12 },
-            Padding = new Thickness(8, 4, 8, 4),
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Flyout = BuildSectionMenu(section, all),
-        };
-        ToolTipService.SetToolTip(more, "Opções da seção");
-        var header = new Grid();
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        header.Children.Add(title);
-        Grid.SetColumn(more, 1);
-        header.Children.Add(more);
-
-        var grid = new GridView
-        {
-            ItemsSource = items,
-            ItemTemplate = (DataTemplate)Root.Resources["TileTemplate"],
-            ItemContainerStyle = (Style)Root.Resources["TileContainerStyle"],
-            ItemsPanel = TilePanel(itemWidth),
-            SelectionMode = ListViewSelectionMode.Single,
-            IsItemClickEnabled = true,
-            CanReorderItems = true,
-            CanDragItems = true,
-            AllowDrop = true,
-            MinHeight = 44,
-            Tag = section.Id,
-        };
-        ScrollViewer.SetVerticalScrollMode(grid, ScrollMode.Disabled);
-        ScrollViewer.SetVerticalScrollBarVisibility(grid, ScrollBarVisibility.Hidden);
-        grid.ItemClick += OnTileClick;
-        grid.ContextRequested += OnTileContextRequested;
-        grid.PointerWheelChanged += OnInnerWheel;
-        grid.DragItemsStarting += (_, e) =>
-        {
-            if (e.Items.Count == 1 && e.Items[0] is ResultItemViewModel vm) e.Data.SetText(vm.Result.Key);
-            e.Data.RequestedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
-        };
-        grid.DragItemsCompleted += (s, _) =>
-        {
-            if (s is not GridView g || g.ItemsSource is not ObservableCollection<ResultItemViewModel> list) return;
-            RunSelfChange(() => _services.StartLayout.SetOrder((string)g.Tag, list.Select(i => i.Result.Key).ToList()));
-        };
-        grid.DragOver += (_, e) => e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
-        grid.Drop += OnTileDrop;
-
-        var panel = new StackPanel { Spacing = 2 };
-        panel.Children.Add(header);
-        panel.Children.Add(grid);
-        return panel;
-    }
-
-    /// <summary>A tile dropped from another section moves there. Reordering inside one section is done by the GridView itself.</summary>
-    private async void OnTileDrop(object sender, DragEventArgs e)
-    {
-        try
-        {
-            if (sender is not GridView g || g.ItemsSource is not ObservableCollection<ResultItemViewModel> list) return;
-            if (!e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text)) return;
-            string key = await e.DataView.GetTextAsync();
-            if (list.Any(i => string.Equals(i.Result.Key, key, StringComparison.OrdinalIgnoreCase))) return;   // same section
-            _services.StartLayout.Move(key, (string)g.Tag);
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn($"Dropping a Start tile failed: {ex.Message}");
-        }
-    }
-
-    private void OnInnerWheel(object sender, PointerRoutedEventArgs e)
-    {
-        // The tile grids do not scroll by themselves; hand the wheel to the page.
-        int delta = e.GetCurrentPoint((UIElement)sender).Properties.MouseWheelDelta;
-        PinnedScroll.ChangeView(null, PinnedScroll.VerticalOffset - delta, null, disableAnimation: true);
-        e.Handled = true;
-    }
-
-    private static ItemsPanelTemplate TilePanel(double itemWidth) => (ItemsPanelTemplate)XamlReader.Load(
-        "<ItemsPanelTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
-        $"<ItemsWrapGrid Orientation='Horizontal' ItemWidth='{itemWidth.ToString(CultureInfo.InvariantCulture)}' ItemHeight='96' />" +
-        "</ItemsPanelTemplate>");
-
-    private void BuildRecents(StartLayout layout, double itemWidth, bool show)
-    {
-        var pinned = layout.Sections.SelectMany(s => s.Items).Select(i => i.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var recent = show
+        var pinnedKeys = layout.Sections.SelectMany(s => s.Items).Select(i => i.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var recent = settings.StartShowRecent
             ? _services.Usage.Recent(RecentCount * 3)
-                .Where(r => StartLayoutStore.CanPin(r) && !pinned.Contains(r.Key)).Take(RecentCount).ToList()
+                .Where(r => StartLayoutStore.CanPin(r) && !pinnedKeys.Contains(r.Key)).Take(RecentCount).ToList()
             : new List<SearchResult>();
-
-        var items = new ObservableCollection<ResultItemViewModel>();
+        bool firstRecent = true;
         foreach (var r in recent)
         {
-            var vm = new ResultItemViewModel(r);
-            items.Add(vm);
+            var vm = WithTasks(new ResultItemViewModel(r));
+            if (firstRecent && _pinned.Count > 0) vm.Header = "Usados recentemente";
+            firstRecent = false;
+            _pinned.Add(vm);
             if (r.Icon is { } icon) _ = LoadIconAsync(vm, icon);
         }
-        RecentsGrid.ItemsSource = items;
-        RecentsGrid.ItemsPanel = TilePanel(itemWidth);
-        var visible = items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        RecentsHeader.Visibility = visible;
-        RecentsGrid.Visibility = visible;
-        RecentsGrid.Tag = "recent";
-        RecentsGrid.PointerWheelChanged -= OnInnerWheel;
-        RecentsGrid.PointerWheelChanged += OnInnerWheel;
+
+        if (PinnedList.Visibility == Visibility.Visible)
+            EmptyHint.Visibility = _pinned.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void BuildQuickBar(StartLayout layout)
+    // ------------------------------------------------------- the right column
+
+    private void BuildPlaces()
     {
-        QuickBar.Children.Clear();
-        foreach (var q in layout.Quick)
+        string Folder(Environment.SpecialFolder f) => Environment.GetFolderPath(f);
+        string downloads = Path.Combine(Folder(Environment.SpecialFolder.UserProfile), "Downloads");
+
+        AddPlace("\uE77B", Environment.UserName, () => OpenTarget(Folder(Environment.SpecialFolder.UserProfile)));
+        AddPlace("\uE8A5", "Documentos", () => OpenTarget(Folder(Environment.SpecialFolder.MyDocuments)));
+        AddPlace("\uEB9F", "Imagens", () => OpenTarget(Folder(Environment.SpecialFolder.MyPictures)));
+        AddPlace("\uEC4F", "Músicas", () => OpenTarget(Folder(Environment.SpecialFolder.MyMusic)));
+        AddPlace("\uE896", "Downloads", () => OpenTarget(downloads));
+        AddSeparator();
+        AddPlace("\uE823", "Itens recentes", () => OpenTarget("shell:Recent"));
+        AddPlace("\uE7F4", "Este Computador", () => OpenTarget("shell:MyComputerFolder"));
+        AddSeparator();
+        AddPlace("\uE9F5", "Painel de Controle", () => OpenTarget("control.exe"));
+        AddPlace("\uE713", "Configurações", () => OpenTarget("ms-settings:"));
+        AddPlace("\uE895", "Windows Update", () => OpenTarget("ms-settings:windowsupdate"));
+        AddPlace("\uE756", "Executar…", () => OpenTarget("explorer.exe", "shell:::{2559a1f3-21d7-11d4-bdaf-00c04f60b9f0}"));
+        AddSeparator();
+        AddPlace("\uE115", "Configurações do Apparatus", () =>
+            _executor.Run(new SearchResult("command:settings", ResultKind.Command, "Configurações", "", InternalCommands.OpenSettings), "", secondary: false));
+    }
+
+    private void AddPlace(string glyph, string label, Action run)
+    {
+        var content = new Grid { ColumnSpacing = 12 };
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(22) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        content.Children.Add(new FontIcon { Glyph = glyph, FontSize = 16, Opacity = 0.9 });
+        var text = new TextBlock { Text = label, FontSize = 14, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+        Grid.SetColumn(text, 1);
+        content.Children.Add(text);
+
+        var button = new Button
         {
-            var vm = new ResultItemViewModel(q.ToResult());
-            var glyph = new FontIcon { Glyph = vm.Glyph, FontSize = 18, Opacity = 0.85 };
-            var image = new Image { Width = 20, Height = 20, Visibility = Visibility.Collapsed };
-            var content = new Grid { Width = 22, Height = 22 };
-            content.Children.Add(glyph);
-            content.Children.Add(image);
-
-            var button = new Button
+            Style = (Style)Application.Current.Resources["SubtleButtonStyle"],
+            Content = content,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Left,
+            Padding = new Thickness(10, 9, 10, 9),
+        };
+        button.Click += (_, _) =>
+        {
+            HideMenu();   // first, so what is opened gets the foreground
+            try { run(); }
+            catch (Exception ex)
             {
-                Style = (Style)Application.Current.Resources["SubtleButtonStyle"],
-                Content = content,
-                Padding = new Thickness(8),
-                Tag = vm,
-            };
-            ToolTipService.SetToolTip(button, q.Title);
-            button.Click += (_, _) => Execute(vm, secondary: false, query: "");
-
-            var remove = new MenuFlyoutItem { Text = "Remover da barra" };
-            remove.Click += (_, _) => _services.StartLayout.RemoveQuick(q.Key);
-            button.ContextFlyout = new MenuFlyout { Items = { remove } };
-            QuickBar.Children.Add(button);
-
-            if (q.Icon is { } icon) _ = ShowIconAsync(icon, image, glyph);
-        }
+                AppLog.Warn($"Opening “{label}” from the Start menu failed: {ex.Message}");
+                _services.Host.ShowBalloon("Não foi possível abrir", $"{label}: {ex.Message}");
+            }
+        };
+        PlacesPanel.Children.Add(button);
     }
 
-    private async Task ShowIconAsync(string key, Image image, FontIcon glyph)
+    // ------------------------------------------------------- account picture
+
+    private string? _avatarPath;
+
+    /// <summary>Shows the picture of the signed-in Windows account in the round button (the person glyph when there is none).</summary>
+    private void RefreshAvatar()
     {
+        string? path = AccountPicturePath();
+        if (path == _avatarPath) return;
+        _avatarPath = path;
         try
         {
-            var source = await _icons.GetAsync(key);
-            if (source is null) return;
-            image.Source = source;
-            image.Visibility = Visibility.Visible;
-            glyph.Visibility = Visibility.Collapsed;
+            if (path is null)
+            {
+                AvatarEllipse.Fill = (Brush)Application.Current.Resources["ControlFillColorSecondaryBrush"];
+                AvatarGlyph.Visibility = Visibility.Visible;
+                return;
+            }
+            var bitmap = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage { DecodePixelWidth = 128 };
+            bitmap.UriSource = new Uri(path);
+            AvatarEllipse.Fill = new ImageBrush { ImageSource = bitmap, Stretch = Stretch.UniformToFill };
+            AvatarGlyph.Visibility = Visibility.Collapsed;
         }
         catch (Exception ex)
         {
-            AppLog.Warn($"Icon load failed for {key}: {ex.Message}");
+            AppLog.Warn($"Loading the account picture failed: {ex.Message}");
+            AvatarGlyph.Visibility = Visibility.Visible;
+        }
+    }
+
+    /// <summary>The picture file Windows keeps for this account (the AccountPicture key of HKLM, per user SID), or null.</summary>
+    private static string? AccountPicturePath()
+    {
+        try
+        {
+            string? sid = System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value;
+            if (sid is null) return null;
+            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey($@"SOFTWARE\Microsoft\Windows\CurrentVersion\AccountPicture\Users\{sid}");
+            if (key is null) return null;
+            foreach (string name in new[] { "Image192", "Image208", "Image96", "Image448", "Image64", "Image240", "Image40", "Image32", "Image1080" })
+                if (key.GetValue(name) is string file && File.Exists(file)) return file;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Reading the account picture failed: {ex.Message}");
+        }
+        return null;
+    }
+
+    private void OnAvatarClick(object sender, RoutedEventArgs e)
+    {
+        HideMenu();
+        try { OpenTarget("ms-settings:yourinfo"); }
+        catch (Exception ex) { AppLog.Warn($"Opening the account page failed: {ex.Message}"); }
+    }
+
+    private void AddSeparator() => PlacesPanel.Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle
+    {
+        Height = 1,
+        Margin = new Thickness(10, 6, 10, 6),
+        Fill = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
+    });
+
+    private static void OpenTarget(string target, string? arguments = null)
+    {
+        var info = new System.Diagnostics.ProcessStartInfo(target) { UseShellExecute = true };
+        if (arguments is not null) info.Arguments = arguments;
+        System.Diagnostics.Process.Start(info);
+    }
+
+    /// <summary>Marks an app that has jump list tasks, so its row shows the button.</summary>
+    private static ResultItemViewModel WithTasks(ResultItemViewModel vm)
+    {
+        if (vm.AppId is { } id) vm.HasTasks = JumpLists.HasTasks(id);
+        return vm;
+    }
+
+    /// <summary>Replaces the generic icon of a task by its own, once loaded (the menu is already showing).</summary>
+    private async Task ShowTaskIconAsync(MenuFlyoutItem item, string key)
+    {
+        try
+        {
+            if (await _icons.GetAsync(key) is { } source)
+                item.Icon = new ImageIcon { Source = source, Width = 16, Height = 16 };
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"A task icon could not be loaded: {ex.Message}");
+        }
+    }
+
+    private async void OnTasksClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ResultItemViewModel { AppId: { } appId } vm } button) return;
+        try
+        {
+            var tasks = await JumpTaskReader.ReadAsync(appId);
+            var menu = new MenuFlyout();
+            if (tasks.Count == 0)
+            {
+                menu.Items.Add(new MenuFlyoutItem { Text = "Nenhuma tarefa disponível", IsEnabled = false });
+            }
+            foreach (var task in tasks)
+            {
+                var item = new MenuFlyoutItem { Text = task.Title, Icon = new FontIcon { Glyph = "\uE8A7" } };
+                if (task.IconKey is { } iconKey) _ = ShowTaskIconAsync(item, iconKey);
+                item.Click += (_, _) =>
+                {
+                    HideMenu();   // first, so the program being started gets the foreground
+                    try { task.Run(); }
+                    catch (Exception ex)
+                    {
+                        AppLog.Warn($"Starting the task “{task.Title}” of {vm.Title} failed: {ex.Message}");
+                        _services.Host.ShowBalloon("Não foi possível executar", $"{task.Title}: {ex.Message}");
+                    }
+                };
+                menu.Items.Add(item);
+            }
+            menu.ShowAt(button, new FlyoutShowOptions { Placement = FlyoutPlacementMode.RightEdgeAlignedTop });
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Showing the tasks of {vm.Title} failed: {ex.Message}");
         }
     }
 
@@ -541,29 +587,6 @@ public sealed partial class StartMenuWindow : Window
 
     // ------------------------------------------------------------ menus
 
-    private MenuFlyout BuildSectionMenu(StartSection section, IReadOnlyList<StartSection> all)
-    {
-        var menu = new MenuFlyout();
-        var rename = new MenuFlyoutItem { Text = "Renomear…" };
-        rename.Click += async (_, _) =>
-        {
-            var name = await AskTextAsync("Renomear seção", section.Name);
-            if (name is not null) _services.StartLayout.RenameSection(section.Id, name);
-        };
-        var up = new MenuFlyoutItem { Text = "Mover para cima", IsEnabled = all.Count > 1 && all[0].Id != section.Id };
-        up.Click += (_, _) => _services.StartLayout.MoveSection(section.Id, -1);
-        var down = new MenuFlyoutItem { Text = "Mover para baixo", IsEnabled = all.Count > 1 && all[^1].Id != section.Id };
-        down.Click += (_, _) => _services.StartLayout.MoveSection(section.Id, +1);
-        var delete = new MenuFlyoutItem { Text = "Excluir seção", IsEnabled = all.Count > 1 };
-        delete.Click += (_, _) => _services.StartLayout.RemoveSection(section.Id);
-        menu.Items.Add(rename);
-        menu.Items.Add(up);
-        menu.Items.Add(down);
-        menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(delete);
-        return menu;
-    }
-
     private enum Origin { Pinned, Recent, List }
 
     private MenuFlyout BuildItemMenu(ResultItemViewModel vm, Origin origin)
@@ -614,20 +637,13 @@ public sealed partial class StartMenuWindow : Window
             Add("Fixar no Iniciar", () => _services.StartLayout.Pin(r), StartLayoutStore.CanPin(r));
         }
 
-        Add("Adicionar à barra rápida", () => _services.StartLayout.AddQuick(r), StartLayoutStore.CanPin(r));
         return menu;
-    }
-
-    private void OnTileContextRequested(UIElement sender, ContextRequestedEventArgs e)
-    {
-        if (sender is not GridView grid || (e.OriginalSource as FrameworkElement)?.DataContext is not ResultItemViewModel vm) return;
-        ShowMenu(BuildItemMenu(vm, grid == RecentsGrid ? Origin.Recent : Origin.Pinned), grid, e);
     }
 
     private void OnRowContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
         if ((e.OriginalSource as FrameworkElement)?.DataContext is not ResultItemViewModel vm) return;
-        ShowMenu(BuildItemMenu(vm, Origin.List), sender, e);
+        ShowMenu(BuildItemMenu(vm, Origin.Pinned), sender, e);
     }
 
     private static void ShowMenu(MenuFlyout menu, UIElement anchor, ContextRequestedEventArgs e)
@@ -689,7 +705,7 @@ public sealed partial class StartMenuWindow : Window
             _results.Clear();
             foreach (var r in found)
             {
-                var vm = new ResultItemViewModel(r);
+                var vm = WithTasks(new ResultItemViewModel(r));
                 _results.Add(vm);
                 if (r.Icon is { } icon) _ = LoadIconAsync(vm, icon);
             }
@@ -713,7 +729,8 @@ public sealed partial class StartMenuWindow : Window
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
 
     private ListView? ActiveList => ResultsList.Visibility == Visibility.Visible ? ResultsList
-        : AllAppsList.Visibility == Visibility.Visible ? AllAppsList : null;
+        : AllAppsList.Visibility == Visibility.Visible ? AllAppsList
+        : PinnedList.Visibility == Visibility.Visible ? PinnedList : null;
 
     private void OnSearchPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -758,32 +775,13 @@ public sealed partial class StartMenuWindow : Window
 
     private void MoveSelection(int delta)
     {
-        if (ActiveList is { } list)
-        {
-            if (list.Items.Count == 0) return;
-            int next = Math.Clamp(list.SelectedIndex + delta, 0, list.Items.Count - 1);
-            list.SelectedIndex = next;
-            list.ScrollIntoView(list.Items[next]);
-            return;
-        }
-
-        // Pinned view: Down moves into the first tile.
-        if (delta > 0 && SectionsPanel.Children.Count > 0 && FirstGrid() is { } grid)
-        {
-            if (grid.SelectedIndex < 0) grid.SelectedIndex = 0;
-            grid.Focus(FocusState.Keyboard);
-        }
+        if (ActiveList is not { } list || list.Items.Count == 0) return;
+        int next = Math.Clamp(list.SelectedIndex + delta, 0, list.Items.Count - 1);
+        list.SelectedIndex = next;
+        list.ScrollIntoView(list.Items[next]);
     }
-
-    private GridView? FirstGrid() => SectionsPanel.Children.OfType<StackPanel>()
-        .Select(p => p.Children.OfType<GridView>().FirstOrDefault()).FirstOrDefault(g => g is { Items.Count: > 0 });
 
     // ------------------------------------------------------------- actions
-
-    private void OnTileClick(object sender, ItemClickEventArgs e)
-    {
-        if (e.ClickedItem is ResultItemViewModel vm) Execute(vm, secondary: false, query: "");
-    }
 
     private void OnRowClick(object sender, ItemClickEventArgs e)
     {
@@ -801,18 +799,5 @@ public sealed partial class StartMenuWindow : Window
         var store = _services.StartLayout;
         if (store.IsPinned(vm.Result.Key)) store.Unpin(vm.Result.Key);
         else store.Pin(vm.Result);
-    }
-
-    private async void OnNewSectionClick(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var name = await AskTextAsync("Nova seção", "");
-            if (name is not null) _services.StartLayout.AddSection(name);
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn($"Creating a Start section failed: {ex.Message}");
-        }
     }
 }

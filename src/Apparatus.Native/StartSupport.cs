@@ -42,6 +42,46 @@ public sealed class RegistryTweakStore : ITweakRegistry
     }
 }
 
+// ============================================================ context menu
+
+/// <summary>
+/// The right-click menu of Windows 11 can be switched back to the classic one (Windows 10 style) by creating an empty
+/// InprocServer32 key for one CLSID under the current user: <c>reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-...}\InprocServer32" /ve /f</c>.
+/// Removing the key restores the Windows 11 menu. Explorer has to be restarted for either to take effect.
+/// </summary>
+public sealed class ClassicContextMenu
+{
+    private const string ClsidKey = @"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
+    private const string ServerKey = ClsidKey + @"\InprocServer32";
+
+    private readonly string? _sandboxRoot;
+
+    /// <param name="sandboxRoot">A key under HKCU that every path is moved below, so tests never touch the real menu.</param>
+    public ClassicContextMenu(string? sandboxRoot = null) => _sandboxRoot = sandboxRoot;
+
+    private string Path(string keyPath) => _sandboxRoot is null ? keyPath : _sandboxRoot + "\\" + keyPath;
+
+    /// <summary>True while the classic menu is switched on.</summary>
+    public bool IsEnabled
+    {
+        get
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(Path(ServerKey));
+            return key is not null;
+        }
+    }
+
+    /// <summary>Throws <see cref="UnauthorizedAccessException"/> or <see cref="IOException"/> when Windows refuses.</summary>
+    public void Enable()
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(Path(ServerKey), writable: true)
+            ?? throw new IOException("Não foi possível criar a chave do registro.");
+        key.SetValue("", "", RegistryValueKind.String);   // the (Default) value, empty
+    }
+
+    public void Disable() => Registry.CurrentUser.DeleteSubKeyTree(Path(ClsidKey), throwOnMissingSubKey: false);
+}
+
 // ================================================================== taskbar
 
 public enum TaskbarEdge { Left = 0, Top = 1, Right = 2, Bottom = 3 }

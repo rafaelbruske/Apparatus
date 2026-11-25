@@ -30,6 +30,19 @@ public sealed class ResultItemViewModel : INotifyPropertyChanged
     /// <summary>Initial shown in the "all apps" list on the first app of each letter; empty elsewhere.</summary>
     public string Letter { get; set; } = "";
 
+    /// <summary>A small heading shown above this row in the Start menu (a section name, "Usados recentemente"); empty elsewhere.</summary>
+    public string Header { get; set; } = "";
+
+    public Visibility HeaderVisibility => Header.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>The app has jump list tasks ("New window"...): a small button opens them.</summary>
+    public bool HasTasks { get; set; }
+
+    public Visibility TasksVisibility => HasTasks ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>The id of an app result (its AppUserModelID or path), which names its jump list; null for anything else.</summary>
+    public string? AppId => Result.Kind == ResultKind.App && Result.Key.StartsWith("app:", StringComparison.Ordinal) ? Result.Key[4..] : null;
+
     public Visibility FavoriteVisibility => Result.Favorite ? Visibility.Visible : Visibility.Collapsed;
 
     public string KindLabel { get; }

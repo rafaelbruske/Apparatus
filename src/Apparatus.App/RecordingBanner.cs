@@ -44,7 +44,6 @@ public sealed class RecordingBanner : Window
         grid.Children.Add(button);
         Content = grid;
 
-        ExtendsContentIntoTitleBar = true;
         var presenter = (OverlappedPresenter)AppWindow.Presenter;
         presenter.SetBorderAndTitleBar(false, false);
         presenter.IsResizable = false;

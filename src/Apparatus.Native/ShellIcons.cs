@@ -72,34 +72,7 @@ public static class ShellIcons
             }
             if (hr != 0 || hbitmap == IntPtr.Zero) return null;
 
-            if (GetObjectW(hbitmap, Marshal.SizeOf<BITMAP>(), out var bmp) == 0 || bmp.bmWidth <= 0 || bmp.bmHeight <= 0)
-                return null;
-
-            var header = new BITMAPINFOHEADER
-            {
-                biSize = Marshal.SizeOf<BITMAPINFOHEADER>(),
-                biWidth = bmp.bmWidth,
-                biHeight = -bmp.bmHeight,   // negative: top-down rows
-                biPlanes = 1,
-                biBitCount = 32,
-            };
-            var pixels = new byte[bmp.bmWidth * bmp.bmHeight * 4];
-            IntPtr hdc = GetDC(IntPtr.Zero);
-            try
-            {
-                if (GetDIBits(hdc, hbitmap, 0, (uint)bmp.bmHeight, pixels, ref header, 0) == 0) return null;
-            }
-            finally
-            {
-                ReleaseDC(IntPtr.Zero, hdc);
-            }
-
-            // Some sources return no alpha at all; treat that as opaque so the icon is not invisible.
-            bool anyAlpha = false;
-            for (int i = 3; i < pixels.Length; i += 4) if (pixels[i] != 0) { anyAlpha = true; break; }
-            if (!anyAlpha) for (int i = 3; i < pixels.Length; i += 4) pixels[i] = 0xFF;
-
-            return new IconBitmap(bmp.bmWidth, bmp.bmHeight, pixels);
+            return ToPixels(hbitmap);
         }
         catch (Exception ex) when (ex is COMException or ArgumentException or FileNotFoundException)
         {
@@ -109,6 +82,82 @@ public static class ShellIcons
         {
             if (hbitmap != IntPtr.Zero) DeleteObject(hbitmap);
             if (factory is not null) Marshal.ReleaseComObject(factory);
+        }
+    }
+
+    /// <summary>Premultiplied BGRA pixels of a GDI bitmap (a handle the caller still owns), or null.</summary>
+    private static IconBitmap? ToPixels(IntPtr hbitmap)
+    {
+        if (GetObjectW(hbitmap, Marshal.SizeOf<BITMAP>(), out var bmp) == 0 || bmp.bmWidth <= 0 || bmp.bmHeight <= 0)
+            return null;
+
+        var header = new BITMAPINFOHEADER
+        {
+            biSize = Marshal.SizeOf<BITMAPINFOHEADER>(),
+            biWidth = bmp.bmWidth,
+            biHeight = -bmp.bmHeight,   // negative: top-down rows
+            biPlanes = 1,
+            biBitCount = 32,
+        };
+        var pixels = new byte[bmp.bmWidth * bmp.bmHeight * 4];
+        IntPtr hdc = GetDC(IntPtr.Zero);
+        try
+        {
+            if (GetDIBits(hdc, hbitmap, 0, (uint)bmp.bmHeight, pixels, ref header, 0) == 0) return null;
+        }
+        finally
+        {
+            ReleaseDC(IntPtr.Zero, hdc);
+        }
+
+        // Some sources return no alpha at all; treat that as opaque so the icon is not invisible.
+        bool anyAlpha = false;
+        for (int i = 3; i < pixels.Length; i += 4) if (pixels[i] != 0) { anyAlpha = true; break; }
+        if (!anyAlpha) for (int i = 3; i < pixels.Length; i += 4) pixels[i] = 0xFF;
+
+        return new IconBitmap(bmp.bmWidth, bmp.bmHeight, pixels);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ICONINFO
+    {
+        public bool fIcon;
+        public int xHotspot, yHotspot;
+        public IntPtr hbmMask, hbmColor;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern uint PrivateExtractIcons(string file, int index, int cx, int cy, IntPtr[] icons, uint[]? ids, uint count, uint flags);
+
+    [DllImport("user32.dll")] private static extern bool GetIconInfo(IntPtr icon, out ICONINFO info);
+    [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr icon);
+
+    /// <summary>
+    /// The icon number <paramref name="index"/> of a file (an .exe, a .dll or an .ico), the way the shell reads "file,index" icon locations:
+    /// the icons of the tasks of a jump list ("New private window") come from there.
+    /// </summary>
+    public static IconBitmap? TryGetFromResource(string file, int index, int size)
+    {
+        IntPtr icon = IntPtr.Zero, color = IntPtr.Zero, mask = IntPtr.Zero;
+        try
+        {
+            var icons = new IntPtr[1];
+            if (PrivateExtractIcons(file, index, size, size, icons, null, 1, 0) == 0 || icons[0] == IntPtr.Zero) return null;
+            icon = icons[0];
+            if (!GetIconInfo(icon, out var info)) return null;
+            color = info.hbmColor;
+            mask = info.hbmMask;
+            return color == IntPtr.Zero ? null : ToPixels(color);
+        }
+        catch (Exception ex) when (ex is COMException or ArgumentException or DllNotFoundException)
+        {
+            return null;
+        }
+        finally
+        {
+            if (color != IntPtr.Zero) DeleteObject(color);
+            if (mask != IntPtr.Zero) DeleteObject(mask);
+            if (icon != IntPtr.Zero) DestroyIcon(icon);
         }
     }
 }

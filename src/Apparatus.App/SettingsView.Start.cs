@@ -22,6 +22,7 @@ public sealed partial class SettingsView
         StartRecentSwitch.IsOn = s.StartShowRecent;
         StartClickSwitch.IsOn = s.StartButtonClick;
         BuildTweakRows();
+        LoadClassicMenu();
         HookStartStatus();
         RefreshStartStatus();
     }
@@ -164,6 +165,46 @@ public sealed partial class SettingsView
         }
     }
 
+    // ------------------------------------------------------ classic context menu
+
+    private readonly ClassicContextMenu _classicMenu = new();
+    private bool _classicMenuLoading;
+
+    private void LoadClassicMenu()
+    {
+        _classicMenuLoading = true;
+        try { ClassicMenuSwitch.IsOn = _classicMenu.IsEnabled; }
+        catch (Exception ex) { AppLog.Warn($"Reading the context menu setting failed: {ex.Message}"); }
+        _classicMenuLoading = false;
+    }
+
+    private async void OnClassicMenuToggled(object sender, RoutedEventArgs e)
+    {
+        if (_classicMenuLoading) return;
+        bool wanted = ClassicMenuSwitch.IsOn;
+        try
+        {
+            if (wanted) _classicMenu.Enable();
+            else _classicMenu.Disable();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or System.Security.SecurityException)
+        {
+            AppLog.Warn($"Changing the context menu failed: {ex.Message}");
+            ClassicMenuInfo.Severity = InfoBarSeverity.Error;
+            ClassicMenuInfo.Title = "O Windows recusou a alteração";
+            ClassicMenuInfo.Message = ex.Message;
+            ClassicMenuInfo.IsOpen = true;
+            LoadClassicMenu();   // show what is really set
+            return;
+        }
+
+        ClassicMenuInfo.Severity = InfoBarSeverity.Success;
+        ClassicMenuInfo.Title = wanted ? "Menu clássico ligado" : "Menu do Windows 11 restaurado";
+        ClassicMenuInfo.Message = "A mudança só aparece depois que o Explorer for reiniciado.";
+        ClassicMenuInfo.IsOpen = true;
+        await AskRestartExplorerAsync("Para o menu de contexto mudar, o Explorer precisa ser reiniciado. Reiniciar agora?");
+    }
+
     // ------------------------------------------------------------ tweaks
 
     private void BuildTweakRows()
@@ -249,17 +290,21 @@ public sealed partial class SettingsView
         TweaksInfo.IsOpen = true;
     }
 
-    private async void OnRestartExplorer(object sender, RoutedEventArgs e)
+    private async void OnRestartExplorer(object sender, RoutedEventArgs e) => await AskRestartExplorerAsync(null);
+
+    /// <summary>Asks, then restarts Explorer. <paramref name="reason"/> replaces the usual explanation at the top of the question.</summary>
+    private async Task AskRestartExplorerAsync(string? reason)
     {
         try
         {
             var dialog = new ContentDialog
             {
                 Title = "Reiniciar o Explorer?",
-                Content = "A barra de tarefas e a área de trabalho somem por alguns segundos, e as janelas abertas do Explorador de Arquivos são fechadas. Nenhum outro programa é afetado.",
+                Content = (reason is null ? "" : reason + "\n\n") +
+                          "A barra de tarefas e a área de trabalho somem por alguns segundos, e as janelas abertas do Explorador de Arquivos são fechadas. Nenhum outro programa é afetado.",
                 PrimaryButtonText = "Reiniciar",
-                CloseButtonText = "Cancelar",
-                DefaultButton = ContentDialogButton.Close,
+                CloseButtonText = reason is null ? "Cancelar" : "Mais tarde",
+                DefaultButton = ContentDialogButton.Primary,
                 XamlRoot = Content.XamlRoot,
             };
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;

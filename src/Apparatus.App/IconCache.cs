@@ -19,7 +19,7 @@ public sealed class IconCache
 
     public IconCache(DispatcherQueue ui) => _ui = ui;
 
-    /// <param name="key">"shell:&lt;parsing name&gt;" or "path:&lt;file path&gt;".</param>
+    /// <param name="key">"shell:&lt;parsing name&gt;", "path:&lt;file path&gt;" or "res:&lt;file&gt;|&lt;icon number&gt;" (an icon inside a file).</param>
     public async Task<ImageSource?> GetAsync(string key)
     {
         if (_cache.Count > MaxEntries) _cache.Clear();
@@ -40,7 +40,17 @@ public sealed class IconCache
         await _gate.WaitAsync().ConfigureAwait(false);
         try
         {
-            pixels = await Task.Run(() => ShellIcons.TryGet(parsingName, IconPixels)).ConfigureAwait(false);
+            pixels = await Task.Run(() =>
+            {
+                if (key.StartsWith("res:", StringComparison.Ordinal))
+                {
+                    int bar = parsingName.LastIndexOf('|');
+                    return bar > 0 && int.TryParse(parsingName[(bar + 1)..], out int index)
+                        ? ShellIcons.TryGetFromResource(parsingName[..bar], index, IconPixels)
+                        : null;
+                }
+                return ShellIcons.TryGet(parsingName, IconPixels);
+            }).ConfigureAwait(false);
         }
         finally
         {

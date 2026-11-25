@@ -484,6 +484,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="24">
                         <NumberBox
                             x:Name="StartColumnsBox"
+                            Visibility="Collapsed"
                             Header="Itens por linha"
                             Minimum="4"
                             Maximum="8"
@@ -513,6 +514,30 @@
             </StackPanel>
 
             <StackPanel x:Name="Page_windows" Spacing="8">
+            <!-- classic context menu -->
+            <TextBlock Text="Menu de contexto do Windows" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <ToggleSwitch
+                        x:Name="ClassicMenuSwitch"
+                        Header="Menu do botão direito"
+                        OnContent="Clássico (como no Windows 10)"
+                        OffContent="Padrão do Windows 11"
+                        Toggled="OnClassicMenuToggled" />
+                    <TextBlock
+                        Text="O menu clássico mostra todas as opções de uma vez, sem o “Mostrar mais opções”. A mudança é feita no registro do seu usuário (não exige administrador) e só passa a valer depois de reiniciar o Explorer."
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap" />
+                    <InfoBar x:Name="ClassicMenuInfo" IsOpen="False" IsClosable="True" />
+                </StackPanel>
+            </Border>
+
             <!-- windows taskbar and start tweaks -->
             <TextBlock Text="Barra de tarefas e Iniciar do Windows" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
             <Border

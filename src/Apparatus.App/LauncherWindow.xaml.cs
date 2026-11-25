@@ -44,7 +44,6 @@ public sealed partial class LauncherWindow : Window
         _hwnd = WindowNative.GetWindowHandle(this);
         _icons = new IconCache(DispatcherQueue);
 
-        ExtendsContentIntoTitleBar = true;
         var presenter = (OverlappedPresenter)AppWindow.Presenter;
         presenter.SetBorderAndTitleBar(false, false);
         presenter.IsResizable = false;

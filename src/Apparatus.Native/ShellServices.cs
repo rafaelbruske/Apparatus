@@ -6,6 +6,7 @@ using Microsoft.Win32;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Dwm;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Apparatus.Native;
 
@@ -218,10 +219,35 @@ public static class WindowHelpers
         return dpi == 0 ? 1.0 : dpi / 96.0;
     }
 
+    /// <summary>
+    /// For a frameless window: no frame at all and slightly rounded corners. A WinUI window keeps the WS_DLGFRAME style even without
+    /// a title bar, and Windows paints it as a 3 px light frame around the content; removing the style (and asking for no border
+    /// colour) leaves only the content, with the corners rounded by Windows 11.
+    /// </summary>
     public static unsafe void UseRoundedCorners(nint hwnd)
     {
+        var window = new HWND(hwnd);
+
+        const uint frameStyles = 0x00C00000 | 0x00800000 | 0x00400000 | 0x00040000;   // WS_CAPTION | WS_BORDER | WS_DLGFRAME | WS_THICKFRAME
+        nint style = PInvoke.GetWindowLongPtr(window, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
+        nint stripped = (nint)((nuint)style & ~(nuint)frameStyles);
+        if (stripped != style)
+        {
+            PInvoke.SetWindowLongPtr(window, WINDOW_LONG_PTR_INDEX.GWL_STYLE, stripped);
+            PInvoke.SetWindowPos(window, HWND.Null, 0, 0, 0, 0,
+                SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOZORDER |
+                SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE | SET_WINDOW_POS_FLAGS.SWP_FRAMECHANGED);
+        }
+
+        // The title-bar-less WinUI window still reserves a 1 px strip at the top that Windows paints black: take the extension back.
+        var none = new Windows.Win32.UI.Controls.MARGINS();
+        PInvoke.DwmExtendFrameIntoClientArea(window, in none);
+
         var pref = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
-        PInvoke.DwmSetWindowAttribute(new HWND(hwnd), DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, &pref, sizeof(DWM_WINDOW_CORNER_PREFERENCE));
+        PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, &pref, sizeof(DWM_WINDOW_CORNER_PREFERENCE));
+
+        uint noBorder = 0xFFFFFFFE;   // DWMWA_COLOR_NONE
+        PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, &noBorder, sizeof(uint));
     }
 
     /// <summary>
