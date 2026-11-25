@@ -1,7 +1,8 @@
 <UserControl
     x:Class="Apparatus.App.SettingsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Apparatus.App">
 
     <ScrollViewer x:Name="Root" PreviewKeyDown="OnRootPreviewKeyDown">
         <StackPanel Padding="32,24,32,32" Spacing="8" MaxWidth="760" HorizontalAlignment="Stretch">
@@ -402,6 +403,183 @@
 
             </StackPanel>
 
+            <StackPanel x:Name="Page_capture" Spacing="8">
+            <TextBlock Text="Ativação e atalho" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <ToggleSwitch
+                        x:Name="CaptureSwitch"
+                        Header="Capturar a tela com o Apparatus"
+                        OnContent="Ativado"
+                        OffContent="Desativado"
+                        Toggled="OnCaptureToggled" />
+                    <InfoBar
+                        IsOpen="True"
+                        IsClosable="False"
+                        Severity="Informational"
+                        Title="Substitui a Ferramenta de Captura do Windows na tecla Print Screen"
+                        Message="Ao ativar, o Apparatus desliga a opção do Windows “Usar o botão Print Screen para abrir a captura de tela” (Configurações → Acessibilidade → Teclado), para que só ele responda à tecla. Ao desativar, a opção volta ao valor que tinha antes. O atalho Win+Shift+S continua sendo da Ferramenta de Captura do Windows." />
+                    <TextBlock x:Name="CaptureWindowsStatus" FontSize="12" Opacity="0.75" TextWrapping="Wrap" />
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Atalho da captura" />
+                            <TextBlock
+                                x:Name="CaptureHotkeyHelp"
+                                Text="Clique em Alterar e pressione a nova combinação."
+                                FontSize="12"
+                                Opacity="0.65"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border
+                            Grid.Column="1"
+                            MinWidth="150"
+                            Padding="14,6"
+                            CornerRadius="6"
+                            VerticalAlignment="Center"
+                            Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                            <TextBlock x:Name="CaptureHotkeyText" HorizontalAlignment="Center" FontFamily="Consolas" FontSize="15" />
+                        </Border>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="CaptureChangeButton" Content="Alterar" Click="OnChangeCaptureHotkey" />
+                            <Button x:Name="CaptureResetButton" Content="Padrão" Click="OnResetCaptureHotkey" />
+                        </StackPanel>
+                    </Grid>
+                    <InfoBar x:Name="CaptureInfo" IsOpen="False" IsClosable="False" Severity="Error" />
+                    <Button x:Name="CaptureNowButton" Content="Capturar agora" HorizontalAlignment="Left" Click="OnCaptureNow" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Salvamento" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <ToggleSwitch
+                        x:Name="CaptureNotifySwitch"
+                        Header="Notificação depois de salvar uma captura"
+                        OnContent="Mostrar"
+                        OffContent="Não mostrar"
+                        Toggled="OnCaptureNotifyToggled" />
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Pasta da captura automática" />
+                            <TextBlock x:Name="CaptureFolderText" FontSize="12" Opacity="0.65" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="CaptureFolderButton" Content="Escolher…" Click="OnChooseCaptureFolder" />
+                        <Button Grid.Column="2" x:Name="CaptureFolderResetButton" Content="Padrão" Click="OnResetCaptureFolder" />
+                    </Grid>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Atalho da captura automática (tela inteira)" />
+                            <TextBlock
+                                x:Name="QuickHotkeyHelp"
+                                Text="Clique em Alterar e pressione a nova combinação."
+                                FontSize="12"
+                                Opacity="0.65"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border
+                            Grid.Column="1"
+                            MinWidth="150"
+                            Padding="14,6"
+                            CornerRadius="6"
+                            VerticalAlignment="Center"
+                            Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                            <TextBlock x:Name="QuickHotkeyText" HorizontalAlignment="Center" FontFamily="Consolas" FontSize="15" />
+                        </Border>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="QuickChangeButton" Content="Alterar" Click="OnChangeCaptureHotkey" />
+                            <Button x:Name="QuickResetButton" Content="Padrão" Click="OnResetCaptureHotkey" />
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="16">
+                        <ComboBox
+                            x:Name="CaptureFormatBox"
+                            Header="Formato da imagem"
+                            MinWidth="160"
+                            SelectionChanged="OnCaptureFormatChanged">
+                            <ComboBoxItem Content="PNG" />
+                            <ComboBoxItem Content="JPEG" />
+                        </ComboBox>
+                        <NumberBox
+                            x:Name="CaptureQualityBox"
+                            Header="Qualidade (1 a 100)"
+                            Minimum="1"
+                            Maximum="100"
+                            SmallChange="1"
+                            LargeChange="10"
+                            SpinButtonPlacementMode="Inline"
+                            Width="170"
+                            ValueChanged="OnCaptureQualityChanged" />
+                    </StackPanel>
+                    <TextBlock
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap"
+                        Text="O PNG não perde qualidade (por isso a qualidade não o afeta) e gera arquivos maiores. O JPEG é bem menor, mas borra um pouco textos pequenos; a qualidade vale para ele, inclusive quando você escolhe .jpg na janela de salvar. Vale para a captura automática e para o tipo sugerido ao salvar. Copiar e imprimir não mudam." />
+                    <ComboBox
+                        x:Name="CaptureScopeBox"
+                        Header="O que a captura automática salva"
+                        MinWidth="300"
+                        SelectionChanged="OnCaptureScopeChanged">
+                        <ComboBoxItem Content="Apenas o monitor focado" />
+                        <ComboBoxItem Content="Todos os monitores (uma imagem só)" />
+                    </ComboBox>
+                    <TextBlock
+                        FontSize="12"
+                        Opacity="0.65"
+                        TextWrapping="Wrap"
+                        Text="Com esse atalho o Apparatus salva na hora uma imagem direto na pasta acima, sem abrir a tela de captura e sem pedir confirmação. Os nomes seguem o formato “Screenshot 2026-11-25 14-03-07”. Com o atalho normal, você escolhe a área e Salvar abre a janela para escolher o local. A notificação acima é a única confirmação, se estiver ligada." />
+                    <InfoBar x:Name="CaptureSaveInfo" IsOpen="False" IsClosable="False" Severity="Error" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Como usar" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="6">
+                    <TextBlock TextWrapping="Wrap" Text="Pressione o atalho e arraste para escolher a área da tela. Arraste pelas bordas e cantos para ajustar, ou por dentro para mover." />
+                    <TextBlock TextWrapping="Wrap" Text="Na barra ao lado da área: lápis, linha, seta, retângulo, marca-texto, texto, cor, desfazer, imprimir, copiar, salvar e fechar." />
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.65" Text="Teclas: Ctrl+C copia, Ctrl+S salva, Ctrl+P imprime, Ctrl+Z desfaz, Esc fecha. Com vários monitores, cada tela é congelada e a seleção fica em uma delas." />
+                </StackPanel>
+            </Border>
+
+            </StackPanel>
+
             <StackPanel x:Name="Page_extensions" Spacing="8">
             <!-- extensions -->
             <TextBlock Text="Extensões" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
@@ -646,6 +824,77 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+            </StackPanel>
+
+            <StackPanel x:Name="Page_aboutapp" Spacing="8">
+            <!-- the program -->
+            <TextBlock Text="Apparatus" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <Border
+                Padding="16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <TextBlock x:Name="AboutVersionText" />
+                    <TextBlock
+                        Text="Licença do Apparatus: BSD Zero Cláusula (0BSD). Qualquer pessoa pode usar, copiar, modificar e distribuir o programa para qualquer finalidade, sem precisar dar créditos."
+                        FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+                    <HyperlinkButton
+                        Content="Repositório no GitHub"
+                        Tag="https://github.com/rafaelbruske/Apparatus"
+                        Click="OnOpenLink"
+                        Padding="0" />
+                </StackPanel>
+            </Border>
+
+            <!-- open source licenses -->
+            <TextBlock Text="Licenças de código aberto" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
+            <TextBlock
+                Text="Bibliotecas de terceiros que o Apparatus usa. Cada uma segue a própria licença; clique para ler o texto completo."
+                FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+            <Button
+                x:Name="OpenLicensesFolderButton"
+                Content="Abrir a pasta com os avisos completos"
+                Click="OnOpenLicensesFolder"
+                Visibility="Collapsed"
+                Margin="0,0,0,4" />
+            <ItemsControl x:Name="LicenseList" IsTabStop="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="6" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:LicenseRow">
+                        <Button
+                            Click="OnLicenseClick"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Padding="16,10"
+                            CornerRadius="8"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            AutomationProperties.Name="{x:Bind Title}">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{x:Bind Title}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind Subtitle}" FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <TextBlock Text="Ver licença" FontSize="12" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center" />
+                                    <FontIcon Glyph="&#xE8A7;" FontSize="12" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
             </StackPanel>
 
         </StackPanel>

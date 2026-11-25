@@ -1,67 +1,76 @@
 # Apparatus
 
-Um utilitário para Windows 11 que reúne, em um só programa residente na bandeja:
+**English** · [Português](README.pt-BR.md)
 
-- **Launcher** (estilo Raycast): `Alt+Space` (configurável) abre uma caixa que pesquisa aplicativos, arquivos, configurações do Windows, histórico da área de transferência, snippets, ações e extensões, e faz contas e conversões.
-- **Snippets** (estilo TextExpander): `;email` vira o seu e-mail em qualquer programa, com variáveis (`{date}`, `{clipboard}`, `{cursor}`) e campos preenchíveis.
-- **Ações e macros** (estilo AutoHotkey): atalhos globais ou por programa que abrem coisas, enviam teclas, gerenciam janelas, controlam volume e brilho. Macros podem ser **gravadas** pelo teclado.
-- **Menu Iniciar próprio** (estilo StartAllBack): fixados em seções, todos os aplicativos, pesquisa, atalhos e energia, aberto pela tecla Windows ou pelo botão Iniciar. A barra de tarefas continua sendo a do Windows.
-- **Ajustes da barra de tarefas** do Windows 11 pelo registro do seu usuário, cada um com desfazer exato.
+A Windows 11 utility that brings together, in a single program living in the tray:
 
-Nada é injetado no Explorer nem em outros programas: o Apparatus usa só APIs públicas do Windows, por isso uma atualização do Windows não o quebra em silêncio. Se a substituição do menu Iniciar parar de funcionar depois de uma atualização, o **menu do Windows volta sozinho** (veja abaixo).
+- **Launcher** (Raycast style): `Alt+Space` (configurable) opens a box that searches apps, files, Windows settings, clipboard history, snippets, actions and extensions, and does math and unit conversions.
+- **Snippets** (TextExpander style): `;email` turns into your e-mail address in any program, with variables (`{date}`, `{clipboard}`, `{cursor}`) and fill-in fields.
+- **Actions and macros** (AutoHotkey style): global or per-program hotkeys that open things, send keys, manage windows, and control volume and brightness. Macros can be **recorded** from the keyboard.
+- **Its own Start menu** (StartAllBack style): pinned items in sections, all apps, search, shortcuts and power, opened with the Windows key or the Start button. The taskbar stays the Windows one.
+- **Screen capture** (Lightshot style): `Print Screen` freezes the screen, you drag the area and annotate it (pen, line, arrow, rectangle, highlighter, text) with one toolbar, then copy, save or print. Optional; turning it on switches off the Windows option that opens the Snipping Tool on `Print Screen`, and turning it off puts it back. See [docs/CAPTURA.md](docs/CAPTURA.md).
+- **Windows 11 taskbar tweaks** through your own user's registry, each one with an exact undo.
 
-## Instalar
+Nothing is injected into Explorer or other programs: Apparatus only uses public Windows APIs, so a Windows update does not break it silently. If the Start menu replacement stops working after an update, the **Windows menu comes back by itself** (see below).
+
+> The documentation in `docs/` is written in Portuguese. The program's interface is also in Portuguese (Brazil).
+
+## Install
 
 ```powershell
 dotnet tool install -g vpk --version 1.2.161
 .\build\release.ps1 -Version 0.7.0
 ```
 
-**Instale com um duplo clique no `Setup.exe`, no Explorador de Arquivos.** Não o execute a partir de um terminal ou de ferramentas de dentro do aplicativo Claude: o que roda ali fica em uma cópia privada que o Windows não enxerga (veja `docs/PENDENCIAS.md`). O instalador sai em `artifacts\releases\ApparatusApp-win-Setup.exe` (cerca de 80 MB). Ele instala em `%LOCALAPPDATA%\ApparatusApp` e não precisa de administrador. Suas configurações e dados ficam em `%APPDATA%\Apparatus` e `%LOCALAPPDATA%\Apparatus`, **fora** da pasta de instalação: desinstalar ou atualizar não os apaga.
+**Install by double-clicking `Setup.exe` in File Explorer.** Do not run it from a terminal or from tools inside the Claude app: whatever runs there ends up in a private copy that Windows cannot see (see `docs/PENDENCIAS.md`). The installer is produced at `artifacts\releases\ApparatusApp-win-Setup.exe` (about 80 MB). It installs to `%LOCALAPPDATA%\ApparatusApp` and does not need administrator rights. Your settings and data live in `%APPDATA%\Apparatus` and `%LOCALAPPDATA%\Apparatus`, **outside** the install folder: uninstalling or updating does not delete them.
 
-Sem assinatura de código, o SmartScreen avisa na primeira execução ("Mais informações → Executar assim mesmo"). Para assinar, passe `-SignParams` ao script.
+Without code signing, SmartScreen warns on the first run ("More info → Run anyway"). To sign, pass `-SignParams` to the script.
 
-Para atualizar, coloque a pasta `artifacts\releases` (ou um endereço web com os mesmos arquivos) em Configurações → Atualizações. O Apparatus avisa quando há versão nova e você decide quando instalar.
+To update, point Settings → Updates at the `artifacts\releases` folder (or a web address with the same files). Apparatus tells you when a new version is available and you decide when to install it.
 
-Para rodar a partir do código: `dotnet run --project src/Apparatus.App`.
+To run from source: `dotnet run --project src/Apparatus.App`.
 
-## Usar o menu Iniciar do Apparatus
+## Using the Apparatus Start menu
 
-1. Clique com o botão direito no ícone da bandeja e marque **"Tecla Windows abre o menu do Apparatus"** (ou em Configurações → Menu Iniciar do Apparatus).
-2. Toque na tecla Windows, ou clique no botão Iniciar. `Win+E`, `Win+D` e as demais combinações continuam como sempre. `Ctrl+Esc` abre o menu original quando você quiser.
-3. Para fixar algo: pesquise e pressione `Ctrl+P` (também no launcher), ou use o botão direito. Arraste para reordenar.
+1. Right-click the tray icon and check **"Windows key opens the Apparatus menu"** (or go to Settings → Apparatus Start menu).
+2. Tap the Windows key, or click the Start button. `Win+E`, `Win+D` and the other combinations keep working as always. `Ctrl+Esc` opens the original menu whenever you want.
+3. To pin something: search for it and press `Ctrl+P` (also in the launcher), or use the right button.
 
-### O menu do Windows volta sozinho se algo der errado
+### The Windows menu comes back by itself if something goes wrong
 
-O Apparatus vigia a si mesmo e devolve o menu ao Windows, sem você fazer nada, quando:
+Apparatus watches itself and hands the menu back to Windows, with nothing for you to do, when:
 
-- **o programa trava ou fecha**: sem ele, o gancho de teclado some e a tecla Windows volta ao Windows na hora; se só a interface travar, os atalhos deixam de ser interceptados em 2 segundos;
-- **o menu do Apparatus não aparece** em até 1,5 s depois do toque: o Apparatus abre o do Windows (`Ctrl+Esc`);
-- **o Windows foi atualizado e o menu dele abre junto com o do Apparatus** (visto de verdade: o Apparatus reconhece o menu do Windows 11 26300, que é uma janela "Pesquisar" do `SearchHost`) (a técnica que esconde a tecla do Windows deixou de funcionar): na primeira ocorrência depois de uma atualização, ou na segunda seguida em um Windows já verificado, a substituição é **desligada** e o motivo aparece em Configurações, com o botão "Tentar de novo";
-- **um jogo em tela cheia exclusiva ou uma apresentação** está no primeiro plano: o Windows decide.
+- **the program hangs or closes**: without it, the keyboard hook is gone and the Windows key goes back to Windows immediately; if only the interface hangs, hotkeys stop being intercepted within 2 seconds;
+- **the Apparatus menu does not appear** within 1.5 s after the tap: Apparatus opens the Windows one (`Ctrl+Esc`);
+- **Windows was updated and its own menu opens together with the Apparatus one** (seen for real: Apparatus recognizes the Windows 11 26300 menu, which is a "Search" window of `SearchHost`) (the technique that hides the Windows key stopped working): on the first occurrence after an update, or the second in a row on an already verified Windows, the replacement is **turned off** and the reason appears in Settings, with a "Try again" button;
+- **an exclusive full-screen game or a presentation** is in the foreground: Windows decides.
 
-### Janelas em modo administrador
+### Windows running as administrator
 
-O Windows impede que um programa comum veja as teclas digitadas em janelas elevadas. Enquanto uma delas está em primeiro plano, a expansão de snippets, a gravação de macros e a tecla Windows do Apparatus não a alcançam (a tecla Windows cai para o menu do Windows, como acima). Veja `docs/FASE7.md` para as opções.
+Windows prevents an ordinary program from seeing the keys typed in elevated windows. While one of them is in the foreground, snippet expansion, macro recording and the Apparatus Windows key do not reach it (the Windows key falls back to the Windows menu, as above). See `docs/FASE7.md` for the options.
 
-## Segurança e privacidade
+## Security and privacy
 
-- O histórico da área de transferência é opcional, só de texto, e fica **criptografado** (AES-GCM, chave protegida pelo DPAPI do Windows); ele nunca é gravado em claro.
-- Extensões são programas que rodam com as suas permissões e nunca rodam sem você ativá-las.
-- Ações importadas podem executar programas: importe só o que for de confiança.
-- A gravação de macros ignora campos de senha do Windows, mas **não** detecta os de navegadores.
-- O **assistente de IA** é opcional e vem desligado. Ligado, o que você digita depois do `Tab` no launcher é enviado ao provedor que você escolheu (ou ao Ollama local, que não sai do PC); os nomes das suas ações só vão se você permitir. A chave de API fica criptografada pelo DPAPI em `assistant.keys`, fora das configurações, do backup e da pasta de sincronização. O assistente só *sugere*: nada roda sem você clicar no cartão. Veja `docs/ASSISTENTE-IA.md`.
-- O backup `.apparatus` e a pasta de sincronização não incluem o histórico da área de transferência e não são criptografados.
+- Clipboard history is optional, text only, and **encrypted** (AES-GCM, key protected by Windows DPAPI); it is never written in clear text.
+- Extensions are programs that run with your permissions and never run unless you enable them.
+- Imported actions can run programs: import only what you trust.
+- Macro recording ignores Windows password fields, but does **not** detect the ones in browsers.
+- The **AI assistant** is optional and ships turned off. When on, what you type after `Tab` in the launcher is sent to the provider you chose (or to local Ollama, which never leaves the PC); the names of your actions are only sent if you allow it. The API key is encrypted with DPAPI in `assistant.keys`, outside the settings, the backup and the sync folder. The assistant only *suggests*: nothing runs until you click the card. See `docs/ASSISTENTE-IA.md`.
+- The `.apparatus` backup and the sync folder do not include clipboard history and are not encrypted.
 
-## Mais
+## More
 
-`docs/PLANO.md` descreve o plano e as decisões; `docs/FASE0-RESULTADOS.md` a `docs/FASE7.md` o que cada fase entregou, como foi verificado e o que ficou de fora. `docs/EXTENSOES.md` explica como escrever uma extensão. `docs/PENDENCIAS.md` lista o que ainda falta (inclusive o uso em janelas de administrador) e `docs/ASSINATURA.md` explica a assinatura de código.
+`docs/PLANO.md` describes the plan and the decisions; `docs/FASE0-RESULTADOS.md` through `docs/FASE7.md` cover what each phase delivered, how it was verified and what was left out. `docs/EXTENSOES.md` explains how to write an extension and `docs/CAPTURA.md` documents the screen capture module. `docs/PENDENCIAS.md` lists what is still missing (including use in administrator windows) and `docs/ASSINATURA.md` explains code signing. All of these are in Portuguese.
 
-## Testes
+## Tests
 
 ```powershell
-dotnet test tests/Apparatus.Core.Tests          # unitários
-dotnet run --project tests/Apparatus.E2E.Start  # integração segura (registro de teste, botão Iniciar, gancho)
+dotnet test tests/Apparatus.Core.Tests          # unit tests
+dotnet run --project tests/Apparatus.E2E.Start  # safe integration (test registry, Start button, hook)
 ```
 
-Há também verificações que pressionam teclas e clicam de verdade (snippets, tecla Windows, botão Iniciar, plano de emergência, gravação de macros); cada uma avisa no próprio cabeçalho do código o que faz e que você não deve mexer no teclado e no mouse enquanto ela roda.
+There are also checks that really press keys and click (snippets, Windows key, Start button, emergency plan, macro recording); each one states in its own code header what it does and that you must not touch the keyboard and mouse while it runs.
+
+## Contributing and license
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) ([Português](CONTRIBUTING.pt-BR.md)). The project is released under the [BSD Zero Clause License](LICENSE) (0BSD): you may use, copy, modify and distribute it for any purpose, without having to give credit ([Português](LICENSE.pt-BR.md)).

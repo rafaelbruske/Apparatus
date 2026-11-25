@@ -31,7 +31,7 @@ public sealed partial class SettingsView : UserControl
         InitializeComponent();
 
         // Recording "Alt+Space" must not also open the host window's system menu (Windows does that after the app has seen the key).
-        _keyMenu = new KeyMenuSuppressor(_hwnd, () => _capturing || Environment.TickCount64 < _menuGuardUntil);
+        _keyMenu = new KeyMenuSuppressor(_hwnd, () => _capturing || _capturingShot || Environment.TickCount64 < _menuGuardUntil);
 
         RootsList.ItemsSource = _roots;
         DataPathText.Text = $"{AppPaths.DataDirectory}\nConfiguração: {AppPaths.SettingsFile}";
@@ -41,6 +41,7 @@ public sealed partial class SettingsView : UserControl
         Closed += (_, _) =>
         {
             _services.Index.StatusChanged -= OnIndexStatusChanged;
+            if (_capturingShot) StopCapturingShot();
             _keyMenu.Dispose();
             if (_capturing)
             {
@@ -58,18 +59,18 @@ public sealed partial class SettingsView : UserControl
     public void Close() => Closed?.Invoke(this, EventArgs.Empty);
 
     /// <summary>True while the user is recording a new launcher hotkey: the host must leave the keys alone (Esc cancels the recording).</summary>
-    public bool IsCapturing => _capturing;
+    public bool IsCapturing => _capturing || _capturingShot;
 
     /// <summary>The pages of the settings, in the order of the side bar. Each is a group of cards of the long page this used to be.</summary>
     public static readonly IReadOnlyList<string> PageIds = new[]
     {
-        "general", "search", "backup", "about", "snippets", "clipboard", "extensions", "start", "assistant", "windows",
+        "general", "search", "backup", "about", "aboutapp", "snippets", "clipboard", "capture", "extensions", "start", "assistant", "windows",
     };
 
     private static readonly Dictionary<string, string> PageTitles = new()
     {
         ["general"] = "Geral", ["search"] = "Pesquisa", ["backup"] = "Backup e sincronização", ["about"] = "Atualizações e dados",
-        ["snippets"] = "Snippets", ["clipboard"] = "Área de transferência", ["extensions"] = "Extensões", ["start"] = "Menu Iniciar do Apparatus",
+        ["aboutapp"] = "Sobre", ["snippets"] = "Snippets", ["clipboard"] = "Área de transferência", ["capture"] = "Captura de tela", ["extensions"] = "Extensões", ["start"] = "Menu Iniciar do Apparatus",
         ["assistant"] = "Assistente de IA", ["windows"] = "Windows",
     };
 
@@ -107,6 +108,8 @@ public sealed partial class SettingsView : UserControl
         LoadStart();
         LoadBackup();
         LoadUpdates();
+        LoadAbout();
+        LoadCapture();
     }
 
     // ------------------------------------------------------------ hotkey
@@ -146,6 +149,7 @@ public sealed partial class SettingsView : UserControl
 
     private void OnRootPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (_capturingShot) { OnCaptureHotkeyKey(e); return; }
         if (!_capturing) return;
         e.Handled = true;
 

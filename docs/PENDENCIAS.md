@@ -76,6 +76,29 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
   assistente) e links diretos de páginas para o assistente; busca dentro das configurações; categorias Privacidade, Atalhos de teclado
   e Avançado.
 
+### Página "Sobre" (25/11/2026)
+- Configurações → **Sobre** mostra a versão, a licença do Apparatus (0BSD) e o link do repositório, e a seção **Licenças de código aberto**
+  com os 25 componentes de terceiros do instalador. Cada linha traz "Nome (vVersão)", "Autor · Licença" e "Ver licença"; clicar abre um diálogo com
+  o aviso de copyright, o texto completo da licença (rolável, em fonte monoespaçada) e os links do repositório e do NuGet. Se a pasta
+  `licenses\` existe ao lado do programa (instalado), há o botão "Abrir a pasta com os avisos completos". Dados em `third-party-licenses.json`
+  (embutido no Core, `ThirdPartyLicenses`), mantidos junto com `THIRD-PARTY-NOTICES.md`; um teste confere que as duas listas concordam.
+- **Verificado** na tela (build de depuração, perfil isolado): o item no menu lateral, a lista, o diálogo do Velopack e o do Windows App SDK,
+  e que o Esc fecha só o diálogo. **Não verificado:** os links abrindo no navegador, o botão da pasta de licenças (só existe no instalado),
+  DPI alto e o teclado (Tab/Enter nas linhas).
+- **Falta:** os termos de uso para o usuário final exigidos pela licença do Windows App SDK (diálogo de primeiro uso); veja `THIRD-PARTY-NOTICES.md`.
+
+### Captura de tela (25/11/2026)
+
+Implementada (ver `docs/CAPTURA.md`): seleção com anotações e modo de texto, captura automática (Shift+Print Screen), PNG/JPEG com qualidade,
+ajuste do Print Screen do Windows com desfazer exato. Verificada à mão em 2 monitores de 100 %; o que não foi verificado está listado no próprio documento.
+
+Pendências do módulo:
+- Verificar: impressão, monitores com DPI diferente de 100 %, Print Screen sozinha com o Lightshot fechado (ele a segura), uso só com teclado.
+- **Gravação de tela** (monitor inteiro ou janela de um aplicativo): planejada sobre `CaptureTarget`/`IFrameSource` com Windows.Graphics.Capture.
+- WebP: adiado (exige libwebp como DLL nativa e aviso de terceiros).
+- O assistente de IA ainda não sabe abrir a página Captura de tela (a lista de telas de `open_apparatus_screen` não a inclui).
+- Escolher uma janela clicando nela, durante a seleção, não existe (só região).
+
 ## 2.4 Menu Iniciar no estilo clássico (24/11/2026)
 - O menu Iniciar do Apparatus passou ao layout de duas colunas (como o do StartAllBack): à esquerda os apps fixados e os mais usados
   ("Usados recentemente"), "Todos os programas" e a busca embaixo; à direita o usuário e os locais do sistema (Documentos, Imagens,
@@ -139,7 +162,7 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (717 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (766 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

@@ -8,7 +8,7 @@ namespace Apparatus.App;
 
 public partial class App : Application
 {
-    private const int CmdOpen = 1, CmdSettings = 2, CmdAutostart = 3, CmdReindex = 4, CmdQuit = 5, CmdSnippets = 6, CmdExpansion = 7, CmdActions = 8, CmdClipboard = 9, CmdStart = 10, CmdStartKey = 11;
+    private const int CmdOpen = 1, CmdSettings = 2, CmdAutostart = 3, CmdReindex = 4, CmdQuit = 5, CmdSnippets = 6, CmdExpansion = 7, CmdActions = 8, CmdClipboard = 9, CmdStart = 10, CmdStartKey = 11, CmdCapture = 12;
 
     private readonly SingleInstance _instance;
     private readonly string[] _args;
@@ -41,6 +41,7 @@ public partial class App : Application
         _services.ActionHost = new ActionService(_services, _ui);
         _services.ExtensionRunner = new ExtensionRunner(_services, _ui);
         _services.ClipboardHost = new ClipboardService(_services);
+        _services.CaptureHost = new CaptureService(_services, _ui);
         var executor = new ResultExecutor(_services, page => OpenSettings(page), Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction),
             draft => OpenActions(true, draft), draft => OpenSnippets(true, draft));
         _launcher = new LauncherWindow(_services, executor);
@@ -61,6 +62,8 @@ public partial class App : Application
         _host.ShowTrayIcon(AppPaths.AssetPath("apparatus.ico"), "Apparatus");
 
         var registration = _services.RegisterConfiguredHotkey();
+        var capture = _services.CaptureHost.Restore();
+        if (!capture.Success) _host.ShowBalloon("Captura de tela indisponível", capture.Message);
         _services.StartBackgroundWork();
         try
         {
@@ -147,7 +150,7 @@ public partial class App : Application
     private IReadOnlyList<TrayMenuItem> BuildTrayMenu()
     {
         string hotkey = _services?.ActiveHotkey?.ToString() ?? "";
-        return new[]
+        var items = new List<TrayMenuItem>
         {
             new TrayMenuItem(CmdOpen, hotkey.Length > 0 ? $"Abrir Apparatus\t{hotkey}" : "Abrir Apparatus"),
             new TrayMenuItem(CmdStart, "Menu Iniciar do Apparatus"),
@@ -163,6 +166,12 @@ public partial class App : Application
             TrayMenuItem.Divider,
             new TrayMenuItem(CmdQuit, "Sair"),
         };
+        if (_services?.CaptureHost is { IsEnabled: true } capture)
+        {
+            string key = capture.ActiveHotkey?.ToString() ?? "";
+            items.Insert(1, new TrayMenuItem(CmdCapture, key.Length > 0 ? $"Capturar a tela\t{key}" : "Capturar a tela"));
+        }
+        return items;
     }
 
     private void OnTrayCommand(int id)
@@ -171,6 +180,7 @@ public partial class App : Application
         {
             case CmdOpen: _launcher?.ShowLauncher(); break;
             case CmdSettings: OpenSettings(); break;
+            case CmdCapture: CaptureFromSettings(); break;
             case CmdStart: _launcher?.HideLauncher(); _services?.StartHost?.Show(); break;
             case CmdStartKey: _services?.ApplySettings(s => s.StartMenuEnabled = !s.StartMenuEnabled); break;
             case CmdSnippets: OpenSnippets(); break;
@@ -201,6 +211,18 @@ public partial class App : Application
     /// <summary>Opens the actions, which live in the settings panel of the launcher window.</summary>
     public void OpenActions(bool startNew = false, Apparatus.Core.Actions.ActionDefinition? draft = null) =>
         _launcher?.ShowActions(startNew, draft);
+
+    /// <summary>"Capturar agora" in the settings: hides the launcher (which holds the settings), then starts the capture.</summary>
+    public void CaptureFromSettings()
+    {
+        _launcher?.HideLauncher();
+        // Give Windows a moment to repaint the screen without the launcher before it is read.
+        var timer = _ui.CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(250);
+        timer.IsRepeating = false;
+        timer.Tick += (_, _) => _services?.CaptureHost?.StartCapture();
+        timer.Start();
+    }
 
     private void Quit()
     {

@@ -87,7 +87,7 @@ Nada disso foi implementado: (1) exige um certificado e uma instalação em Prog
 
 ## 5. Acabamento
 
-- `README.md` na raiz.
+- `README.md` na raiz (hoje em inglês; a versão em português é `README.pt-BR.md`).
 - Proteção de jogos: com um jogo Direct3D em tela cheia exclusiva ou em modo de apresentação (`SHQueryUserNotificationState`),
   a tecla Windows e o botão Iniciar ficam com o Windows.
 - Vários monitores: o menu abre no monitor do cursor, respeita o DPI dele e usa o lado da barra de tarefas; o botão Iniciar das

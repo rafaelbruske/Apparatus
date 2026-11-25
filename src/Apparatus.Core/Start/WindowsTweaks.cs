@@ -67,8 +67,18 @@ public static class TweakCatalog
             Advanced, "Start_TrackDocs", OffOn, DefaultValue: 1),
     };
 
+    /// <summary>Id of the Windows option "use the Print Screen key to open screen capture". The Apparatus screen capture turns it off while it owns that key.</summary>
+    public const string PrintScreenSnippingId = "printscreen-snipping";
+
+    /// <summary>Tweaks the program changes by itself for a feature; they are not offered on the tweaks page and "restore all" leaves them alone.</summary>
+    public static IReadOnlyList<WindowsTweak> Internal { get; } = new WindowsTweak[]
+    {
+        new(PrintScreenSnippingId, "Print Screen abre a Ferramenta de Captura", "Opção do Windows em Configurações → Acessibilidade → Teclado.",
+            @"Control Panel\Keyboard", "PrintScreenKeyForSnippingEnabled", OffOn, DefaultValue: 1, NeedsExplorerRestart: false),
+    };
+
     public static WindowsTweak Get(string id) =>
-        All.FirstOrDefault(t => t.Id == id) ?? throw new ArgumentException($"Ajuste desconhecido: {id}");
+        All.Concat(Internal).FirstOrDefault(t => t.Id == id) ?? throw new ArgumentException($"Ajuste desconhecido: {id}");
 }
 
 /// <summary>
@@ -192,7 +202,7 @@ public sealed class TweakService
     public int RestoreAll()
     {
         List<string> ids;
-        lock (_gate) ids = _backup.Originals.Keys.ToList();
+        lock (_gate) ids = _backup.Originals.Keys.Where(id => TweakCatalog.All.Any(t => t.Id == id)).ToList();
         return ids.Count(id => Restore(id).Success);
     }
 

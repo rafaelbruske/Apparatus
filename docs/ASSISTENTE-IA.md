@@ -46,7 +46,7 @@ máquina), tratado na seção 7.
 - Arquivo: `%LOCALAPPDATA%\Apparatus\assistant.keys` (pasta *Local*, como `clipboard.key`), conteúdo = JSON
   `{ providerId: chave }` embrulhado pelo DPAPI. Uma chave por provedor, para trocar de provedor sem perder as outras.
 - **A chave nunca entra em `AppSettings`**: `settings.json` é exportado no backup `.apparatus` e na pasta de sincronização,
-  e ambos são sem criptografia (README, "Segurança e privacidade"). `BackupService.ForExport` não deve ver chave alguma.
+  e ambos são sem criptografia (README.pt-BR.md, "Segurança e privacidade"). `BackupService.ForExport` não deve ver chave alguma.
 - Limite honesto, igual ao do histórico da área de transferência: protege contra outro usuário/disco roubado/backup, não
   contra um programa rodando como você. Dizer isso na tela.
 - Alternativa (Gerenciador de Credenciais via CsWin32): a chave fica visível ao usuário no Painel de Controle. Mais
@@ -190,7 +190,7 @@ parte mais incerta é o modo conversa na janela do launcher (altura dinâmica, f
    (verificar os termos atuais do Gemini antes de escrever o aviso). Mostrar o aviso ao lado do selo "Grátis".
 6. **Segredo:** chave só em `assistant.keys` (DPAPI), nunca em log, backup ou sincronização; `AppLog` não registra
    requisições. Ollama local não envia nada para fora.
-7. Atualizar a seção "Segurança e privacidade" do `README.md` e a `PENDENCIAS.md` quando entregar.
+7. Atualizar a seção "Segurança e privacidade" do `README.pt-BR.md` (e do `README.md`, em inglês) e a `PENDENCIAS.md` quando entregar.
 
 ## 8. Testes
 

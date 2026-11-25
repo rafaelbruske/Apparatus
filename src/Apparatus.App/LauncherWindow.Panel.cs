@@ -40,12 +40,14 @@ public sealed partial class LauncherWindow
         new("Pesquisa", "", "search"),
         new("Backup e sincronização", "", "backup"),
         new("Atualizações e dados", "", "about"),
+        new("Sobre", "", "aboutapp"),
 
         new("Módulos", null, null),
         new("Snippets", "", SnippetsPage),
         new("Ações e atalhos", "", ActionsPage),
         new("Ajustes dos snippets", "", "snippets"),
         new("Área de transferência", "", "clipboard"),
+        new("Captura de tela", "", "capture"),
         new("Extensões", "", "extensions"),
 
         new("Menu Iniciar", null, null),

@@ -119,6 +119,35 @@ public sealed class AppSettings
     /// <summary>While the launcher is in AI mode, clicking elsewhere does not hide it (it closes with Esc, the hotkey or the × button). Off by default: the launcher always hides when it loses focus.</summary>
     public bool AssistantKeepOpen { get; set; }
 
+    // ---- Screen capture (own region selector with annotations; replaces the Windows Snipping Tool on the Print Screen key)
+
+    /// <summary>Opt-in: turning it on also turns off the Windows option that opens the Snipping Tool on Print Screen (restored when turned off).</summary>
+    public bool CaptureEnabled { get; set; }
+
+    /// <summary>Hotkey that starts a capture.</summary>
+    public string CaptureHotkey { get; set; } = "PrintScreen";
+
+    /// <summary>Last annotation color, "#RRGGBB".</summary>
+    public string CaptureColor { get; set; } = "#FF0000";
+
+    /// <summary>File format of saved captures: "png" (the default, lossless) or "jpeg".</summary>
+    public string CaptureFormat { get; set; } = "png";
+
+    /// <summary>JPEG quality, 1 to 100 (90 by default). PNG does not lose quality, so it ignores it.</summary>
+    public int CaptureQuality { get; set; } = 90;
+
+    /// <summary>Show a notification after a capture is saved to a file. Off by default.</summary>
+    public bool CaptureNotifyOnSave { get; set; }
+
+    /// <summary>Folder for captures saved without a dialog. Empty means Pictures\Screenshots.</summary>
+    public string CaptureSaveFolder { get; set; } = "";
+
+    /// <summary>What the automatic capture takes: false = only the focused monitor (the default), true = every monitor in one image.</summary>
+    public bool CaptureAutoAllMonitors { get; set; }
+
+    /// <summary>Hotkey of the automatic capture, which saves straight into <see cref="CaptureSaveFolder"/>.</summary>
+    public string CaptureQuickHotkey { get; set; } = "Shift+PrintScreen";
+
     public string DefaultSearchEngine { get; set; } = "g";
 
     public List<WebSearchEngine> SearchEngines { get; set; } = DefaultEngines();

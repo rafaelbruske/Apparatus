@@ -16,6 +16,7 @@
     <EmbeddedResource Include="Resources\windows-settings.json" LogicalName="windows-settings.json" />
     <EmbeddedResource Include="Resources\assistant-system-prompt.md" LogicalName="assistant-system-prompt.md" />
     <EmbeddedResource Include="Resources\assistant-providers.json" LogicalName="assistant-providers.json" />
+    <EmbeddedResource Include="Resources\third-party-licenses.json" LogicalName="third-party-licenses.json" />
     <InternalsVisibleTo Include="Apparatus.Core.Tests" />
   </ItemGroup>
 

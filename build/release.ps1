@@ -4,6 +4,7 @@
 
 .DESCRIPTION
   1. publishes the app self-contained for win-x64 (Release),
+  1b. adds the license files (LICENSE, THIRD-PARTY-NOTICES.md and a licenses folder) to the published folder,
   2. packs it with Velopack ("vpk"): Setup.exe, the full package and, when an earlier release is in the output folder, a delta.
 
   Requires:  dotnet tool install -g vpk --version 1.2.161   (the version of the Velopack package the app uses)
@@ -32,6 +33,28 @@ $publish = Join-Path $root "artifacts\publish"
 if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
 dotnet publish src/Apparatus.App -c Release -r win-x64 --self-contained -p:Version=$Version -o $publish
 if ($LASTEXITCODE -ne 0) { throw "publish failed" }
+
+# Licenses of what the installer carries (THIRD-PARTY-NOTICES.md explains why). The app's own license and the notices go next to the
+# program; the full texts of the .NET runtime and of the Windows App SDK come from the NuGet cache into a "licenses" folder.
+Copy-Item (Join-Path $root "LICENSE") $publish
+Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.md") $publish
+$licenses = Join-Path $publish "licenses"
+New-Item -ItemType Directory -Force $licenses | Out-Null
+$nugetCache = (dotnet nuget locals global-packages -l) -replace '^\s*global-packages:\s*', ''
+function Copy-PackageFile([string] $package, [string] $versionPrefix, [string] $file, [string] $as) {
+    $dir = Join-Path $nugetCache.Trim() $package
+    $version = Get-ChildItem $dir -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "$versionPrefix*" } | Sort-Object { [version]($_.Name -replace '[^\d.].*$', '') } -Descending | Select-Object -First 1
+    $source = if ($version) { Join-Path $version.FullName $file } else { "" }
+    if ($source -and (Test-Path $source)) { Copy-Item $source (Join-Path $licenses $as) }
+    else { Write-Warning "License file not found: $package $versionPrefix* $file. The installer will be missing licenses\$as." }
+}
+Copy-PackageFile "microsoft.netcore.app.runtime.win-x64" "10." "LICENSE.TXT" "dotnet-runtime-LICENSE.TXT"
+Copy-PackageFile "microsoft.netcore.app.runtime.win-x64" "10." "THIRD-PARTY-NOTICES.TXT" "dotnet-runtime-THIRD-PARTY-NOTICES.TXT"
+Copy-PackageFile "microsoft.windowsappsdk.foundation" "2." "license.txt" "WindowsAppSDK-license.txt"
+# The third-party notices that the Windows App SDK itself ships (the open source code it incorporates), copied unchanged.
+Copy-PackageFile "microsoft.windowsappsdk.base" "2." "NOTICE.txt" "WindowsAppSDK-NOTICE.txt"
+Copy-PackageFile "microsoft.windowsappsdk.winui" "2." "NOTICE.txt" "WindowsAppSDK-WinUI-NOTICE.txt"
 
 $vpkArgs = @(
     "pack",

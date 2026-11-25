@@ -21,14 +21,16 @@ public readonly record struct HotkeySpec(HotkeyModifiers Modifiers, uint Virtual
     {
         ("Space", 0x20), ("Enter", 0x0D), ("Tab", 0x09), ("Esc", 0x1B), ("Backspace", 0x08),
         ("Insert", 0x2D), ("Delete", 0x2E), ("Home", 0x24), ("End", 0x23), ("PageUp", 0x21), ("PageDown", 0x22),
-        ("Up", 0x26), ("Down", 0x28), ("Left", 0x25), ("Right", 0x27), ("Pause", 0x13),
+        ("PrintScreen", 0x2C), ("Up", 0x26), ("Down", 0x28), ("Left", 0x25), ("Right", 0x27), ("Pause", 0x13),
         (";", 0xBA), ("=", 0xBB), (",", 0xBC), ("-", 0xBD), (".", 0xBE), ("/", 0xBF),
         ("`", 0xC0), ("[", 0xDB), ("\\", 0xDC), ("]", 0xDD), ("'", 0xDE),
     };
 
-    /// <summary>A hotkey needs a modifier, except for function keys.</summary>
+    /// <summary>A hotkey needs a modifier, except for function keys and Print Screen.</summary>
     public bool IsValid =>
-        VirtualKey != 0 && (Modifiers != HotkeyModifiers.None || IsFunctionKey(VirtualKey));
+        VirtualKey != 0 && (Modifiers != HotkeyModifiers.None || IsFunctionKey(VirtualKey) || VirtualKey == PrintScreenKey);
+
+    public const uint PrintScreenKey = 0x2C;
 
     public static bool IsFunctionKey(uint vk) => vk is >= 0x70 and <= 0x87;
 

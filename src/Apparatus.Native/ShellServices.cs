@@ -222,9 +222,9 @@ public static class WindowHelpers
     /// <summary>
     /// For a frameless window: no frame at all and slightly rounded corners. A WinUI window keeps the WS_DLGFRAME style even without
     /// a title bar, and Windows paints it as a 3 px light frame around the content; removing the style (and asking for no border
-    /// colour) leaves only the content, with the corners rounded by Windows 11.
+    /// colour) leaves only the content, with the corners rounded by Windows 11 (or square, with <paramref name="rounded"/> false).
     /// </summary>
-    public static unsafe void UseRoundedCorners(nint hwnd)
+    public static unsafe void UseRoundedCorners(nint hwnd, bool rounded = true)
     {
         var window = new HWND(hwnd);
 
@@ -243,7 +243,7 @@ public static class WindowHelpers
         var none = new Windows.Win32.UI.Controls.MARGINS();
         PInvoke.DwmExtendFrameIntoClientArea(window, in none);
 
-        var pref = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
+        var pref = rounded ? DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND : DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_DONOTROUND;
         PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, &pref, sizeof(DWM_WINDOW_CORNER_PREFERENCE));
 
         uint noBorder = 0xFFFFFFFE;   // DWMWA_COLOR_NONE

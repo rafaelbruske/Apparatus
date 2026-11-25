@@ -185,6 +185,9 @@ public sealed class AppServices : IDisposable
     /// <summary>Shows the launcher with some text typed in (null for none). Set by the app once the launcher exists.</summary>
     public Action<string?>? ShowLauncher { get; set; }
 
+    /// <summary>The screen capture (hotkey, selection windows); set once the UI thread exists.</summary>
+    public CaptureService? CaptureHost { get; set; }
+
     /// <summary>Runs actions and keeps their hotkeys registered; set once the UI thread exists.</summary>
     public ActionService? ActionHost { get; set; }
 
@@ -345,6 +348,7 @@ public sealed class AppServices : IDisposable
         StartHost?.Dispose();
         Sync.Dispose();
         ClipboardHost?.Dispose();
+        CaptureHost?.Dispose();
         Extensions.Dispose();
         ClipboardStore.Dispose();
         ActionHost?.Dispose();

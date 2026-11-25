@@ -59,7 +59,7 @@ SQLite, com exportar e importar para backup.
 
 ## 5. Fases
 
-Status: **Fase 0 concluída** ([resultados](FASE0-RESULTADOS.md)); **Fase 1 concluída** ([detalhes](FASE1.md)); **Fase 2 concluída** ([detalhes](FASE2.md)); **Fase 3 concluída** ([detalhes](FASE3.md)); **Fase 4 concluída** ([detalhes](FASE4.md), [guia de extensões](EXTENSOES.md)); **Fase 5 concluída** ([detalhes](FASE5.md)); **Fase 6 concluída, sem o AppBar** ([detalhes](FASE6.md)); **Fase 7 (uso diário) concluída, exceto janelas elevadas** ([detalhes](FASE7.md)).
+Status: **Fase 0 concluída** ([resultados](FASE0-RESULTADOS.md)); **Fase 1 concluída** ([detalhes](FASE1.md)); **Fase 2 concluída** ([detalhes](FASE2.md)); **Fase 3 concluída** ([detalhes](FASE3.md)); **Fase 4 concluída** ([detalhes](FASE4.md), [guia de extensões](EXTENSOES.md)); **Fase 5 concluída** ([detalhes](FASE5.md)); **Fase 6 concluída, sem o AppBar** ([detalhes](FASE6.md)); **Fase 7 (uso diário) concluída, exceto janelas elevadas** ([detalhes](FASE7.md)); **assistente de IA** ([detalhes](ASSISTENTE-IA.md)) e **captura de tela** ([detalhes](CAPTURA.md)) entregues depois, fora das fases numeradas.
 
 | Fase | Entrega | Critério de saída |
 |---|---|---|
@@ -70,6 +70,7 @@ Status: **Fase 0 concluída** ([resultados](FASE0-RESULTADOS.md)); **Fase 1 conc
 | **4. Extensões** | Protocolo stdio JSON, quicklinks, histórico de clipboard, favoritos | Extensão de exemplo em PowerShell |
 | **5. Start A1** | Menu próprio e ajustes por registro | Win abre o menu próprio, sem regressão |
 | **6. Opcionais** | AppBar (A2), gravação de macros, sincronização | À parte |
+| **Captura de tela** | Seleção de área com anotações, captura automática (monitor focado ou todos), PNG/JPEG, ajuste do Print Screen do Windows com desfazer exato | Veja [CAPTURA.md](CAPTURA.md). Próximo: gravação de tela (monitor inteiro ou janela de um app) |
 
 ## 6. Riscos
 
