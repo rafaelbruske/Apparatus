@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Apparatus.Core.Actions;
 using Apparatus.Core.Assistant;
 using Apparatus.Core.Snippets;
@@ -127,6 +127,7 @@ public class AssistantToolsTests : IDisposable
     [InlineData("SNIPPETS")]
     [InlineData("actions")]
     [InlineData("extensions")]
+    [InlineData("capture")]
     public void Screens_InTheClosedList_AreAccepted(string screen) =>
         Assert.True(Run("open_apparatus_screen", JsonSerializer.Serialize(new { screen })).Accepted);
 
@@ -137,6 +138,26 @@ public class AssistantToolsTests : IDisposable
     [InlineData("")]
     public void Screens_ThatDestroyOrQuit_AreRejected(string screen) =>
         Assert.False(Run("open_apparatus_screen", JsonSerializer.Serialize(new { screen })).Accepted);
+
+    [Fact]
+    public void ScreenSchema_ListsExactlyTheClosedList_SoTheModelCanOfferCapture()
+    {
+        var spec = Tools().Specs().Single(x => x.Name == "open_apparatus_screen");
+        using var doc = JsonDocument.Parse(spec.ParametersSchema);
+        var offered = doc.RootElement.GetProperty("properties").GetProperty("screen").GetProperty("enum")
+            .EnumerateArray().Select(e => e.GetString()).ToList();
+        Assert.Equal(AssistantTools.Screens.Select(x => x.Id), offered);
+        Assert.Contains("capture", offered);
+    }
+
+    [Fact]
+    public void CaptureScreen_BecomesAButton_ThatOpensItsOwnPage()
+    {
+        var result = Run("open_apparatus_screen", """{"screen":"capture"}""");
+        Assert.True(result.Accepted);
+        Assert.Equal(SuggestionKind.OpenApparatusScreen, result.Action!.Kind);
+        Assert.Equal("capture", result.Action.Payload);
+    }
 
     // ------------------------------------------------------------------------ open_launcher / open_url
 

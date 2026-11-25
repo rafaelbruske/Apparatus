@@ -77,7 +77,7 @@ public class AssistantEvalTests
     }
 
     /// <summary>
-    /// Asks the 21 reference questions to a REAL provider, through the same engine the launcher uses, and reports which ones
+    /// Asks the reference questions of assistant-eval.json to a REAL provider, through the same engine the launcher uses, and reports which ones
     /// ended in the expected button. Runs only when a key is in the environment; otherwise it returns at once (so CI and
     /// everyone without a key are unaffected). Nothing runs on the machine: the engine only produces suggestions.
     ///
@@ -152,7 +152,7 @@ public class AssistantEvalTests
                 }
                 catch (AssistantException ex) when (ex.Kind is AssistantErrorKind.InvalidKey or AssistantErrorKind.ModelNotFound or AssistantErrorKind.InvalidEndpoint)
                 {
-                    // Every other question would fail the same way: stop now instead of printing 21 identical errors.
+                    // Every other question would fail the same way: stop now instead of printing the same error for every question.
                     Assert.Fail($"O provedor {resolved.Provider.Name} recusou o pedido já na primeira pergunta ({ex.Kind}): {ex.Message}{Environment.NewLine}" +
                                 "Nenhuma pergunta chegou ao modelo. Confira a chave (sem aspas nem espaços extras) e o modelo, e rode de novo.");
                 }

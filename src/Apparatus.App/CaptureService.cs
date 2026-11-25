@@ -199,6 +199,38 @@ public sealed class CaptureService : IDisposable
 
     private bool _autoBusy;
 
+    private const int FlashTicks = 12, FlashTickMs = 16;
+    private const byte FlashStartAlpha = 150;
+
+    /// <summary>A white flash that fades out in about 200 ms over the given areas. Fire and forget; a failure only means no flash.</summary>
+    private void Flash(IReadOnlyList<RectD> areas)
+    {
+        try
+        {
+            var windows = areas.Select(a => new FlashWindow(a, FlashStartAlpha)).ToList();
+            int tick = 0;
+            var timer = _ui.CreateTimer();
+            timer.Interval = TimeSpan.FromMilliseconds(FlashTickMs);
+            timer.Tick += (_, _) =>
+            {
+                tick++;
+                if (tick >= FlashTicks)
+                {
+                    timer.Stop();
+                    foreach (var w in windows) w.Dispose();
+                    return;
+                }
+                double left = 1 - (double)tick / FlashTicks;
+                foreach (var w in windows) w.SetAlpha((byte)(FlashStartAlpha * left * left));   // quick at first, then a soft tail
+            };
+            timer.Start();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("The capture flash could not be shown: " + ex.Message);
+        }
+    }
+
     /// <summary>The monitor of the window that has the focus; when there is none, the one under the mouse.</summary>
     private static MonitorInfoData FocusedMonitor(IReadOnlyList<MonitorInfoData> monitors)
     {
@@ -218,10 +250,15 @@ public sealed class CaptureService : IDisposable
         {
             var monitors = _source.Monitors();
             if (monitors.Count == 0) throw new InvalidOperationException("Nenhum monitor encontrado.");
-            CaptureTarget target = _services.Settings.Current.CaptureAutoAllMonitors
+            bool all = _services.Settings.Current.CaptureAutoAllMonitors;
+            var focused = FocusedMonitor(monitors);
+            CaptureTarget target = all
                 ? new RegionTarget(RectD.Union(monitors.Select(m => m.Bounds)))
-                : new MonitorTarget(FocusedMonitor(monitors).Index);
+                : new MonitorTarget(focused.Index);
             var frame = _source.Grab(target);
+
+            // After the screen was read, so the flash is never in the picture.
+            if (_services.Settings.Current.CaptureAutoFlash) Flash((all ? monitors : new[] { focused }).Select(m => m.Bounds).ToList());
 
             var settings = _services.Settings.Current;
             var format = CaptureImageFormats.Parse(settings.CaptureFormat);

@@ -471,6 +471,12 @@
                 BorderThickness="1">
                 <StackPanel Spacing="14">
                     <ToggleSwitch
+                        x:Name="CaptureFlashSwitch"
+                        Header="Flash ao fazer a captura automática"
+                        OnContent="Mostrar"
+                        OffContent="Não mostrar"
+                        Toggled="OnCaptureFlashToggled" />
+                    <ToggleSwitch
                         x:Name="CaptureNotifySwitch"
                         Header="Notificação depois de salvar uma captura"
                         OnContent="Mostrar"

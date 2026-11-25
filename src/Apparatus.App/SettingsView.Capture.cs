@@ -26,6 +26,7 @@ public sealed partial class SettingsView
         _loading = true;
         CaptureSwitch.IsOn = s.CaptureEnabled;
         CaptureNotifySwitch.IsOn = s.CaptureNotifyOnSave;
+        CaptureFlashSwitch.IsOn = s.CaptureAutoFlash;
         CaptureScopeBox.SelectedIndex = s.CaptureAutoAllMonitors ? 1 : 0;
         CaptureFormatBox.SelectedIndex = CaptureImageFormats.Parse(s.CaptureFormat) == CaptureImageFormat.Jpeg ? 1 : 0;
         CaptureQualityBox.Value = CaptureImageFormats.ClampQuality(s.CaptureQuality);
@@ -98,6 +99,12 @@ public sealed partial class SettingsView
     }
 
     // ----------------------------------------------------------- saving
+
+    private void OnCaptureFlashToggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _services.ApplySettings(s => s.CaptureAutoFlash = CaptureFlashSwitch.IsOn);
+    }
 
     private void OnCaptureNotifyToggled(object sender, RoutedEventArgs e)
     {

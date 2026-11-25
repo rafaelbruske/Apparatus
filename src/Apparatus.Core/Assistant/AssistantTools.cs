@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Apparatus.Core.Actions;
 using Apparatus.Core.Snippets;
 
@@ -86,7 +86,11 @@ public sealed class AssistantTools
         ("snippets", "Abrir os snippets"),
         ("actions", "Abrir as ações"),
         ("extensions", "Abrir as extensões"),
+        ("capture", "Abrir a captura de tela"),
     };
+
+    /// <summary>The ids of <see cref="Screens"/> as a JSON list body, so the tool schema can never disagree with the closed list.</summary>
+    private static string ScreenIds() => string.Join(",", Screens.Select(s => "\"" + s.Id + "\""));
 
     /// <summary>Step kinds a proposed action may contain. No commands, no PowerShell, no typing text, no system commands.</summary>
     public static readonly IReadOnlySet<StepKind> AllowedStepKinds = new HashSet<StepKind>
@@ -143,7 +147,7 @@ public sealed class AssistantTools
                 """{"type":"object","properties":{"uri":{"type":"string","description":"A uri copied exactly from the catalog, for example ms-settings:printers"}},"required":["uri"]}"""),
             new(OpenApparatusScreen,
                 "Suggest opening one of Apparatus' own windows.",
-                """{"type":"object","properties":{"screen":{"type":"string","enum":["settings","snippets","actions","extensions"]}},"required":["screen"]}"""),
+                $$$"""{"type":"object","properties":{"screen":{"type":"string","enum":[{{{ScreenIds()}}}]}},"required":["screen"]}"""),
             new(OpenLauncher,
                 "Suggest opening the launcher with some text already typed, for example the name of an app or a keyword such as 'clip '.",
                 """{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}"""),

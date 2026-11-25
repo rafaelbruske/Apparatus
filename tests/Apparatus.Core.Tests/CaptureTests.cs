@@ -169,6 +169,12 @@ public class CaptureTests
     }
 
     [Fact]
+    public void Automatic_capture_flashes_by_default()
+    {
+        Assert.True(new Apparatus.Core.Settings.AppSettings().CaptureAutoFlash);
+    }
+
+    [Fact]
     public void Automatic_capture_takes_only_the_focused_monitor_by_default()
     {
         Assert.False(new Apparatus.Core.Settings.AppSettings().CaptureAutoAllMonitors);

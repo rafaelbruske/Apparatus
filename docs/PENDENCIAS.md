@@ -92,12 +92,37 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
 Implementada (ver `docs/CAPTURA.md`): seleção com anotações e modo de texto, captura automática (Shift+Print Screen), PNG/JPEG com qualidade,
 ajuste do Print Screen do Windows com desfazer exato. Verificada à mão em 2 monitores de 100 %; o que não foi verificado está listado no próprio documento.
 
-Pendências do módulo:
-- Verificar: impressão, monitores com DPI diferente de 100 %, Print Screen sozinha com o Lightshot fechado (ele a segura), uso só com teclado.
+Pendências do módulo (atualizado em 25/11/2026):
+
+*Assistente de IA*
+- **Feito (25/11/2026):** o prompt do assistente cita a captura (e traz um exemplo "como tiro um print?"), a tela `capture` entrou na lista fechada
+  `AssistantTools.Screens` (o esquema da ferramenta agora é gerado dessa lista), o `ResultExecutor` abre a página, e há duas perguntas novas em
+  `assistant-eval.json` (23 no total). Coberto por testes offline.
+- **Pendente: rodar as 23 perguntas com um provedor real** (o teste opt-in `Integration_RealProvider_...`, com `APPARATUS_TEST_GEMINI_KEY` ou
+  `APPARATUS_TEST_GROQ_KEY`) para medir se a IA realmente passa a sugerir a captura e se o prompt maior não piorou as outras. Nada disso foi medido com IA de verdade.
+
+*Segurança e ciclo de vida*
+- **Desinstalar com a captura ligada deixa a opção do Windows desligada**: a Ferramenta de Captura deixa de abrir no Print Screen e nada a devolve.
+  Falta um gancho de desinstalação do Velopack (e, de preferência, devolver a opção também ao sair do app com a captura desligada em outro PC). Hoje o valor
+  só volta ao desligar a captura nas configurações.
+- Se o Windows religar a opção sozinho (atualização, política), o Apparatus a desliga de novo só ao iniciar.
+
+*Uso e verificação*
+- Verificar: impressão, monitores com DPI diferente de 100 %, uso só com teclado, o app **instalado** (os testes foram em build local e publicado, perfil isolado)
+  e a tecla Print Screen sozinha com o Lightshot fechado (ele a segura; os testes usaram outra tecla).
+- **A dica da barra** (nome e atalho do botão) foi refeita porque a padrão do XAML leva ~1 s; a falha total relatada não foi reproduzida. Confirmar no app instalado.
+- O flash da captura automática foi medido em 2 monitores (brilho sobe e volta em ~300 ms, o arquivo salvo não o contém); não foi visto em DPI alto.
+
+*Limites do módulo*
+- Anotações não são editáveis depois de inseridas (não dá para mover, redimensionar ou reescrever); só desfazer.
+- Fonte e tamanho do modo de texto não são lembrados entre capturas (a cor é).
+- A leitura da tela usa GDI: conteúdo protegido ou em tela cheia exclusiva pode sair preto (a gravação, com Windows.Graphics.Capture, resolveria).
+- A janela de salvar só abre em Imagens (limite do seletor do Windows); a pasta configurada vale para a captura automática.
+- Escolher uma janela clicando nela, durante a seleção, não existe (só região).
+
+*Futuro*
 - **Gravação de tela** (monitor inteiro ou janela de um aplicativo): planejada sobre `CaptureTarget`/`IFrameSource` com Windows.Graphics.Capture.
 - WebP: adiado (exige libwebp como DLL nativa e aviso de terceiros).
-- O assistente de IA ainda não sabe abrir a página Captura de tela (a lista de telas de `open_apparatus_screen` não a inclui).
-- Escolher uma janela clicando nela, durante a seleção, não existe (só região).
 
 ## 2.4 Menu Iniciar no estilo clássico (24/11/2026)
 - O menu Iniciar do Apparatus passou ao layout de duas colunas (como o do StartAllBack): à esquerda os apps fixados e os mais usados
@@ -162,7 +187,7 @@ Pendências do módulo:
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (766 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (770 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

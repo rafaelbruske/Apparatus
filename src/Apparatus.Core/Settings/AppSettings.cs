@@ -142,6 +142,9 @@ public sealed class AppSettings
     /// <summary>Folder for captures saved without a dialog. Empty means Pictures\Screenshots.</summary>
     public string CaptureSaveFolder { get; set; } = "";
 
+    /// <summary>A brief white flash over the captured screen(s) when the automatic capture is taken, so the user knows it worked. On by default.</summary>
+    public bool CaptureAutoFlash { get; set; } = true;
+
     /// <summary>What the automatic capture takes: false = only the focused monitor (the default), true = every monitor in one image.</summary>
     public bool CaptureAutoAllMonitors { get; set; }
 

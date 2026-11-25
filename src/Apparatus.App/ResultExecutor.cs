@@ -94,6 +94,7 @@ public sealed class ResultExecutor
                     {
                         case "settings": _openSettings("general"); break;
                         case "extensions": _openSettings("extensions"); break;
+                        case "capture": _openSettings("capture"); break;
                         case "snippets": _openSnippets(false); break;
                         case "actions": _openActions(false); break;
                     }

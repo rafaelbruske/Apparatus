@@ -18,6 +18,8 @@
     { "q": "quero ver meus snippets", "tool": "open_apparatus_screen", "screen": "snippets" },
     { "q": "abrir as configurações do Apparatus", "tool": "open_apparatus_screen", "screen": "settings" },
     { "q": "onde crio uma ação nova?", "tool": "open_apparatus_screen", "screen": "actions" },
+    { "q": "como tiro um print da tela?", "tool": "open_apparatus_screen", "screen": "capture" },
+    { "q": "onde configuro a captura de tela?", "tool": "open_apparatus_screen", "screen": "capture" },
     { "q": "abra o site do github", "tool": "open_url" },
     { "q": "crie uma ação que abra o bloco de notas e a calculadora", "tool": "propose_action" },
     { "q": "crie um snippet 'att' que escreva 'Atenciosamente, Rafael'", "tool": "propose_snippet" },

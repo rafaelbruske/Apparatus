@@ -31,6 +31,9 @@ Ao escolher **texto**, a barra troca por: voltar, **desfazer** | negrito, itáli
   com o nome padrão (se o nome já existir, ganha “ (2)”, “ (3)”…). Sem a notificação ligada, é silenciosa.
   Com o atalho normal, a seleção abre e **Salvar** usa a janela de salvar do Windows (que só abre em Imagens; o seletor de arquivos do
   Windows não aceita uma pasta qualquer).
+- **Flash** (`CaptureAutoFlash`, ligado por padrão): um clarão branco que some em ~200 ms sobre o(s) monitor(es) capturado(s), para a captura
+  automática não ser silenciosa. É uma janela própria, transparente ao mouse e sem foco (`FlashWindow`, em `Apparatus.Native/ScreenFlash.cs`), criada
+  **depois** da leitura da tela, então não aparece na imagem. A opção desliga o efeito.
 - **O que a captura automática salva** (`CaptureAutoAllMonitors`): por padrão, **apenas o monitor focado**, o da janela que tem o foco
   (se não houver uma, como com a área de trabalho em foco ou uma janela minimizada, vale o monitor sob o mouse). A outra opção junta
   **todos os monitores numa imagem só** (o retângulo que cobre a área virtual inteira).
@@ -38,6 +41,11 @@ Ao escolher **texto**, a barra troca por: voltar, **desfazer** | negrito, itáli
   age no JPEG (o PNG é sem perdas e a ignora). Vale para a captura automática e define o tipo oferecido primeiro na janela de salvar; se o
   usuário escolher “.jpg” ali, grava JPEG com a mesma qualidade. Copiar e imprimir não mudam (a imagem vai por PNG).
 - **Nome padrão**: `Screenshot AAAA-MM-DD HH-mm-ss.png` (ou `.jpg`).
+
+### Assistente de IA
+
+A IA conhece a captura: o prompt a descreve, `open_apparatus_screen` aceita a tela `capture` (abre esta página) e `assistant-eval.json` tem duas
+perguntas sobre ela. Veja `docs/ASSISTENTE-IA.md`. A medição com um provedor real ainda não foi feita (`docs/PENDENCIAS.md`).
 
 Fora por decisão: envio para a nuvem, compartilhamento e busca de imagem. WebP foi analisado e adiado: o Windows não tem codificador, então
 exigiria o libwebp (BSD-3) como DLL nativa, com aviso de terceiros.
@@ -63,6 +71,7 @@ Por isso, **ativar a captura do Apparatus desliga a opção do Windows** “Usar
 | Parte | Onde | Papel |
 |---|---|---|
 | Modelo e geometria | `Apparatus.Core/Capture/CaptureModel.cs` | `RectD` (com `Union`), `CaptureTarget` (`RegionTarget`, `MonitorTarget`, `WindowTarget`), `CapturedFrame`, `IFrameSource`, `SelectionGeometry` (acerto de alças, mover/redimensionar, posição da barra), `ArrowGeometry`, `CaptureImageFormats`, `CaptureNaming`, `KnownCaptureTools`. Tudo puro e testado (`CaptureTests`). |
+| Flash | `Apparatus.Native/ScreenFlash.cs` | `FlashWindow`: janela branca em camadas (WS_EX_LAYERED, sem foco, transparente ao mouse) cuja opacidade o `CaptureService` reduz a cada 16 ms. |
 | Leitura da tela | `Apparatus.Native/ScreenCapture.cs` | `GdiFrameSource`: um `BitBlt` do retângulo da área virtual (pixels físicos, DPI por monitor) e `ForegroundWindowCenter` (qual monitor tem o foco). |
 | Codificação | `Apparatus.App/CaptureImage.cs` | BGRA → PNG ou JPEG (com qualidade) pelo `BitmapEncoder`. |
 | Janela de seleção | `Apparatus.App/CaptureOverlayWindow.cs` | Uma janela sem borda por monitor, com a imagem congelada, seleção, anotações (XAML), as duas barras, as dicas e as ações. |
@@ -70,7 +79,7 @@ Por isso, **ativar a captura do Apparatus desliga a opção do Windows** “Usar
 | Configurações | `SettingsView.Capture.cs` + página `Page_capture` | Interruptor, atalhos (aceitam Print Screen sozinha), pasta, formato, qualidade, escopo, “Capturar agora”. |
 
 Configurações em `AppSettings`: `CaptureEnabled`, `CaptureHotkey` (`PrintScreen`), `CaptureColor`, `CaptureFormat` (`png`), `CaptureQuality` (90),
-`CaptureNotifyOnSave` (falso), `CaptureSaveFolder`, `CaptureQuickHotkey` (`Shift+PrintScreen`), `CaptureAutoAllMonitors` (falso).
+`CaptureNotifyOnSave` (falso), `CaptureAutoFlash` (verdadeiro), `CaptureSaveFolder`, `CaptureQuickHotkey` (`Shift+PrintScreen`), `CaptureAutoAllMonitors` (falso).
 Entram no backup como as demais. Nenhum pacote NuGet novo foi preciso: tudo usa APIs do Windows já disponíveis (GDI, WinRT de imagem, WinUI).
 
 Decisões de implementação:
@@ -103,14 +112,15 @@ Fora de propósito por ora: seleção de janela por clique no overlay (hoje só 
 
 ## Testes e verificação
 
-- `CaptureTests` (Core, 44 casos): geometria da seleção (alças, mover, redimensionar, inverter, tamanho mínimo, limites), posição da barra,
+- `CaptureTests` (Core, 45 casos): geometria da seleção (alças, mover, redimensionar, inverter, tamanho mínimo, limites), posição da barra,
   setas, união dos monitores, nome de arquivo e caminho único, formato e qualidade, reconhecimento de programas de captura, Print Screen como
   atalho válido, padrões das configurações e o ajuste do Windows (aplica, restaura exatamente, não é afetado pelo “desfazer tudo”).
 - **Verificado à mão** (build local e build publicado, perfil isolado `APPARATUS_PROFILE_DIR`, 2 monitores de 1920×1080): atalho, seleção nos
   dois monitores, mover/redimensionar pela alça, barra e ordem dos botões, lápis, retângulo, seta, marca-texto e texto (várias linhas,
   Ctrl+Enter, desfazer), dicas, cópia (imagem do tamanho exato da seleção, sem o escurecimento), janela de salvar acima da sobreposição
   (com JPEG como tipo inicial quando configurado), `Esc`, ativar/desativar com o valor do Windows em 1 (vira 0 e volta a 1), captura
-  automática (monitor focado 1920×1080, todos 3840×1080, PNG e JPEG nas qualidades 90 e 30) e a página de configurações.
+  automática (monitor focado 1920×1080, todos 3840×1080, PNG e JPEG nas qualidades 90 e 30), o flash (brilho do monitor focado medido durante a
+  captura, arquivo salvo sem o flash, nada com a opção desligada) e a página de configurações.
 - **Não verificado**: impressão, monitores com DPI diferente de 100 %, a tecla Print Screen sozinha com o Lightshot fechado (nos testes ele a
   segurava; foi usado `Ctrl+Alt+F8`), o instalador com o app instalado, uso apenas com teclado nas barras.
 

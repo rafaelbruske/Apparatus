@@ -1,4 +1,4 @@
-using Apparatus.Core.Assistant;
+﻿using Apparatus.Core.Assistant;
 
 namespace Apparatus.Core.Tests;
 
@@ -32,6 +32,8 @@ public class SystemPromptBuilderTests : IDisposable
             Assert.Contains(p, template);
         Assert.Contains("open_windows_setting", template);
         Assert.Contains("only **suggest**", template);
+        Assert.Contains("Print Screen", template);   // the assistant must know the screen capture exists
+        Assert.Contains("open_apparatus_screen", template);
     }
 
     [Fact]
