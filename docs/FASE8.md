@@ -39,4 +39,5 @@ Como usar: Configurações → Assistente → ligar, escolher o provedor, colar 
 - [ ] DPI alto (150% / 200%) e tema escuro/claro: texto e cartões legíveis.
 
 ## Instalador
-- [ ] `build\release.ps1`: comparar o tamanho do instalador com o anterior (~80 MB) para medir o efeito das DLLs do assistente (~7 MB sem compressão).
+- [x] `build\release.ps1`: tamanho medido em 25/11/2026 (versão 0.8.0): `ApparatusApp-win-Setup.exe` 81,9 MB (85,9 milhões de bytes), pacote completo 74,7 MB. O valor anterior é só "~80 MB" nas notas (sem número exato), então o custo das DLLs do assistente (~7 MB sem compressão) ficou em torno de 2 MB comprimidos. Gerado e **não instalado**: instalar é com duplo clique no Explorador, fora do aplicativo Claude.
+- [ ] Instalar o `Setup.exe` (duplo clique) e conferir: abre, Alt+Espaço funciona, o assistente aparece em Configurações e a chave salva continua depois de reiniciar.

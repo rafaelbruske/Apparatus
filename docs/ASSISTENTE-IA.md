@@ -13,7 +13,7 @@ formato de `PLANO.md`/`FASEn.md`: decisões, estrutura, fases com critério de s
 | Executar só depois do clique do usuário | `ResultExecutor` / `ActionService.Run` já separam "escolher" de "executar"; o launcher já tem lista + Enter |
 | Chave guardada cifrada na máquina | `IKeyProtector` / `DpapiKeyProtector` (`Clipboard/ClipboardCipher.cs`), com testes de cifragem prontos para copiar |
 | Arquivo de instruções embutido e editável pela comunidade | Padrão de `EmbeddedResource` com `LogicalName` já usado em `windows-settings.json` |
-| Nova tela em Configurações | `SettingsWindow` é uma página rolável dividida em seções e em arquivos parciais (`SettingsWindow.Start.cs`, `.Backup.cs`, `.Updates.cs`) |
+| Nova tela em Configurações | `SettingsView` é uma página rolável dividida em seções e em arquivos parciais (`SettingsView.Start.cs`, `.Backup.cs`, `.Updates.cs`) |
 | Lógica testável sem UI | `Apparatus.Core` é `net10.0` puro, com xUnit (491 testes) |
 
 O que **não** existe e é o trabalho real: (a) cliente HTTP/IA (o app não usa `HttpClient` hoje; só o Velopack acessa a rede),
@@ -81,7 +81,7 @@ O modelo devolve `nome + argumentos JSON`. O C# **valida e normaliza** (nunca co
 Observações:
 - O `CriarAtalhoAutoHotKey` da ideia vira `propose_action`: o Apparatus tem o próprio modelo de ações/macros, não usa AutoHotkey.
 - O `ExecutarComandoCustomizado(id)` vira `run_my_action(name)`. Usar **nome** (o que o modelo enxerga), resolvido para id no C#.
-- Falta hoje: `ActionsWindow` e `SnippetsWindow` só têm `StartNewAction()`/`StartNewSnippet()` sem dados. É preciso um
+- Falta hoje: `ActionsView` e `SnippetsView` só têm `StartNewAction()`/`StartNewSnippet()` sem dados. É preciso um
   `StartNewAction(ActionDefinition draft)` e equivalente, que carrega o rascunho no editor como "novo, não salvo".
 - Mesmo uma ação aceita no editor só roda quando o usuário aciona o atalho; a IA nunca aperta "Salvar" nem dispara a ação criada.
 
@@ -122,7 +122,7 @@ Observações:
   transferência), `AssistantProvider`, `AssistantBaseUrl` (só provedor personalizado), `AssistantModel` (por provedor),
   `AssistantShareActionNames` (padrão false), `AssistantPrefix`. `AssistantEnabled` deve ser tratado como específico da
   máquina em `BackupService.KeepMachineSpecific`, porque a chave não viaja.
-- Tela em `SettingsWindow.xaml` + `SettingsWindow.Assistant.cs`, seção "Assistente de IA": interruptor, lista de
+- Tela em `SettingsView.xaml` + `SettingsView.Assistant.cs`, seção "Assistente de IA": interruptor, lista de
   provedores com selos, campo de chave (`PasswordBox`; depois de salva mostra "Chave salva" com Substituir/Remover, nunca
   a chave de volta), URL base, modelo (combo + Atualizar), **Testar conexão** (uma chamada mínima, mostra o erro traduzido),
   interruptor "Enviar os nomes das minhas ações", aviso de privacidade (`InfoBar`).
@@ -146,7 +146,7 @@ src/Apparatus.Core/Resources/assistant-system-prompt.md, assistant-providers.jso
 src/Apparatus.Core/Search/Providers/AssistantProvider.cs      (ISearchProvider, ResultKind.Assistant)
 src/Apparatus.App/AssistantService.cs        fila de UI, cancelamento, ponte SuggestedAction -> executores existentes
 src/Apparatus.App/LauncherWindow.xaml(.cs)   modo conversa
-src/Apparatus.App/SettingsWindow.Assistant.cs
+src/Apparatus.App/SettingsView.Assistant.cs
 tests/Apparatus.Core.Tests/Assistant*Tests.cs
 ```
 `Apparatus.Core` fica sem tipos do WinUI. O executor das sugestões é em `App`, perto do `ResultExecutor`
@@ -259,7 +259,7 @@ Regras que ficaram no código, além do plano:
 - `AppSettings`: `AssistantEnabled` (desligado), `AssistantProvider`, `AssistantBaseUrl` (só provedor personalizado), `AssistantModels` (modelo por provedor), `AssistantShareActionNames`. Nenhum campo guarda segredo (um teste por reflexão barra nomes como `ApiKey`/`Token`).
 - Backup: `AssistantEnabled` e `AssistantBaseUrl` não viajam (exportados vazios, e a importação mantém os do computador). Provedor, modelo e a preferência de enviar nomes viajam. A chave não entra em lugar nenhum além de `assistant.keys` (pasta Local, DPAPI).
 - Core: `AssistantSetup` (resolve configurações + catálogo + chave, `WhatIsMissing` diz o que falta, `ModelChoices` filtra a lista de modelos e põe os `flash-lite` do Gemini na frente).
-- Tela: cartão "Assistente de IA" em `SettingsWindow.Assistant.cs` (provedor com selo "Grátis", chave com Salvar/Remover e sem exibir de volta, modelo, Atualizar lista, Testar conexão, aviso de privacidade, opção de enviar nomes das ações, pasta das instruções extras).
+- Tela: cartão "Assistente de IA" em `SettingsView.Assistant.cs` (provedor com selo "Grátis", chave com Salvar/Remover e sem exibir de volta, modelo, Atualizar lista, Testar conexão, aviso de privacidade, opção de enviar nomes das ações, pasta das instruções extras).
 - Correção achada no teste real: o Gemini responde 400 (não 401) para chave inválida; agora vira "chave recusada" em vez de "modelo não aceita o pedido".
 - Verificação feita abrindo o app de verdade (`--settings`, perfil isolado em `APPARATUS_PROFILE_DIR`): salvar a chave, reiniciar e ela continuar lá; `assistant.keys` sem a chave em texto puro; `settings.json` sem a chave; trocar de provedor; digitar um modelo e ele ser gravado; "Testar conexão" com uma chave falsa devolveu o erro traduzido do Google.
 - Não verificado: "Atualizar lista" e "Testar conexão" com uma **chave válida** (só a chave falsa foi usada), e o modo de alto DPI. Há um teste de integração opcional (`APPARATUS_TEST_GEMINI_KEY`) para quem tiver a chave.
@@ -270,7 +270,7 @@ Regras que ficaram no código, além do plano:
 - **Teclas no modo IA:** Enter envia · Esc cancela a resposta em andamento; sem resposta pendente, sai do modo (o texto digitado fica na caixa; para apagar use Ctrl+A e Delete) e, no modo de pesquisa, o Esc seguinte fecha o launcher · Tab (caixa vazia) volta à busca · Ctrl+N conversa nova · Ctrl+Shift+C copia a última resposta · Ctrl+, abre as configurações · setas e PageUp/PageDown rolam a conversa. Pergunta cancelada ou com erro volta para a caixa.
 - **Só texto:** o motor é criado com `offerTools: false` e o prompt ganha uma nota dizendo que não há botões. Os cartões de ação são a Fase 4.
 - Core: `AssistantChat` (linhas da conversa, ask/cancelar/reiniciar/expirar, erro vira linha na tela), `ChatEntry`, `AskOutcome`. App: `LauncherWindow.Assistant.cs`, `ChatTemplateSelector`.
-- Verificado no app real (perfil isolado + servidor falso compatível com OpenAI fazendo o papel do Ollama): dica na caixa, Tab, pergunta e resposta em streaming (o texto cresce palavra a palavra), cancelar com Esc, erro 429 traduzido, Ctrl+N, sequência de Esc, conversa guardada ao reabrir pelo atalho global, "sempre do zero", assistente sem chave (tela explica o que falta) e assistente desligado (Tab segue como antes).
+- Verificado no app real (perfil isolado + servidor falso compatível com OpenAI fazendo o papel do Ollama): dica na caixa, Tab, pergunta e resposta em streaming (o texto cresce palavra a palavra), cancelar com Esc, erro 429 traduzido, Ctrl+N, sequência de Esc, conversa guardada ao reabrir pelo atalho global, "sempre do zero", assistente sem chave (tela explica o que falta) e assistente desligado (na época o Tab seguia como antes; desde o painel dentro do launcher, em 24/11, o Tab entra no modo IA mesmo desligado e mostra como conectar, e Enter abre a página do assistente).
 - Não verificado: resposta de um provedor real dentro do launcher (só o servidor falso), perguntas longas com rolagem, alto DPI.
 
 ### Fase 4 (botões de ação nas respostas): feita
@@ -306,3 +306,9 @@ Regras que ficaram no código, além do plano:
 - **Não muda o prompt** nem o que o modelo vê: as linhas do catálogo no prompt continuam "uri — nome". O cartão extra **não entra no histórico** (continua uma chamada, um reconhecimento), **não conta** no limite de 3 sugestões e **não duplica** se o modelo já sugeriu a página moderna (em qualquer ordem).
 - Sem equivalente moderno (Gerenciador de Dispositivos e demais `.msc`, variáveis de ambiente, Opções da Internet, rede `ncpa.cpl`, disco) nada é acrescentado. `sysdm.cpl` ficou de fora de propósito: "Sobre" só cobre parte e seria ruído para quem quer variáveis de ambiente. Para `ncpa.cpl` e disco falta a página moderna no catálogo; incluí-la aumentaria o prompt.
 - Testes: 710 passando (6 novos: pares válidos, prompt inalterado, só ferramentas clássicas com par, ordem e duplicação, limite, histórico válido). Não verificado na tela do launcher (o cartão usa o mesmo caminho dos outros).
+
+### Depois do painel dentro do launcher (2026-11-25)
+- Em 24/11 configurações, snippets e ações deixaram de ser janelas e viraram páginas do launcher (`SettingsView`, `SnippetsView`, `ActionsView`, `LauncherWindow.Panel.cs`). Os nomes `*Window` do texto acima, escrito antes disso, são hoje `*View`.
+- Mudanças que tocam o assistente: Tab entra no modo IA mesmo com o assistente desligado ou sem chave (a tela explica o que falta; Enter abre a página "Conexão e comportamento"); Esc no modo IA só sai do modo e não apaga o texto da caixa; `Ctrl+,` no modo IA abre a página do assistente. Os cartões continuam por `ResultExecutor.RunSuggestion`; os rascunhos abrem o editor da página certa, marcado como não salvo, e perguntam antes de descartar uma edição pendente.
+- Ajuste: o cartão "Abrir as extensões" (e o comando "Gerenciar extensões" do launcher) abria sempre a página Geral; agora `ResultExecutor` recebe o id da página (`Action<string>`) e abre `extensions`. "Abrir as configurações do Apparatus" continua em `general`.
+- Não verificado na tela: o cartão de extensões abrindo a página certa, o piscar de esconder e mostrar a janela ao abrir o painel por um cartão, e o resto da lista em `docs/FASE8.md`.

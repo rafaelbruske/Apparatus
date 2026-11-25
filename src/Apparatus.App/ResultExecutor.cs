@@ -10,7 +10,7 @@ namespace Apparatus.App;
 public sealed class ResultExecutor
 {
     private readonly AppServices _services;
-    private readonly Action _openSettings;
+    private readonly Action<string> _openSettings;   // the id of the settings page to show ("general", "extensions"...)
     private readonly Action _quit;
     private readonly Action<bool> _openSnippets;   // true = start a new snippet
     private readonly Action<bool> _openActions;    // true = start a new action
@@ -18,7 +18,7 @@ public sealed class ResultExecutor
     private readonly Action<Apparatus.Core.Actions.ActionDefinition>? _openActionDraft;
     private readonly Action<Apparatus.Core.Snippets.Snippet>? _openSnippetDraft;
 
-    public ResultExecutor(AppServices services, Action openSettings, Action quit, Action<bool> openSnippets, Action<bool> openActions,
+    public ResultExecutor(AppServices services, Action<string> openSettings, Action quit, Action<bool> openSnippets, Action<bool> openActions,
         Action<Apparatus.Core.Actions.ActionDefinition>? openActionDraft = null, Action<Apparatus.Core.Snippets.Snippet>? openSnippetDraft = null)
     {
         _openActionDraft = openActionDraft;
@@ -92,7 +92,8 @@ public sealed class ResultExecutor
                 case Apparatus.Core.Assistant.SuggestionKind.OpenApparatusScreen:
                     switch (s.Payload)
                     {
-                        case "settings" or "extensions": _openSettings(); break;
+                        case "settings": _openSettings("general"); break;
+                        case "extensions": _openSettings("extensions"); break;
                         case "snippets": _openSnippets(false); break;
                         case "actions": _openActions(false); break;
                     }
@@ -119,7 +120,7 @@ public sealed class ResultExecutor
     {
         switch (id)
         {
-            case InternalCommands.OpenSettings: _openSettings(); break;
+            case InternalCommands.OpenSettings: _openSettings("general"); break;
             case InternalCommands.Reindex: _services.ReindexNow(); break;
             case InternalCommands.ClearHistory: _services.Usage.ClearHistory(); break;
             case InternalCommands.OpenDataFolder: ShellLauncher.Open(AppPaths.DataDirectory); break;
@@ -129,7 +130,7 @@ public sealed class ResultExecutor
             case InternalCommands.ManageActions: _openActions(false); break;
             case InternalCommands.ClipboardEnable: _services.ApplySettings(s => s.ClipboardHistory = true); break;
             case InternalCommands.ClipboardClear: _services.ClipboardStore.Clear(); break;
-            case InternalCommands.ManageExtensions: _openSettings(); break;
+            case InternalCommands.ManageExtensions: _openSettings("extensions"); break;
             case InternalCommands.NewAction: _openActions(true); break;
         }
     }

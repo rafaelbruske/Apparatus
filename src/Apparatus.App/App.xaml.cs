@@ -41,7 +41,7 @@ public partial class App : Application
         _services.ActionHost = new ActionService(_services, _ui);
         _services.ExtensionRunner = new ExtensionRunner(_services, _ui);
         _services.ClipboardHost = new ClipboardService(_services);
-        var executor = new ResultExecutor(_services, () => OpenSettings(), Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction),
+        var executor = new ResultExecutor(_services, page => OpenSettings(page), Quit, newSnippet => OpenSnippets(newSnippet), newAction => OpenActions(newAction),
             draft => OpenActions(true, draft), draft => OpenSnippets(true, draft));
         _launcher = new LauncherWindow(_services, executor);
         _services.ShowLauncher = query => _ui.TryEnqueue(() => _launcher.ShowLauncher(string.IsNullOrEmpty(query) ? null : query));
