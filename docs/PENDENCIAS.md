@@ -189,8 +189,12 @@ Pendências do módulo (atualizado em 25/11/2026):
   **Não verificado:** o workflow nunca rodou no GitHub (restore e build no runner, SDK do `global.json`, `vpk` no `PATH`, permissão do `GITHUB_TOKEN`,
   anexos, notas) nem o instalador que ele gera. Confira na primeira tag. Com publicação direta, uma falha no último passo deixa uma release pela metade:
   apague a release e a tag e refaça.
-  **Ideias (sem decisão):** pacote delta com `vpk download github`; atualização automática pelo endereço `releases/latest/download` (desligada por padrão);
-  workflow de build e testes em cada pull request.
+  **Ideias (sem decisão):** pacote delta com `vpk download github`; workflow de build e testes em cada pull request.
+- **Atualização pelo GitHub (25/11/2026):** o botão "Usar o GitHub" (Configurações → Atualizações e dados) preenche a fonte com o repositório oficial; o app usa o
+  `GithubSource` do Velopack, que pergunta à API qual é a release mais recente e compara localmente, sem enviar a versão instalada. Continua desligado até o
+  usuário clicar. **Verificado:** os testes (`UpdateSourcesTests`), a tela (o botão preenche o campo e grava a configuração, num perfil isolado) e o pedido
+  real da biblioteca, medido num servidor de gravação. **Não verificado:** a atualização de ponta a ponta contra o GitHub (não há release ainda), o tema claro
+  e DPI alto. Detalhes em `docs/LANCAMENTO.md`.
 - Tamanho: 177 MB instalado, 80 MB o instalador. `Microsoft.Windows.SDK.NET.dll` (24 MB) é o maior arquivo e não é reduzível sem
   cortes arriscados do WinUI.
 
@@ -228,7 +232,7 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (778 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (798 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

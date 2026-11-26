@@ -26,7 +26,7 @@ dotnet tool install -g vpk --version 1.2.161
 
 Without code signing, SmartScreen warns on the first run ("More info → Run anyway"). To sign, pass `-SignParams` to the script.
 
-To update, point Settings → Updates at the `artifacts\releases` folder (or a web address with the same files). Apparatus tells you when a new version is available and you decide when to install it.
+To update, point Settings → Updates at the `artifacts\releases` folder (or a web address with the same files), or click **Usar o GitHub** to follow the releases published on GitHub. Nothing is checked until you choose a source. With GitHub, Apparatus asks `api.github.com` once a day (and when you ask) which release is the newest and compares it with the installed version on your PC, so GitHub only sees the ordinary request (your IP address), not your version. Apparatus tells you when a new version is available and you decide when to install it.
 
 To run from source: `dotnet run --project src/Apparatus.App`.
 

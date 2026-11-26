@@ -1,5 +1,7 @@
 using Apparatus.Core;
+using Apparatus.Core.Settings;
 using Velopack;
+using Velopack.Sources;
 
 namespace Apparatus.App;
 
@@ -34,9 +36,10 @@ public sealed class UpdateService
 
     public event Action? StatusChanged;
 
+    /// <summary>Starts the daily check. Called at startup and again when a source is chosen, so it takes effect without a restart.</summary>
     public void Start()
     {
-        if (Source.Length == 0 || !IsInstalled) return;
+        if (_timer is not null || Source.Length == 0 || !IsInstalled) return;
         _timer = new Timer(async _ => await CheckAsync(notify: true).ConfigureAwait(false), null, TimeSpan.FromMinutes(2), CheckEvery);
     }
 
@@ -47,7 +50,11 @@ public sealed class UpdateService
         if (_manager is not null && _managerSource == source) return _manager;
         try
         {
-            _manager = new UpdateManager(source);
+            // A GitHub repository is asked through its API for the newest release; the comparison with the installed version happens
+            // here, so the request does not carry the installed version (a plain web address would add it to the query string).
+            _manager = UpdateSources.IsGithubRepository(source)
+                ? new UpdateManager(new GithubSource(source, null, false))
+                : new UpdateManager(source);
             _managerSource = source;
             return _manager;
         }

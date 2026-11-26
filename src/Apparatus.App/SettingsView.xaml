@@ -808,16 +808,24 @@
                     <TextBlock x:Name="VersionText" />
                     <TextBox
                         x:Name="UpdateSourceBox"
-                        Header="De onde vêm as atualizações (pasta ou endereço web com os arquivos de release)"
-                        PlaceholderText="por exemplo D:\releases ou https://exemplo.com/apparatus"
+                        Header="De onde vêm as atualizações (repositório do GitHub, pasta ou endereço web com os arquivos de release)"
+                        PlaceholderText="por exemplo https://github.com/rafaelbruske/Apparatus, D:\releases ou https://exemplo.com/apparatus"
                         LostFocus="OnUpdateSourceLostFocus" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button
+                            x:Name="UseGithubButton"
+                            Content="Usar o GitHub"
+                            Click="OnUseGithub"
+                            ToolTipService.ToolTip="Preenche o campo com o repositório oficial do Apparatus no GitHub e liga a verificação diária" />
                         <Button Content="Verificar agora" Click="OnCheckUpdates" />
                         <Button x:Name="InstallUpdateButton" Content="Instalar e reiniciar" Click="OnInstallUpdate" Visibility="Collapsed" />
                     </StackPanel>
                     <TextBlock x:Name="UpdateStatusText" FontSize="12" Opacity="0.75" TextWrapping="Wrap" />
                     <TextBlock
                         Text="Sem uma fonte, nada é baixado. Quando há uma versão nova, o Apparatus avisa e você decide quando instalar; suas configurações e dados não são tocados."
+                        FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="Com o GitHub, o Apparatus pergunta a api.github.com qual é a release mais recente, uma vez por dia e quando você pede, e compara com a versão instalada no seu PC. O GitHub recebe só o pedido comum (seu endereço IP e o nome da biblioteca de atualização); a versão instalada não vai junto."
                         FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>

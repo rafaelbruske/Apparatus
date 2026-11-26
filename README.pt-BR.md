@@ -24,7 +24,7 @@ dotnet tool install -g vpk --version 1.2.161
 
 Sem assinatura de código, o SmartScreen avisa na primeira execução ("Mais informações → Executar assim mesmo"). Para assinar, passe `-SignParams` ao script.
 
-Para atualizar, coloque a pasta `artifacts\releases` (ou um endereço web com os mesmos arquivos) em Configurações → Atualizações. O Apparatus avisa quando há versão nova e você decide quando instalar.
+Para atualizar, coloque a pasta `artifacts\releases` (ou um endereço web com os mesmos arquivos) em Configurações → Atualizações, ou clique em **Usar o GitHub** para acompanhar as releases publicadas no GitHub. Nada é verificado até você escolher uma fonte. Com o GitHub, o Apparatus pergunta a `api.github.com`, uma vez por dia (e quando você pede), qual é a release mais recente e compara com a versão instalada no seu PC; o GitHub vê só o pedido comum (seu endereço IP), não a sua versão. O Apparatus avisa quando há versão nova e você decide quando instalar.
 
 Para rodar a partir do código: `dotnet run --project src/Apparatus.App`.
 
