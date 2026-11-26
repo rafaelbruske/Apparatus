@@ -16,6 +16,8 @@
         <StackPanel Grid.Column="1" Padding="32,24,32,32" Spacing="8">
 
             <TextBlock x:Name="PageTitle" Text="Configurações" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,8" />
+            <!-- Shown by the window when the search finds no setting (see SettingsWindow.ApplySearch). -->
+            <TextBlock x:Name="SearchEmptyText" Visibility="Collapsed" Opacity="0.65" TextWrapping="Wrap" />
 
             <StackPanel x:Name="Page_general" Spacing="8">
             <!-- hotkey -->

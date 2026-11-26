@@ -519,6 +519,7 @@ public sealed partial class ActionsView : UserControl
         {
             AppLog.Error("Starting the macro recording failed", ex);
             AbortMacroRecording();
+            RecordingFinished?.Invoke();   // the host may be hidden already: bring it back (and give the hotkey back)
         }
     }
 

@@ -25,6 +25,26 @@ public class SettingsSearchTests
     public void Matches_NeedsEveryWordAndIgnoresCaseAndAccents(string text, string query, bool expected) =>
         Assert.Equal(expected, SettingsSearch.Matches(text, SettingsSearch.Words(query)));
 
+    private static readonly string[] Order = { "general", "snippets-list", "actions-list", "snippets", "capture" };
+
+    [Fact]
+    public void PageToJumpTo_StaysWhenThePageOnTheScreenHasMatches() =>
+        Assert.Null(SettingsSearch.PageToJumpTo("capture", Order, new Dictionary<string, int> { ["general"] = 1, ["capture"] = 2 }));
+
+    [Fact]
+    public void PageToJumpTo_GoesToTheFirstSettingsPageWithMatches() =>
+        Assert.Equal("snippets", SettingsSearch.PageToJumpTo("general", Order, new Dictionary<string, int> { ["capture"] = 1, ["snippets"] = 1 }));
+
+    [Fact]
+    public void PageToJumpTo_SkipsTheEditorPagesListedBeforeTheMatch() =>
+        // "gatilho" matches the snippets editor by keyword, which comes first in the side bar, but only the settings page has blocks.
+        Assert.Equal("snippets", SettingsSearch.PageToJumpTo("general", Order, new Dictionary<string, int> { ["snippets"] = 1 }));
+
+    [Fact]
+    public void PageToJumpTo_StaysWhenNoSettingMatches() =>
+        // "macro" matches only the actions editor.
+        Assert.Null(SettingsSearch.PageToJumpTo("general", Order, new Dictionary<string, int>()));
+
     [Fact]
     public void FindRanges_PointsIntoTheOriginalTextIgnoringCaseAndAccents()
     {

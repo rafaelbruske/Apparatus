@@ -102,6 +102,8 @@ public sealed partial class SettingsWindow : Window
     /// <summary>
     /// The search box filters the side bar to the pages that have a setting with the words typed (with how many), and each of those
     /// pages then shows only the blocks that have them. Enter opens the first page, Down moves into the side bar, Esc clears.
+    /// Typing only moves between settings pages; the snippets and actions pages are opened by Enter or a click. Opening them
+    /// ends the search, as does a request from outside to show a page: a page must never come up emptied by an old search.
     /// </summary>
     private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
@@ -163,13 +165,29 @@ public sealed partial class SettingsWindow : Window
         }
         if (heading is not null) heading.Visibility = words.Count == 0 || anyInGroup ? Visibility.Visible : Visibility.Collapsed;
 
-        // The page on the screen has nothing to show: move to the first page that has. (Not from the snippets and actions pages:
-        // leaving them can ask about unsaved edits, which would be rude in the middle of typing.)
-        if (words.Count > 0 && _page != SnippetsPage && _page != ActionsPage && counts.GetValueOrDefault(_page) == 0
-            && FirstVisiblePage() is { } target)
+        // When no setting has the words, the page on the screen is empty: say why, and how to open an editor page that matched.
+        string? note = null;
+        if (words.Count > 0 && counts.Count == 0)
+        {
+            note = $"Nenhuma configuração com “{_query}”.";
+            if (FirstVisibleItem()?.Tag is NavEntry editor) note += $" Pressione Enter para abrir {editor.Label}.";
+        }
+        _settingsView.ShowSearchNote(note);
+
+        // The page on the screen has nothing to show: move to the first settings page that has. (Not from the snippets and actions
+        // pages: leaving them can ask about unsaved edits, which would be rude in the middle of typing.)
+        if (words.Count > 0 && _page != SnippetsPage && _page != ActionsPage
+            && SettingsSearch.PageToJumpTo(_page, Navigation.Select(n => n.Page).OfType<string>(), counts) is { } target)
         {
             SelectPage(target);
         }
+    }
+
+    private void ClearSearch()
+    {
+        if (_query.Length == 0 && SearchBox.Text.Length == 0) return;
+        SearchBox.Text = "";
+        ApplySearch("");
     }
 
     private ListViewItem? FirstVisibleItem() =>
@@ -217,6 +235,7 @@ public sealed partial class SettingsWindow : Window
         if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } p) p.Restore();
         Activate();
         WindowHelpers.BringToForeground(_hwnd);
+        ClearSearch();
         SelectPage(page);
     }
 
@@ -227,6 +246,9 @@ public sealed partial class SettingsWindow : Window
     /// <summary>Opens the actions page; <paramref name="startNew"/> also starts a new action (from <paramref name="draft"/> when given).</summary>
     public void ShowActions(bool startNew = false, ActionDefinition? draft = null) =>
         ShowPage(ActionsPage, startNew ? w => w._actionsView?.StartNewAction(draft) : null);
+
+    /// <summary>True while a macro is being recorded: the window is hidden on purpose and the launcher must stay out of the way.</summary>
+    public bool IsRecordingMacro => _macroHidden;
 
     /// <summary>Gets the window out of the way (before a screen capture).</summary>
     public void Minimize()
@@ -362,6 +384,7 @@ public sealed partial class SettingsWindow : Window
     private void ShowPanelPage(string page)
     {
         _page = page;
+        if (page is SnippetsPage or ActionsPage) ClearSearch();   // the search box goes away with the side bar
         UpdateNavigationVisibility(page);
         switch (page)
         {
