@@ -1,0 +1,74 @@
+name: "Feature request / Sugerir uma funcionalidade"
+description: "An idea or improvement. / Uma ideia ou melhoria."
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! You can write in **English or Portuguese**. / Obrigado pela ideia! Pode escrever em **português ou inglês**.
+
+        Start with the problem, not the solution: it helps to find the best way to solve it. / Comece pelo problema, não pela solução: isso ajuda a achar o melhor jeito de resolvê-lo.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area / Área
+      options:
+        - Launcher (search box / caixa de busca)
+        - Snippets
+        - Actions and macros / Ações e macros
+        - Clipboard history / Histórico da área de transferência
+        - Start menu / Menu Iniciar
+        - Screen capture / Captura de tela
+        - AI assistant / Assistente de IA
+        - Windows tweaks / Ajustes do Windows
+        - Settings window / Janela de configurações
+        - Backup or sync / Backup ou sincronização
+        - Installer or updates / Instalador ou atualizações
+        - New area / Área nova
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation / Problema ou motivação
+      description: What are you trying to do that is hard or impossible today? / O que você quer fazer e hoje é difícil ou impossível?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution / Solução proposta
+      description: How would you like it to work? Describe what you would see and press. / Como você gostaria que funcionasse? Descreva o que você veria e apertaria.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives / Alternativas
+      description: Other ways you tried or thought of, or how other programs do it. / Outros jeitos que você tentou ou imaginou, ou como outros programas fazem.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: More context / Mais contexto
+      description: Screenshots, examples, links. / Capturas de tela, exemplos, links.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project principles / Princípios do projeto
+      description: Apparatus keeps these rules; an idea that breaks one is hard to accept. / O Apparatus mantém estas regras; uma ideia que quebre uma é difícil de aceitar.
+      options:
+        - label: It does not need to inject code into Explorer or other programs (only public Windows APIs). / Não precisa injetar código no Explorer nem em outros programas (só APIs públicas do Windows).
+        - label: Anything that sends data out of the PC, or takes a system key, would be off until the user turns it on. / O que enviar dados para fora do PC, ou tomar uma tecla do sistema, ficaria desligado até o usuário ligar.
+        - label: I looked for an existing issue about this. / Procurei uma issue igual.
+          required: true

@@ -1,0 +1,118 @@
+name: "Bug report / Relatar um erro"
+description: "Something does not work or behaves unexpectedly. / Algo não funciona ou se comporta de forma inesperada."
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! You can write in **English or Portuguese**. / Obrigado por relatar! Pode escrever em **português ou inglês**.
+
+        Before you continue / Antes de continuar:
+        - Search the [open issues](https://github.com/rafaelbruske/Apparatus/issues) and the [known pending items](https://github.com/rafaelbruske/Apparatus/blob/master/docs/PENDENCIAS.md) (in Portuguese). / Procure nas issues abertas e nas pendências conhecidas.
+        - **Never paste an API key, clipboard history or other personal text.** / **Nunca cole chave de API, histórico da área de transferência ou outro texto pessoal.**
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area / Área
+      description: Where does the problem happen? / Onde o problema acontece?
+      options:
+        - Launcher (search box / caixa de busca)
+        - Snippets
+        - Actions and macros / Ações e macros
+        - Clipboard history / Histórico da área de transferência
+        - Start menu / Menu Iniciar
+        - Screen capture / Captura de tela
+        - AI assistant / Assistente de IA
+        - Windows tweaks / Ajustes do Windows
+        - Settings window / Janela de configurações
+        - Backup or sync / Backup ou sincronização
+        - Installer or updates / Instalador ou atualizações
+        - Other / Outra
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened? / O que aconteceu?
+      description: Describe the problem in a few sentences. / Descreva o problema em poucas frases.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce / Passos para reproduzir
+      placeholder: |
+        1. Press Alt+Space...
+        2. Type...
+        3. See the problem...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect? / O que você esperava?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Apparatus version / Versão do Apparatus
+      description: Shown in Settings → Sobre. / Aparece em Configurações → Sobre.
+      placeholder: "0.9.15"
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version / Versão do Windows
+      description: Run `winver` and copy the version and build. / Rode `winver` e copie a versão e a compilação.
+      placeholder: "Windows 11 24H2 (build 26100.xxxx)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it? / Como você instalou?
+      options:
+        - Installer (Setup.exe) / Instalador
+        - Portable (zip) / Portátil
+        - Built from source / Compilado do código-fonte
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Anything about your setup that may matter / Algo do seu ambiente que possa importar
+      description: Multiple monitors, display scale (DPI), a different keyboard layout, running a program as administrator, the theme (light/dark)... / Vários monitores, escala da tela (DPI), outro layout de teclado, programa em modo administrador, tema (claro/escuro)...
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log and screenshots / Log e capturas de tela
+      description: |
+        The log is in `%LOCALAPPDATA%\Apparatus\logs`. Paste only the relevant lines, after removing anything personal. Drag screenshots here.
+        O log fica em `%LOCALAPPDATA%\Apparatus\logs`. Cole só as linhas relevantes, depois de tirar o que for pessoal. Arraste capturas de tela para cá.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before sending / Antes de enviar
+      options:
+        - label: I looked for an existing issue about this. / Procurei uma issue igual.
+          required: true
+        - label: I removed API keys, clipboard text and other personal data from what I pasted. / Tirei chaves, textos copiados e dados pessoais do que colei.
+          required: true

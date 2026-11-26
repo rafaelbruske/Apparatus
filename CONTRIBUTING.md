@@ -16,9 +16,11 @@ By contributing you agree that your contribution is released under the project l
 - **Questions about how something works:** the decisions and what each phase delivered are in [`docs/`](docs), written in
   Portuguese. [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) lists what is known to be missing or unverified.
 - **Security problems:** please do **not** open a public issue with details. Use GitHub's private vulnerability report
-  if it is enabled for the repository; otherwise contact the maintainer privately through GitHub.
+  if it is enabled for the repository; otherwise contact the maintainer privately through GitHub. The details are in
+  [`SECURITY.md`](SECURITY.md).
 
-When you report a bug, include the Apparatus version, your Windows build (`winver`), the steps to reproduce it and what
+The **New issue** button offers a form for a bug report and another for a feature request (both bilingual); the fields ask
+for what is needed below. When you report a bug, include the Apparatus version, your Windows build (`winver`), the steps to reproduce it and what
 you expected. The log is in `%LOCALAPPDATA%\Apparatus\logs`. **Never paste an API key, clipboard history or other
 personal text** into an issue; remove it from the log first.
 
@@ -88,7 +90,8 @@ These are easy to break by accident, so please check your change against them:
 3. Write the commit message as a short sentence saying what changed and why (the history uses Portuguese verbs such as
    "Adiciona…" and "Corrige…"; English is fine too).
 4. Update the docs if behaviour changes: user-facing text in `README.md` / `README.pt-BR.md`, and the relevant note in `docs/`.
-5. In the pull request, describe what you changed, how you tested it and what you could not test.
+5. In the pull request, describe what you changed, how you tested it and what you could not test. The description opens with
+   a template ([`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md)) that asks for exactly that, plus a checklist of the rules above.
 
 If you are an AI coding assistant, read [`CLAUDE.md`](CLAUDE.md) first: it lists the project rules, how to test safely and what to update.
 

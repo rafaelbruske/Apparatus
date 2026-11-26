@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability / Vulnerabilidade de segurança
+    url: https://github.com/rafaelbruske/Apparatus/security/advisories/new
+    about: Report it privately. Please do not open a public issue with details. / Relate em particular. Não abra uma issue pública com detalhes.
+  - name: Known pending items / Pendências conhecidas
+    url: https://github.com/rafaelbruske/Apparatus/blob/master/docs/PENDENCIAS.md
+    about: What is known to be missing or unverified (in Portuguese). Check before reporting. / O que se sabe que falta ou não foi verificado. Confira antes de relatar.
