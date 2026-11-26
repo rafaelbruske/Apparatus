@@ -1,0 +1,17 @@
+# The pull requests that Dependabot opens by itself. GitHub only reads this file from the default branch (master).
+# Why each choice, and what to do with one of these pull requests: docs/VERIFICACAO-PR.md.
+version: 2
+updates:
+  # The actions used by the workflows, including the one pinned to a commit: the SHA and the version in its comment change together.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  # NuGet: security fixes only. A limit of 0 turns the version updates off and leaves the security updates on (those are switched on
+  # in the repository settings). The Windows App SDK and others change often, and each pull request costs a full check.
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 0

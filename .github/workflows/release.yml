@@ -63,8 +63,10 @@ jobs:
       - name: Conferir o que foi gerado
         run: .\build\verify-release.ps1 -Version $env:VERSION
 
+      # Third-party code that runs with write access and publishes what users install: pinned to a commit, because a tag (v3) can be
+      # moved to other code. To update, put the commit of the new tag here and its version in the comment (docs/LANCAMENTO.md).
       - name: Publicar a release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
           name: Apparatus ${{ github.ref_name }}
           generate_release_notes: true

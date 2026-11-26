@@ -51,6 +51,14 @@ Roda num Windows do GitHub (`windows-latest`). Cada passo que falha encerra tudo
   resto em Outras mudanças. Um pull request com o rótulo `ignore-for-release` não aparece. O título do pull request é o texto da nota: escreva-o
   como uma frase para o usuário.
 - **O instalador do GitHub também não é assinado.** O SmartScreen avisa como antes (`docs/ASSINATURA.md`).
+- **A ação que publica é fixada pelo SHA do commit** (26/11/2026: `softprops/action-gh-release`, `v3.0.4`, `8a0cd651…`). Ela é de terceiro, roda com
+  `contents: write` e entrega o que os usuários instalam e recebem como atualização. Uma tag (`v3`, ou mesmo `v3.0.4`) pode ser apontada para outro código
+  por quem controla o repositório da ação; um SHA não. As ações do próprio GitHub (`actions/checkout`, `actions/setup-dotnet`) continuam por tag.
+  - **O custo:** correções não chegam sozinhas, e o GitHub **não gera alerta do Dependabot** para ação fixada por SHA. O
+    `.github/dependabot.yml` abre, uma vez por mês, um pull request com as versões novas (`docs/VERIFICACAO-PR.md`).
+  - **Para atualizar:** `git ls-remote --tags https://github.com/softprops/action-gh-release "vX.Y.Z*"` e use o SHA da linha terminada em `^{}` (o do
+    commit; sem essa linha, a tag é simples e o único SHA já é o do commit). Troque o SHA e o comentário no `release.yml`, num pull request, depois de ler as
+    notas da versão. O `release.yml` só roda numa tag, então o pull request não exercita essa linha.
 
 ## Verificado e não verificado
 
