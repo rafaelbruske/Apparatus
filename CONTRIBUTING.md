@@ -51,6 +51,7 @@ the environment variable `APPARATUS_PROFILE_DIR`. Use a different launcher hotke
 | `tests/Apparatus.Core.Tests` | The unit tests (xUnit). |
 | `tests/Apparatus.E2E.*`, `tests/Apparatus.UI` | Checks that press real keys, click, or drive the interface. Each says in its header what it does; do not touch the keyboard or mouse while one runs. |
 | `build/` | The release script ([`release.ps1`](build/release.ps1)): a self-contained publish packed with Velopack. |
+| `.github/` | Issue forms, the pull request template and the release workflow (a pushed `vX.Y.Z` tag creates a draft release; see [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md), in Portuguese). |
 | `docs/` | Plans, per-phase notes, extension guide, pending items. |
 
 ## Code style
