@@ -63,13 +63,29 @@ Roda num Windows do GitHub (`windows-latest`). Cada passo que falha encerra tudo
   Workflow permissions), se as notas saem agrupadas e se o `Setup.exe` instala e abre. Espere ajustes na primeira tentativa; uma tag que falha antes
   do passo 8 não deixa nada publicado.
 
+## Atualização automática pelo GitHub (25/11/2026)
+
+Em Configurações → Atualizações e dados, o botão **Usar o GitHub** preenche o campo "De onde vêm as atualizações" com
+`https://github.com/rafaelbruske/Apparatus` e liga a verificação diária (sem reiniciar). É **opt-in**: a fonte vem vazia e nada é consultado até o usuário
+clicar (ou digitar um endereço). Quem digita o endereço de um repositório (`https://github.com/dono/repo`, também de um fork) tem o mesmo comportamento;
+pasta e endereço web comuns continuam como antes.
+
+- **Por que o `GithubSource` e não o endereço de download da release:** com um endereço web comum o Velopack acrescenta ao pedido informações da máquina
+  (medi `?arch=x64&os=win&rid=win-x64`) e, segundo o código da biblioteca, pode acrescentar a versão instalada e um identificador anônimo da instalação.
+  O `GithubSource` faz o contrário: pergunta à API qual é a release mais recente e **compara no próprio app**.
+- **Medido** com um servidor de gravação no lugar do GitHub (programa de teste na pasta temporária, fora do repositório): o pedido do `GithubSource` é só
+  `GET https://api.github.com/repos/rafaelbruske/Apparatus/releases?per_page=10&page=1` com o cabeçalho `Accept`, mais o `User-Agent: Velopack/1.2.161` que o
+  cliente HTTP padrão da biblioteca manda (visto no teste do endereço web comum, que usa o mesmo cliente). Nem a versão do Apparatus nem identificador algum vão junto. O GitHub vê, como em qualquer pedido, o IP.
+- **Limite do GitHub:** sem autenticação são 60 pedidos por hora por IP. Uma verificação por dia não chega perto, mas numa rede compartilhada o GitHub pode recusar;
+  a tela mostra a mensagem de erro e a verificação seguinte tenta de novo.
+- Só vê **releases estáveis** (o app não pede pré-lançamentos). Rascunhos não aparecem sem autenticação.
+- **Não verificado:** contra o GitHub de verdade, porque ainda não existe release feita pelo workflow. Falta ver, depois da primeira: se o app acha a release,
+  baixa o pacote completo e se atualiza (o `releases.win.json` e o `.nupkg` precisam estar entre os arquivos da release, o que o workflow faz); a aparência
+  com o tema claro e com DPI alto; e a primeira verificação feita pelo temporizador diário (a verificação "Verificar agora" usa o mesmo caminho).
+
 ## Ideias para depois
 
 - **Pacote delta** (atualização de poucos MB em vez de ~75 MB): depois que existir uma release feita pelo workflow, baixar a release anterior com
   `vpk download github` antes do `release.ps1`; o script já cria o delta quando o pacote anterior está na pasta. Tem de tolerar a primeira release (que
   não tem anterior), e a conferência passaria a esperar o `*-delta.nupkg` também.
-- **Atualização automática pelo GitHub:** o app já aceita um endereço web em Configurações → Atualizações. O endereço
-  `https://github.com/rafaelbruske/Apparatus/releases/latest/download` deve servir sem mudar código (o GitHub redireciona `latest/download/<arquivo>` para a
-  release mais recente que não seja rascunho nem pré-lançamento), mas **não foi testado**. Manter a opção **desligada por padrão**, como a regra
-  "nada sai do PC sem o usuário ligar" exige, por exemplo com um botão "Usar o GitHub" que preenche o campo, e dizer no README o que é enviado.
 - **Verificação em pull requests:** um workflow que roda o build e os testes em cada PR, para a `master` só aceitar o que compila.

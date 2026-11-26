@@ -1,3 +1,4 @@
+using Apparatus.Core.Settings;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -34,7 +35,15 @@ public sealed partial class SettingsView
         string value = UpdateSourceBox.Text.Trim();
         if (value == _services.Settings.Current.UpdateSource) return;
         _services.ApplySettings(s => s.UpdateSource = value);
+        _services.Updates.Start();   // a source chosen now starts the daily check without a restart
         RefreshUpdates();
+    }
+
+    /// <summary>Fills the source with the official repository: the user turns the GitHub check on by clicking here, it is never the default.</summary>
+    private void OnUseGithub(object sender, RoutedEventArgs e)
+    {
+        UpdateSourceBox.Text = UpdateSources.OfficialGithubRepository;
+        OnUpdateSourceLostFocus(sender, e);
     }
 
     private async void OnCheckUpdates(object sender, RoutedEventArgs e)
