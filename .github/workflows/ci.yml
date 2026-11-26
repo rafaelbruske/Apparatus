@@ -1,0 +1,71 @@
+# Checks every pull request into master (and master itself after a merge): the app and the tests compile, the unit tests pass, and the
+# installer can still be built. Make it required in the branch protection of master: see docs/VERIFICACAO-PR.md.
+name: Verificar
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to the same pull request cancels the check that is still running for the older one.
+concurrency:
+  group: verificar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The name of the job is what the branch protection lists as a required check: do not rename it without changing the rule.
+  compilar-e-testar:
+    name: Compilar e testar
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar o .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # The app is not packaged here, only built; the E2E projects are compiled (not run: they press real keys) so a refactor
+      # that breaks them is caught.
+      - name: Compilar o app e os projetos de verificação
+        run: |
+          dotnet build src/Apparatus.App/Apparatus.App.csproj --configuration Release -p:Platform=x64
+          if ($LASTEXITCODE -ne 0) { throw "O app não compila." }
+          foreach ($project in 'Snippets', 'Actions', 'Clipboard', 'Start') {
+            dotnet build "tests/Apparatus.E2E.$project" --configuration Release
+            if ($LASTEXITCODE -ne 0) { throw "O projeto Apparatus.E2E.$project não compila." }
+          }
+
+      - name: Rodar os testes
+        run: dotnet test tests/Apparatus.Core.Tests --configuration Release
+
+      # Syntax of the scripts the release depends on: a typo here would only show up on the day of a release otherwise.
+      - name: Conferir os scripts de build
+        run: |
+          $failed = $false
+          foreach ($script in Get-ChildItem build -Filter *.ps1) {
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($script.FullName, [ref]$null, [ref]$errors)
+            if ($errors.Count -gt 0) { $failed = $true; $errors | ForEach-Object { Write-Host "::error file=build/$($script.Name),line=$($_.Extent.StartLineNumber)::$($_.Message)" } }
+          }
+          if ($failed) { throw "Há erro de sintaxe nos scripts de build." }
+
+      # The same steps as the release (see release.yml), with a throw-away version and nothing published. It catches, before a tag
+      # is pushed, a missing license, a broken publish or a package that does not match its feed.
+      - name: Ensaiar o instalador
+        run: |
+          dotnet tool install -g vpk --version 1.2.161
+          if ($LASTEXITCODE -ne 0) { throw "Não foi possível instalar o vpk." }
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          .\build\release.ps1 -Version 0.0.1 -Output artifacts\ensaio
+          .\build\verify-release.ps1 -Version 0.0.1 -Output artifacts\ensaio

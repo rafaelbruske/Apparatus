@@ -88,4 +88,3 @@ pasta e endereço web comuns continuam como antes.
 - **Pacote delta** (atualização de poucos MB em vez de ~75 MB): depois que existir uma release feita pelo workflow, baixar a release anterior com
   `vpk download github` antes do `release.ps1`; o script já cria o delta quando o pacote anterior está na pasta. Tem de tolerar a primeira release (que
   não tem anterior), e a conferência passaria a esperar o `*-delta.nupkg` também.
-- **Verificação em pull requests:** um workflow que roda o build e os testes em cada PR, para a `master` só aceitar o que compila.
