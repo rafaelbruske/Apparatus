@@ -52,8 +52,8 @@ descartável com a variável de ambiente `APPARATUS_PROFILE_DIR`. Use outro atal
 | `src/Apparatus.App` | O app WinUI 3: janelas, controles, bandeja, ligações. Também deve ficar enxuto. |
 | `tests/Apparatus.Core.Tests` | Os testes unitários (xUnit). |
 | `tests/Apparatus.E2E.*`, `tests/Apparatus.UI` | Verificações que pressionam teclas, clicam ou conduzem a interface. Cada uma diz no cabeçalho o que faz; não mexa no teclado nem no mouse enquanto uma roda. |
-| `build/` | O script de lançamento ([`release.ps1`](build/release.ps1)): publicação autocontida empacotada com o Velopack. |
-| `.github/` | Formulários de issue, modelo de pull request e o workflow de release (uma tag `vX.Y.Z` enviada cria um rascunho de release; veja [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md)). |
+| `build/` | O script de lançamento ([`release.ps1`](build/release.ps1)): publicação autocontida empacotada com o Velopack, e o [`verify-release.ps1`](build/verify-release.ps1), que confere o resultado antes de publicar. |
+| `.github/` | Formulários de issue, modelo de pull request e o workflow de release (uma tag `vX.Y.Z` enviada roda os testes, gera o instalador e publica a release; veja [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md)). |
 | `docs/` | Planos, notas de cada fase, guia de extensões, pendências. |
 
 ## Estilo do código

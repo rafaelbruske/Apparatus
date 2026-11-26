@@ -50,8 +50,8 @@ the environment variable `APPARATUS_PROFILE_DIR`. Use a different launcher hotke
 | `src/Apparatus.App` | The WinUI 3 app: windows, controls, tray, wiring. Keep it thin too. |
 | `tests/Apparatus.Core.Tests` | The unit tests (xUnit). |
 | `tests/Apparatus.E2E.*`, `tests/Apparatus.UI` | Checks that press real keys, click, or drive the interface. Each says in its header what it does; do not touch the keyboard or mouse while one runs. |
-| `build/` | The release script ([`release.ps1`](build/release.ps1)): a self-contained publish packed with Velopack. |
-| `.github/` | Issue forms, the pull request template and the release workflow (a pushed `vX.Y.Z` tag creates a draft release; see [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md), in Portuguese). |
+| `build/` | The release script ([`release.ps1`](build/release.ps1)): a self-contained publish packed with Velopack, and [`verify-release.ps1`](build/verify-release.ps1), which checks the result before it is published. |
+| `.github/` | Issue forms, the pull request template and the release workflow (a pushed `vX.Y.Z` tag runs the tests, builds the installer and publishes the release; see [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md), in Portuguese). |
 | `docs/` | Plans, per-phase notes, extension guide, pending items. |
 
 ## Code style
