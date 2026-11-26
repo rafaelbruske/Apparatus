@@ -76,6 +76,7 @@ public sealed partial class SettingsWindow : Window
         var find = new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = Windows.System.VirtualKey.F, Modifiers = Windows.System.VirtualKeyModifiers.Control };
         find.Invoked += (_, e) => { SearchBox.Focus(FocusState.Keyboard); e.Handled = true; };
         Root.KeyboardAccelerators.Add(find);
+        Root.KeyboardAcceleratorPlacementMode = Microsoft.UI.Xaml.Input.KeyboardAcceleratorPlacementMode.Hidden;   // or "Ctrl+F" pops up wherever the mouse rests
 
         _settingsView = new SettingsView(services, _hwnd);
         BuildNavigation();

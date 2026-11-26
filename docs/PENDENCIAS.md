@@ -102,6 +102,14 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
     a gravação e o app instalado.
   - Ao digitar, a página pode mudar a cada letra (os começos da palavra também combinam); o "Voltar" leva à última que ficou aberta, não à
     de antes da busca.
+- **Dica "Ctrl+F" por toda a janela (26/11/2026, achada pelo dono no 0.9.9):** o WinUI mostra por padrão a dica do atalho de um `KeyboardAccelerator` sobre o
+  elemento que o registra, aqui a raiz da janela, então ela aparecia onde o mouse parasse. Corrigido com `KeyboardAcceleratorPlacementMode = Hidden`.
+  **Verificado** (build local, mouse automatizado): a dica aparecia no menu lateral, na margem e num cartão e deixou de aparecer; `Ctrl+F` continua levando à
+  caixa de busca. **Não verificado:** no app instalado.
+- **"Pasta de build" no app instalado (26/11/2026, visto na captura do dono):** sem fonte de atualização (o padrão), Sobre e "Atualizações e dados" diziam que o
+  app instalado rodava de uma pasta de build, porque a detecção passava pelo `UpdateManager`, que só existe com uma fonte. Agora a versão instalada vem do
+  localizador do Velopack. **Verificado** no pacote 0.9.10, numa cópia do `Portable.zip` (mesma disposição de uma instalação) com perfil isolado e sem fonte:
+  as duas páginas mostram a versão instalada; a build local continua dizendo "pasta de build". **Não verificado:** no app instalado pelo `Setup.exe`.
 - **Falta:** redesenhar Snippets e Ações como lista + pré-visualização + `Ctrl+K`; página das Configurações do Windows (catálogo do
   assistente) e links diretos de páginas para o assistente; categorias Privacidade, Atalhos de teclado e Avançado.
 

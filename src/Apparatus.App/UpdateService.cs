@@ -1,6 +1,7 @@
 using Apparatus.Core;
 using Apparatus.Core.Settings;
 using Velopack;
+using Velopack.Locators;
 using Velopack.Sources;
 
 namespace Apparatus.App;
@@ -24,10 +25,15 @@ public sealed class UpdateService
 
     public string Source => _services.Settings.Current.UpdateSource.Trim();
 
-    /// <summary>The version the installer put on this computer, or null when running from a build folder.</summary>
-    public string? InstalledVersion => Manager()?.IsInstalled == true ? Manager()!.CurrentVersion?.ToString() : null;
+    /// <summary>
+    /// The version the installer put on this computer, or null when running from a build folder. Asked to Velopack's locator (set up by
+    /// <c>VelopackApp</c> in <see cref="Program"/>) and not to the update manager: that one needs an update source, and an installed
+    /// program with no source chosen (the default) is still installed.
+    /// </summary>
+    public string? InstalledVersion =>
+        VelopackLocator.IsCurrentSet ? VelopackLocator.Current.CurrentlyInstalledVersion?.ToString() : null;
 
-    public bool IsInstalled => Manager()?.IsInstalled == true;
+    public bool IsInstalled => InstalledVersion is not null;
 
     /// <summary>The newest version found by the last check, if it is newer than this one.</summary>
     public string? AvailableVersion => _pending?.TargetFullRelease.Version.ToString();
