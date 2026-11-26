@@ -17,9 +17,11 @@ créditos nem a manutenção de nenhum aviso.
 - **Dúvidas sobre como algo funciona:** as decisões e o que cada fase entregou estão em [`docs/`](docs), em português.
   [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) lista o que se sabe que falta ou que não foi verificado.
 - **Problemas de segurança:** **não** abra uma issue pública com detalhes. Use o relatório privado de vulnerabilidade do
-  GitHub, se estiver ativado no repositório; senão, fale com o mantenedor em particular pelo GitHub.
+  GitHub, se estiver ativado no repositório; senão, fale com o mantenedor em particular pelo GitHub. Os detalhes estão em
+  [`SECURITY.pt-BR.md`](SECURITY.pt-BR.md).
 
-Ao relatar um erro, informe a versão do Apparatus, a versão do Windows (`winver`), os passos para reproduzir e o que você
+O botão **New issue** oferece um formulário para relatar um erro e outro para sugerir uma funcionalidade (os dois bilíngues);
+os campos pedem o que é necessário, descrito abaixo. Ao relatar um erro, informe a versão do Apparatus, a versão do Windows (`winver`), os passos para reproduzir e o que você
 esperava. O registro (log) fica em `%LOCALAPPDATA%\Apparatus\logs`. **Nunca cole uma chave de API, histórico da área de
 transferência ou outro texto pessoal** numa issue; apague isso do log antes.
 
@@ -93,6 +95,7 @@ São fáceis de quebrar sem querer, então confira a sua mudança contra eles:
    como "Adiciona…" e "Corrige…"; inglês também serve).
 4. Atualize a documentação se o comportamento mudar: o texto para o usuário em `README.md` / `README.pt-BR.md` e a nota
    correspondente em `docs/`.
-5. No pull request, descreva o que mudou, como testou e o que não conseguiu testar.
+5. No pull request, descreva o que mudou, como testou e o que não conseguiu testar. A descrição já abre com um modelo
+   ([`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md)) que pede exatamente isso, mais uma lista de conferência das regras acima.
 
 Seja gentil e paciente nas issues e nas revisões. Discorde da ideia, não da pessoa.

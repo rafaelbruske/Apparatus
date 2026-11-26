@@ -183,6 +183,22 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Quando a lista de aplicativos termina de carregar com uma pesquisa já digitada no menu Iniciar, os resultados não são atualizados.
 - Ao abrir o menu pela primeira vez sem cache, os fixados iniciais dependem de a lista de aplicativos já ter carregado (há uma
   nova tentativa a cada 0,5 s por até 20 s).
+### Modelos de issue e de pull request (25/11/2026)
+- `.github/ISSUE_TEMPLATE/` (formulário de erro, formulário de sugestão e `config.yml` que desliga a issue em branco) e
+  `.github/PULL_REQUEST_TEMPLATE.md`, todos bilíngues (campos em inglês e português, já que o projeto aceita os dois idiomas). O de erro pede área,
+  versão do Apparatus (Configurações → Sobre), versão do Windows (`winver`), passos, esperado, log de `%LOCALAPPDATA%\Apparatus\logs` e avisa para não
+  colar chaves nem texto copiado; o de sugestão pede o problema antes da solução e confere os princípios do projeto; o de pull request segue as regras do
+  `CONTRIBUTING.md` (testes, docs em dois idiomas, recursos novos desligados, pacotes de terceiros, "o que não testei").
+- **Verificado:** o YAML dos três arquivos lê sem erro, sem `id` nem opção repetidos. **Não verificado:** a aparência no GitHub, que só reconhece os modelos
+  depois de estarem na `master` (conferir em *New issue* e ao abrir um pull request).
+- **Depende de você:** o link "Vulnerabilidade de segurança" do `config.yml` só funciona se o **relatório privado de vulnerabilidade** estiver ligado em
+  Settings → Security do repositório; senão a página dá 404. Ligue-o ou tire esse item do `config.yml`.
+- **`SECURITY.md` e `SECURITY.pt-BR.md`** (na raiz, como os README e os CONTRIBUTING): como relatar em particular, o que enviar, o que esperar (sem
+  prazo garantido, projeto de uma pessoa), só a última versão recebe correção, o que conta como vulnerabilidade (as promessas do projeto: chave da IA,
+  nada executa sem clique, nada sai do PC sem o usuário ligar) e os limites conhecidos da seção 5 abaixo, que não contam. Se esses limites mudarem,
+  atualize os dois arquivos. Um `CODE_OF_CONDUCT.md` foi descartado. **Não verificado:** a aba Security do GitHub exibindo o arquivo (só depois do push
+  na `master`).
+
 - Arrastar de resultados de pesquisa ou da lista "Todos os aplicativos" direto para uma seção do menu (hoje: botão direito ou `Ctrl+P`).
 - Ajustes da barra de tarefas que versões recentes do Windows protegem (Widgets, tamanho): o cartão avisa quando o valor não é mantido.
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
