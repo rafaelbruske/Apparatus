@@ -1,6 +1,6 @@
-# Creates a GitHub release when a version tag (v0.9.16, v1.0.0...) is pushed.
-# It only writes the release and its notes. It does NOT build the installer: Setup.exe is made on the maintainer's PC
-# with build\release.ps1 and attached afterwards (see docs/LANCAMENTO.md). That is why the release starts as a draft.
+# Builds the installer and publishes the GitHub release when a version tag (v0.9.16, v1.0.0...) is pushed.
+# Any failed check stops the workflow BEFORE the release is created, so a broken installer is never published.
+# How to release, and what to do when this fails: docs/LANCAMENTO.md.
 name: Criar release
 
 on:
@@ -13,28 +13,63 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - name: Baixar o código do repositório
         uses: actions/checkout@v4
         with:
           fetch-depth: 0   # the whole history, to check the branch and to write the notes
 
+      # v0.9.16 and v1.0.0 only: a name such as v1.2.3-teste matches the trigger but is not a version of the sequence.
+      - name: Conferir o nome da tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ($env:TAG -notmatch '^v(\d+\.\d+\.\d+)$') {
+            throw "A tag '$env:TAG' não é uma versão no formato vX.Y.Z."
+          }
+          "VERSION=$($Matches[1])" >> $env:GITHUB_ENV
+
       # A release must come from code that went through the pull request into master.
       - name: Conferir que a tag está na master
         run: |
           git fetch origin master
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
-            echo "::error::A tag $GITHUB_REF_NAME aponta para um commit que não está na master. Crie a tag depois do merge, em cima da master."
-            exit 1
-          fi
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/master
+          if ($LASTEXITCODE -ne 0) {
+            throw "A tag $env:GITHUB_REF_NAME aponta para um commit que não está na master. Crie a tag depois do merge, em cima da master."
+          }
 
-      - name: Criar o rascunho da release
+      - name: Instalar o .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Rodar os testes
+        run: dotnet test tests/Apparatus.Core.Tests --configuration Release
+
+      - name: Instalar o vpk (Velopack)
+        run: |
+          dotnet tool install -g vpk --version 1.2.161
+          "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
+
+      # Fails when a license file is missing (see the -AllowMissingLicenses switch in the script).
+      - name: Gerar o instalador
+        run: .\build\release.ps1 -Version $env:VERSION
+
+      - name: Conferir o que foi gerado
+        run: .\build\verify-release.ps1 -Version $env:VERSION
+
+      - name: Publicar a release
         uses: softprops/action-gh-release@v2
         with:
           name: Apparatus ${{ github.ref_name }}
-          draft: true
           generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: artifacts/releases/*
           body: |
             **Instalação / Install:** baixe `ApparatusApp-win-Setup.exe` abaixo e execute-o com um duplo clique no Explorador de Arquivos. / Download `ApparatusApp-win-Setup.exe` below and double-click it in File Explorer.
 

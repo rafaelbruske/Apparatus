@@ -18,7 +18,9 @@
 param(
     [Parameter(Mandatory)] [string] $Version,
     [string] $Output = "artifacts\releases",
-    [string] $SignParams = ""
+    [string] $SignParams = "",
+    # By default a missing license file stops the build: an installer without the licenses of what it carries must not be released.
+    [switch] $AllowMissingLicenses
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,13 +43,17 @@ Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.md") $publish
 $licenses = Join-Path $publish "licenses"
 New-Item -ItemType Directory -Force $licenses | Out-Null
 $nugetCache = (dotnet nuget locals global-packages -l) -replace '^\s*global-packages:\s*', ''
+$missingLicenses = @()
 function Copy-PackageFile([string] $package, [string] $versionPrefix, [string] $file, [string] $as) {
     $dir = Join-Path $nugetCache.Trim() $package
     $version = Get-ChildItem $dir -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like "$versionPrefix*" } | Sort-Object { [version]($_.Name -replace '[^\d.].*$', '') } -Descending | Select-Object -First 1
     $source = if ($version) { Join-Path $version.FullName $file } else { "" }
     if ($source -and (Test-Path $source)) { Copy-Item $source (Join-Path $licenses $as) }
-    else { Write-Warning "License file not found: $package $versionPrefix* $file. The installer will be missing licenses\$as." }
+    else {
+        Write-Warning "License file not found: $package $versionPrefix* $file. The installer would be missing licenses\$as."
+        $script:missingLicenses += $as
+    }
 }
 Copy-PackageFile "microsoft.netcore.app.runtime.win-x64" "10." "LICENSE.TXT" "dotnet-runtime-LICENSE.TXT"
 Copy-PackageFile "microsoft.netcore.app.runtime.win-x64" "10." "THIRD-PARTY-NOTICES.TXT" "dotnet-runtime-THIRD-PARTY-NOTICES.TXT"
@@ -55,6 +61,9 @@ Copy-PackageFile "microsoft.windowsappsdk.foundation" "2." "license.txt" "Window
 # The third-party notices that the Windows App SDK itself ships (the open source code it incorporates), copied unchanged.
 Copy-PackageFile "microsoft.windowsappsdk.base" "2." "NOTICE.txt" "WindowsAppSDK-NOTICE.txt"
 Copy-PackageFile "microsoft.windowsappsdk.winui" "2." "NOTICE.txt" "WindowsAppSDK-WinUI-NOTICE.txt"
+if ($missingLicenses.Count -gt 0 -and -not $AllowMissingLicenses) {
+    throw "License files missing from the package: $($missingLicenses -join ', '). Restore the NuGet packages first, or pass -AllowMissingLicenses for a test build."
+}
 
 $vpkArgs = @(
     "pack",

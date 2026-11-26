@@ -19,7 +19,7 @@ sem pacote MSIX), instalador pelo Velopack. Licença 0BSD. Só a branch `master`
 | `src/Apparatus.App` | O app WinUI 3: janelas, controles, bandeja, ligações. Fina também. |
 | `tests/Apparatus.Core.Tests` | Testes unitários (xUnit). Rodam sem teclado, mouse nem tela. |
 | `tests/Apparatus.E2E.*`, `tests/Apparatus.UI` | Verificações que usam teclado e mouse de verdade. Cada uma diz no cabeçalho o que faz. **Não rode sem o dono do projeto saber.** |
-| `build/release.ps1` | Publica self-contained e empacota com o Velopack. |
+| `build/release.ps1`, `build/verify-release.ps1` | Publica self-contained e empacota com o Velopack; confere o resultado (feed, versão, licenças). |
 | `docs/` | Plano, notas por fase, guias e pendências. |
 
 Como as telas se ligam: configurações são páginas do `SettingsView` (`PageIds`/`PageTitles` em `SettingsView.xaml.cs`, uma `Page_<id>` no XAML e uma
@@ -40,9 +40,10 @@ dotnet test tests/Apparatus.Core.Tests --no-restore
 - O `Apparatus.exe` fica bloqueado enquanto roda: encerre o processo de teste antes de recompilar (veja a seção de testes seguros).
 - Versão do instalador: siga a sequência (0.9.x). O `release.ps1` cria o delta sobre a versão anterior e copia `LICENSE`,
   `THIRD-PARTY-NOTICES.md` e `licenses\` para o pacote. Sem assinatura de código, o SmartScreen avisa na primeira execução.
-- A `master` só aceita pull request. Para lançar: gere o instalador, depois crie a tag `vX.Y.Z` **na `master`** e envie (`git push origin vX.Y.Z`);
-  o workflow `.github/workflows/release.yml` cria um rascunho de release com as notas, e o instalador é anexado à mão. Passo a passo em
-  `docs/LANCAMENTO.md`. Não crie nem envie tag sem o dono do projeto pedir.
+- A `master` só aceita pull request. Para lançar, crie a tag `vX.Y.Z` **na `master`** e envie (`git push origin vX.Y.Z`): o workflow
+  `.github/workflows/release.yml` roda os testes, gera o instalador, confere com `build\verify-release.ps1` e **publica** a release no GitHub.
+  Passo a passo em `docs/LANCAMENTO.md`. **Não crie nem envie tag sem o dono do projeto pedir**: publicar é público e a release pela metade
+  precisa ser desfeita à mão. O `release.ps1` falha se faltar licença (`-AllowMissingLicenses` só para teste local).
 
 ## Regras do projeto
 
