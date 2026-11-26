@@ -82,7 +82,7 @@ Tudo em `docs/` é em português. O que atualizar, conforme a mudança:
 | Estrutura de pastas ou regra de contribuição | `CONTRIBUTING.md` e `CONTRIBUTING.pt-BR.md` (e este arquivo) |
 | Pacote de terceiros | `THIRD-PARTY-NOTICES.md` e `src/Apparatus.Core/Resources/third-party-licenses.json` |
 | Processo de lançamento ou o workflow de release | `docs/LANCAMENTO.md` |
-| A verificação dos pull requests (`.github/workflows/ci.yml`) | `docs/VERIFICACAO-PR.md` |
+| A verificação dos pull requests (`.github/workflows/ci.yml`) ou o `.github/dependabot.yml` | `docs/VERIFICACAO-PR.md` |
 | Contagem de testes | `docs/PENDENCIAS.md` (seção “Como retomar”) |
 
 Escreva o **porquê** das decisões e separe **“verificado”** de **“não verificado”**. Não registre como feito o que não foi testado.
@@ -92,7 +92,8 @@ Os README e os CONTRIBUTING existem em inglês (padrão) e português: mexeu em 
 
 Ao adicionar ou atualizar um pacote NuGet (ou levar uma DLL nativa): confira a licença; atualize `THIRD-PARTY-NOTICES.md` (tabela, texto da
 licença, se for nova) **e** `third-party-licenses.json` (alimenta Configurações → Sobre; o teste `ThirdPartyLicensesTests` confere que as
-duas listas concordam). Se o `release.ps1` precisar levar um arquivo de licença do pacote, acrescente-o lá.
+duas listas concordam). Se o `release.ps1` precisar levar um arquivo de licença do pacote, acrescente-o lá. Ao atualizar o `Velopack`, atualize
+junto a versão do `vpk` onde ela aparece (o teste `VpkVersionTests` confere).
 
 ## Testes manuais com segurança
 

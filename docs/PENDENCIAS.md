@@ -212,18 +212,12 @@ Pendências do módulo (atualizado em 25/11/2026):
   A primeira execução falhou num teste de extensões por tempo esgotado (limite de 3 s, agora 15 s). **Não verificado:** que o instalador gerado lá instala e abre, e a
   regra de proteção. **Depende de você:** marcar "Compilar e testar" como verificação obrigatória na proteção da `master` (passo a passo no guia).
   *(Em 26/11/2026 o dono marcou a verificação como obrigatória.)*
-- **Dependabot para atualizar pacotes (ideia futura, 26/11/2026, não implementada):** o dono já ligou no GitHub os alertas e as atualizações de **segurança** (um PR
-  automático quando um pacote com vulnerabilidade tem correção); isso funciona sem arquivo. A ideia futura é um `.github/dependabot.yml` para as atualizações de
-  **versão**, com este desenho:
-  - `github-actions`, mensal (volume baixo; já houve o aviso do Node.js 20 que isso teria antecipado);
-  - `nuget` só para segurança, listando o ecossistema com `open-pull-requests-limit: 0` (desliga as atualizações de versão e mantém as de segurança), porque o Windows App
-    SDK e outros pacotes mudam muito e cada PR gasta ~3 min de verificação.
-  - **Antes de ligar, resolver dois pontos que a verificação de hoje não pega:** (1) a versão do `vpk` está fixa em três lugares (`Apparatus.App.csproj`,
-    `ci.yml` e `release.yml`, mais o comentário do `release.ps1`), então um PR que atualize só o pacote `Velopack` deixaria o instalador gerado por uma ferramenta de
-    versão diferente da biblioteca do app: acrescentar um teste ou passo que confira que os três concordam; (2) um PR de NuGet muda a lista de licenças, e o teste
-    `ThirdPartyLicensesTests` o reprovaria até alguém atualizar `THIRD-PARTY-NOTICES.md` e `third-party-licenses.json`, o que é desejado, mas dá trabalho manual
-    em cada PR.
-  - Os PRs do Dependabot passam pela mesma verificação "Compilar e testar" (os workflows não usam segredos, então rodam com o acesso reduzido dele).
+- **Dependabot (26/11/2026):** `.github/dependabot.yml` pede as atualizações das ações dos workflows uma vez por mês e, nos pacotes NuGet, só as correções de
+  segurança (`open-pull-requests-limit: 0`); os alertas e os "security updates" já estavam ligados pelo dono no GitHub. Os dois pontos que faltavam foram
+  tratados: o teste `VpkVersionTests` reprova quando a versão do `vpk` (workflows, `release.ps1` e READMEs) difere do pacote `Velopack`; a atualização das
+  listas de licenças num pull request de NuGet continua manual, de propósito. Como lidar com cada pull request: `docs/VERIFICACAO-PR.md`.
+  **Verificado:** o YAML lê sem erro (PyYAML) e o teste passa, e falha com uma versão diferente. **Não verificado:** o arquivo contra o esquema do GitHub e o
+  Dependabot em ação, o que só acontece depois do merge na `master` (conferir em Insights → Dependency graph → Dependabot).
 - **Atualização pelo GitHub (25/11/2026):** o botão "Usar o GitHub" (Configurações → Atualizações e dados) preenche a fonte com o repositório oficial; o app usa o
   `GithubSource` do Velopack, que pergunta à API qual é a release mais recente e compara localmente, sem enviar a versão instalada. Continua desligado até o
   usuário clicar. **Verificado:** os testes (`UpdateSourcesTests`), a tela (o botão preenche o campo e grava a configuração, num perfil isolado) e o pedido
@@ -266,7 +260,7 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (802 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (803 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

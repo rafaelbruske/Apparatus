@@ -51,7 +51,7 @@ the environment variable `APPARATUS_PROFILE_DIR`. Use a different launcher hotke
 | `tests/Apparatus.Core.Tests` | The unit tests (xUnit). |
 | `tests/Apparatus.E2E.*`, `tests/Apparatus.UI` | Checks that press real keys, click, or drive the interface. Each says in its header what it does; do not touch the keyboard or mouse while one runs. |
 | `build/` | The release script ([`release.ps1`](build/release.ps1)): a self-contained publish packed with Velopack, and [`verify-release.ps1`](build/verify-release.ps1), which checks the result before it is published. |
-| `.github/` | Issue forms, the pull request template, the pull request check (`ci.yml`) and the release workflow (a pushed `vX.Y.Z` tag runs the tests, builds the installer and publishes the release; see [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md), in Portuguese). |
+| `.github/` | Issue forms, the pull request template, the Dependabot settings (`dependabot.yml`), the pull request check (`ci.yml`) and the release workflow (a pushed `vX.Y.Z` tag runs the tests, builds the installer and publishes the release; see [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md), in Portuguese). |
 | `docs/` | Plans, per-phase notes, extension guide, pending items. |
 
 ## Code style

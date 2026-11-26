@@ -40,6 +40,25 @@ Se alguém renomear o trabalho no `ci.yml`, a regra deixa de achar a verificaç�
 - **`contents: read`:** a verificação não precisa escrever em nada; um pull request vindo de um fork roda sem acesso a segredos.
 - **Cancelar o que ficou velho:** um novo commit no mesmo pull request cancela a verificação anterior, para não gastar tempo com código já substituído.
 
+## Pull requests do Dependabot (26/11/2026)
+
+O `.github/dependabot.yml` faz o GitHub abrir pull requests sozinho. Eles passam por esta mesma verificação (os workflows não usam segredos, então rodam com o
+acesso reduzido do Dependabot). O GitHub só lê o arquivo na `master`.
+
+| O quê | Quando | Por quê |
+|---|---|---|
+| Ações dos workflows (`github-actions`) | Uma vez por mês | Volume baixo, e é o único aviso de versão nova da ação fixada por SHA (`docs/LANCAMENTO.md`); o Dependabot troca o SHA e o comentário. |
+| Pacotes NuGet | Só correções de segurança (`open-pull-requests-limit: 0`) | O Windows App SDK e outros mudam muito, e cada pull request gasta uma verificação inteira. Depende dos "security updates" ligados nas configurações do repositório. |
+
+O que fazer quando um chega:
+
+- **De ação:** ler as notas da versão antes de mesclar. A verificação **não exercita o `release.yml`** (ele só roda numa tag), então uma mudança na ação que publica só
+  aparece na próxima release.
+- **De pacote NuGet:** a verificação fica vermelha de propósito até as listas de licenças serem atualizadas (`THIRD-PARTY-NOTICES.md` e
+  `third-party-licenses.json`, teste `ThirdPartyLicensesTests`). Se o pacote for o **Velopack**, atualize também a versão do `vpk` em `ci.yml`, `release.yml`,
+  `release.ps1`, `README.md` e `README.pt-BR.md`; o teste `VpkVersionTests` reprova enquanto não forem iguais.
+- **Título:** vem em inglês e vira linha das notas da release; ajuste-o, ou ponha o rótulo `ignore-for-release`.
+
 ## Verificado e não verificado
 
 - **Verificado nesta máquina:** o YAML lê sem erro; os quatro passos de `run` foram extraídos do próprio arquivo e executados em ordem (compilação do app e dos E2E,
@@ -59,7 +78,7 @@ Se alguém renomear o trabalho no `ci.yml`, a regra deixa de achar a verificaç�
   no workflow de release), as versões mais novas na data, todas em Node.js 24. As notas de cada versão não trazem mudança que nos afete (o `checkout@v7` só bloqueia o
   `pull_request_target` com fork, que não usamos) e os campos que usamos (`global-json-file`, `fetch-depth`, `files`, `fail_on_unmatched_files`, `generate_release_notes`, `body`,
   `name`, `draft`) continuam existindo. **Falta ver rodar:** o `ci.yml` roda no próprio pull request que traz a mudança; o `release.yml` (principalmente o
-  `action-gh-release@v3`) só roda na primeira tag.
+  `action-gh-release`, no mesmo dia fixado pelo SHA da `v3.0.4`, que era o commit da `v3`: `docs/LANCAMENTO.md`) só roda na primeira tag.
 - **Não verificado:** que o instalador gerado no GitHub instala e abre (só foi conferido o que o `verify-release.ps1` confere, não a execução) e a regra de proteção.
   O ensaio é a mesma parte que o workflow de release usa, então ficou provado no GitHub: restauração, compilação, `setup-dotnet`, `vpk`, `release.ps1` e conferência. Faltam, só na
   primeira tag, a checagem da tag, a permissão de escrita do `GITHUB_TOKEN` e a criação da release.
