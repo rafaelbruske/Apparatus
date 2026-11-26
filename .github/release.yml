@@ -1,0 +1,19 @@
+# How GitHub groups the automatic release notes (generate_release_notes in .github/workflows/release.yml).
+# It groups pull requests by their labels; a pull request with no matching label goes under "Outras mudanças".
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: Novidades
+      labels:
+        - enhancement
+    - title: Correções
+      labels:
+        - bug
+    - title: Documentação
+      labels:
+        - documentation
+    - title: Outras mudanças
+      labels:
+        - "*"

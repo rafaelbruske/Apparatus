@@ -40,6 +40,9 @@ dotnet test tests/Apparatus.Core.Tests --no-restore
 - O `Apparatus.exe` fica bloqueado enquanto roda: encerre o processo de teste antes de recompilar (veja a seção de testes seguros).
 - Versão do instalador: siga a sequência (0.9.x). O `release.ps1` cria o delta sobre a versão anterior e copia `LICENSE`,
   `THIRD-PARTY-NOTICES.md` e `licenses\` para o pacote. Sem assinatura de código, o SmartScreen avisa na primeira execução.
+- A `master` só aceita pull request. Para lançar: gere o instalador, depois crie a tag `vX.Y.Z` **na `master`** e envie (`git push origin vX.Y.Z`);
+  o workflow `.github/workflows/release.yml` cria um rascunho de release com as notas, e o instalador é anexado à mão. Passo a passo em
+  `docs/LANCAMENTO.md`. Não crie nem envie tag sem o dono do projeto pedir.
 
 ## Regras do projeto
 
@@ -76,6 +79,7 @@ Tudo em `docs/` é em português. O que atualizar, conforme a mudança:
 | Algo ficou de fora, foi adiado ou não foi verificado | `docs/PENDENCIAS.md` (com a data), nunca só na conversa |
 | Estrutura de pastas ou regra de contribuição | `CONTRIBUTING.md` e `CONTRIBUTING.pt-BR.md` (e este arquivo) |
 | Pacote de terceiros | `THIRD-PARTY-NOTICES.md` e `src/Apparatus.Core/Resources/third-party-licenses.json` |
+| Processo de lançamento ou o workflow de release | `docs/LANCAMENTO.md` |
 | Contagem de testes | `docs/PENDENCIAS.md` (seção “Como retomar”) |
 
 Escreva o **porquê** das decisões e separe **“verificado”** de **“não verificado”**. Não registre como feito o que não foi testado.

@@ -1,0 +1,43 @@
+# Creates a GitHub release when a version tag (v0.9.16, v1.0.0...) is pushed.
+# It only writes the release and its notes. It does NOT build the installer: Setup.exe is made on the maintainer's PC
+# with build\release.ps1 and attached afterwards (see docs/LANCAMENTO.md). That is why the release starts as a draft.
+name: Criar release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the whole history, to check the branch and to write the notes
+
+      # A release must come from code that went through the pull request into master.
+      - name: Conferir que a tag está na master
+        run: |
+          git fetch origin master
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
+            echo "::error::A tag $GITHUB_REF_NAME aponta para um commit que não está na master. Crie a tag depois do merge, em cima da master."
+            exit 1
+          fi
+
+      - name: Criar o rascunho da release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Apparatus ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
+          body: |
+            **Instalação / Install:** baixe `ApparatusApp-win-Setup.exe` abaixo e execute-o com um duplo clique no Explorador de Arquivos. / Download `ApparatusApp-win-Setup.exe` below and double-click it in File Explorer.
+
+            O instalador não é assinado: o SmartScreen avisa na primeira execução. / The installer is not code-signed: SmartScreen warns on the first run.
+
+            Suas configurações e dados ficam fora da pasta de instalação e não são apagados ao atualizar. / Your settings and data live outside the install folder and are not deleted by an update.

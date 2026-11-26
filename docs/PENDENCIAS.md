@@ -180,6 +180,11 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Depois de uma instalação **silenciosa** o programa não é iniciado sozinho (a instalação comum o inicia).
 - Para atualizações é preciso **hospedar** a pasta de release (uma pasta de rede/nuvem sincronizada ou um endereço web); o app só
   consulta a fonte escolhida em Configurações → Atualizações.
+- **Release automática no GitHub (25/11/2026):** `.github/workflows/release.yml` cria um **rascunho** de release quando uma tag `v*.*.*` é enviada, com
+  notas geradas dos pull requests (agrupadas por `.github/release.yml`). Não compila o instalador: o `Setup.exe` sai do `release.ps1` e é anexado à mão.
+  Guia em `docs/LANCAMENTO.md`. **Verificado:** o YAML, a sintaxe do passo que exige a tag na `master` e o resultado dele numa simulação local.
+  **Não verificado:** o workflow nunca rodou no GitHub; confira na primeira tag (rascunho criado, notas, anexo do instalador, permissão do `GITHUB_TOKEN`).
+  **Decisão sua:** publicar sem rascunho (`draft: false`) ou compilar no GitHub, o que só compensa depois da assinatura de código.
 - Tamanho: 177 MB instalado, 80 MB o instalador. `Microsoft.Windows.SDK.NET.dll` (24 MB) é o maior arquivo e não é reduzível sem
   cortes arriscados do WinUI.
 
