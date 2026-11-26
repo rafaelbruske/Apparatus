@@ -51,7 +51,7 @@ the environment variable `APPARATUS_PROFILE_DIR`. Use a different launcher hotke
 | `tests/Apparatus.Core.Tests` | The unit tests (xUnit). |
 | `tests/Apparatus.E2E.*`, `tests/Apparatus.UI` | Checks that press real keys, click, or drive the interface. Each says in its header what it does; do not touch the keyboard or mouse while one runs. |
 | `build/` | The release script ([`release.ps1`](build/release.ps1)): a self-contained publish packed with Velopack, and [`verify-release.ps1`](build/verify-release.ps1), which checks the result before it is published. |
-| `.github/` | Issue forms, the pull request template and the release workflow (a pushed `vX.Y.Z` tag runs the tests, builds the installer and publishes the release; see [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md), in Portuguese). |
+| `.github/` | Issue forms, the pull request template, the pull request check (`ci.yml`) and the release workflow (a pushed `vX.Y.Z` tag runs the tests, builds the installer and publishes the release; see [`docs/LANCAMENTO.md`](docs/LANCAMENTO.md), in Portuguese). |
 | `docs/` | Plans, per-phase notes, extension guide, pending items. |
 
 ## Code style
@@ -93,6 +93,8 @@ These are easy to break by accident, so please check your change against them:
 4. Update the docs if behaviour changes: user-facing text in `README.md` / `README.pt-BR.md`, and the relevant note in `docs/`.
 5. In the pull request, describe what you changed, how you tested it and what you could not test. The description opens with
    a template ([`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md)) that asks for exactly that, plus a checklist of the rules above.
+6. Every pull request is checked automatically on GitHub: the app and the tests must compile, the unit tests must pass and the installer must still build
+   ([`docs/VERIFICACAO-PR.md`](docs/VERIFICACAO-PR.md), in Portuguese). Run `dotnet test tests/Apparatus.Core.Tests` yourself first; a red check blocks the merge.
 
 If you are an AI coding assistant, read [`CLAUDE.md`](CLAUDE.md) first: it lists the project rules, how to test safely and what to update.
 

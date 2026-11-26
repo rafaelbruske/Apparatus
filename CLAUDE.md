@@ -40,7 +40,8 @@ dotnet test tests/Apparatus.Core.Tests --no-restore
 - O `Apparatus.exe` fica bloqueado enquanto roda: encerre o processo de teste antes de recompilar (veja a seção de testes seguros).
 - Versão do instalador: siga a sequência (0.9.x). O `release.ps1` cria o delta sobre a versão anterior e copia `LICENSE`,
   `THIRD-PARTY-NOTICES.md` e `licenses\` para o pacote. Sem assinatura de código, o SmartScreen avisa na primeira execução.
-- A `master` só aceita pull request. Para lançar, crie a tag `vX.Y.Z` **na `master`** e envie (`git push origin vX.Y.Z`): o workflow
+- A `master` só aceita pull request, e cada um passa por uma verificação no GitHub (compila, testes, ensaio do instalador; `docs/VERIFICACAO-PR.md`).
+  Rode os testes e o `verify-release.ps1` antes de abrir o PR, para não descobrir no GitHub. Para lançar, crie a tag `vX.Y.Z` **na `master`** e envie (`git push origin vX.Y.Z`): o workflow
   `.github/workflows/release.yml` roda os testes, gera o instalador, confere com `build\verify-release.ps1` e **publica** a release no GitHub.
   Passo a passo em `docs/LANCAMENTO.md`. **Não crie nem envie tag sem o dono do projeto pedir**: publicar é público e a release pela metade
   precisa ser desfeita à mão. O `release.ps1` falha se faltar licença (`-AllowMissingLicenses` só para teste local).
@@ -81,6 +82,7 @@ Tudo em `docs/` é em português. O que atualizar, conforme a mudança:
 | Estrutura de pastas ou regra de contribuição | `CONTRIBUTING.md` e `CONTRIBUTING.pt-BR.md` (e este arquivo) |
 | Pacote de terceiros | `THIRD-PARTY-NOTICES.md` e `src/Apparatus.Core/Resources/third-party-licenses.json` |
 | Processo de lançamento ou o workflow de release | `docs/LANCAMENTO.md` |
+| A verificação dos pull requests (`.github/workflows/ci.yml`) | `docs/VERIFICACAO-PR.md` |
 | Contagem de testes | `docs/PENDENCIAS.md` (seção “Como retomar”) |
 
 Escreva o **porquê** das decisões e separe **“verificado”** de **“não verificado”**. Não registre como feito o que não foi testado.
