@@ -20,7 +20,7 @@ jobs:
         shell: pwsh
     steps:
       - name: Baixar o código do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0   # the whole history, to check the branch and to write the notes
 
@@ -44,7 +44,7 @@ jobs:
           }
 
       - name: Instalar o .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
@@ -64,7 +64,7 @@ jobs:
         run: .\build\verify-release.ps1 -Version $env:VERSION
 
       - name: Publicar a release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Apparatus ${{ github.ref_name }}
           generate_release_notes: true

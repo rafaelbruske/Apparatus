@@ -55,8 +55,11 @@ Se alguém renomear o trabalho no `ci.yml`, a regra deixa de achar a verificaç�
 - **Segunda execução no GitHub (26/11/2026): tudo verde, em cerca de 3 min 15 s.** Compilação do app e dos E2E (1 min 14 s a do app), **798 de 798 testes**, sintaxe dos
   scripts e o ensaio do instalador: o `vpk` 1.2.161 foi instalado e achado no `PATH`, o `release.ps1` não acusou licença faltando, gerou o `Setup.exe` de 82 MB e o
   `verify-release.ps1` deu OK ("installer, portable, full package, feed, version and licenses"). Os únicos avisos foram o de assinatura (esperado, o instalador não é
-  assinado) e o do GitHub de que `actions/checkout@v4` e `actions/setup-dotnet@v4` ainda usam Node.js 20 (rodam forçados no 24); o aviso some ao subir esses dois para a
-  versão seguinte, o que não foi feito nem testado.
+  assinado) e o do GitHub de que `actions/checkout@v4` e `actions/setup-dotnet@v4` ainda usam Node.js 20 (rodam forçados no 24). **Ações atualizadas (26/11/2026):** `actions/checkout@v7`, `actions/setup-dotnet@v6` e `softprops/action-gh-release@v3` (a última só é usada
+  no workflow de release), as versões mais novas na data, todas em Node.js 24. As notas de cada versão não trazem mudança que nos afete (o `checkout@v7` só bloqueia o
+  `pull_request_target` com fork, que não usamos) e os campos que usamos (`global-json-file`, `fetch-depth`, `files`, `fail_on_unmatched_files`, `generate_release_notes`, `body`,
+  `name`, `draft`) continuam existindo. **Falta ver rodar:** o `ci.yml` roda no próprio pull request que traz a mudança; o `release.yml` (principalmente o
+  `action-gh-release@v3`) só roda na primeira tag.
 - **Não verificado:** que o instalador gerado no GitHub instala e abre (só foi conferido o que o `verify-release.ps1` confere, não a execução) e a regra de proteção.
   O ensaio é a mesma parte que o workflow de release usa, então ficou provado no GitHub: restauração, compilação, `setup-dotnet`, `vpk`, `release.ps1` e conferência. Faltam, só na
   primeira tag, a checagem da tag, a permissão de escrita do `GITHUB_TOKEN` e a criação da release.
