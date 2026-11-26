@@ -81,6 +81,11 @@ public sealed partial class SnippetsView : UserControl
 
     public void Close() => Closed?.Invoke(this, EventArgs.Empty);
 
+    /// <summary>The host's way back to the settings; the "Voltar" button at the top of the list calls it.</summary>
+    public Action? BackRequested { get; set; }
+
+    private void OnBackClick(object sender, RoutedEventArgs e) => BackRequested?.Invoke();
+
     /// <summary>True when the editor holds edits that were not saved.</summary>
     public bool HasUnsaved => HasUnsavedChanges();
 

@@ -8,23 +8,58 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <!-- Side bar of groups plus the page (settings, snippets or actions); see SettingsWindow.xaml.cs. -->
+    <!-- A title bar that is part of the window, then the side bar of groups plus the page (settings, snippets or actions); see SettingsWindow.xaml.cs. -->
     <Grid x:Name="Root">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="244" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <ListView
-            x:Name="PanelNav"
-            Margin="10,12,6,10"
-            SelectionMode="Single"
-            SelectionChanged="OnPanelNavChanged" />
-        <ContentControl
-            x:Name="PanelContent"
-            AutomationProperties.AutomationId="PanelContent"
-            Grid.Column="1"
-            HorizontalContentAlignment="Stretch"
-            VerticalContentAlignment="Stretch"
-            IsTabStop="False" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="AppTitleBar" Height="40" ColumnSpacing="10" Padding="14,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="TitleBarRightInset" Width="0" />
+            </Grid.ColumnDefinitions>
+            <Image x:Name="TitleIcon" Width="16" Height="16" VerticalAlignment="Center" />
+            <TextBlock
+                Grid.Column="1"
+                Text="Configurações — Apparatus"
+                FontSize="12"
+                VerticalAlignment="Center" />
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="NavColumn" Width="244" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="NavPanel" Margin="10,4,6,10" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <AutoSuggestBox
+                    x:Name="SearchBox"
+                    PlaceholderText="Pesquisar nas configurações"
+                    QueryIcon="Find"
+                    AutomationProperties.Name="Pesquisar nas configurações"
+                    TextChanged="OnSearchTextChanged"
+                    PreviewKeyDown="OnSearchKeyDown"
+                    QuerySubmitted="OnSearchQuerySubmitted" />
+                <ListView
+                    x:Name="PanelNav"
+                    Grid.Row="1"
+                    SelectionMode="Single"
+                    SelectionChanged="OnPanelNavChanged" />
+            </Grid>
+            <ContentControl
+                x:Name="PanelContent"
+                AutomationProperties.AutomationId="PanelContent"
+                Grid.Column="1"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"
+                IsTabStop="False" />
+        </Grid>
     </Grid>
 </Window>

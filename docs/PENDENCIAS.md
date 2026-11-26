@@ -73,9 +73,22 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
   `tests/Apparatus.UI/browse-without-edits.ps1` passa para snippets e ações (controle com diálogo, 0 diálogos ao navegar).
   **Não verificado desde a mudança:** abrir pela engrenagem, por `Ctrl+,` e pela bandeja; fechar com edição pendente; gravação de atalho e de macro;
   seletores de arquivo; "Capturar agora"; DPI alto; o app instalado.
+- **Barra de título e ícones (25/11/2026):** a janela usa a barra de título integrada (Mica, ícone e título à esquerda, botões do sistema sem
+  cor); os itens da barra lateral voltaram a ter ícone (os glifos estavam vazios no código; agora escritos como escapes Unicode).
+- **Snippets e Ações em tela cheia (25/11/2026):** ao abrir uma dessas páginas o menu lateral das configurações some e a lista da própria página ganha um botão "Voltar" no topo, que leva à última página de configurações aberta (pergunta antes se há edição não salva). Verificado pela automação (menu lateral some, o botão aparece, Voltar o traz de volta e seleciona "Geral"; `browse-without-edits.ps1` passa nas duas telas). As listas das duas páginas têm a mesma largura (360 px; a de snippets tinha 340), então o botão, a busca e a coluna de detalhe ficam nas mesmas posições (medido). Não verificado: o teclado e a busca (`Ctrl+F`) a partir dessas páginas, já que a caixa fica escondida com o menu.
+- **Alinhamento das páginas (25/11/2026):** as páginas de configurações começavam a distâncias diferentes do menu lateral (de 414 a 452 px, porque o painel com `MaxWidth` tomava a largura do conteúdo de cada página). Agora ficam numa coluna de no máximo 760 px, centralizada por duas colunas laterais iguais: todas começam no mesmo ponto (medido nas 12 páginas). Snippets e Ações não mudaram.
+- **Busca nas configurações (25/11/2026):** a caixa acima da barra lateral (`Ctrl+F`) **filtra** a janela: a barra lateral passa a mostrar só as
+  páginas que têm alguma configuração com as palavras digitadas (com a contagem de blocos ao lado, e sem os títulos de grupo vazios) e cada
+  página mostra só os **blocos** (um título e o cartão abaixo dele) que as têm. A página tem de ter todas as palavras, no bloco ou no título da
+  página (digitar o nome de uma página mantém a página inteira). Sem diferenciar maiúsculas nem acentos (`SettingsSearch`, testado em
+  `SettingsSearchTests`); os blocos são lidos do XAML de `SettingsView`, então uma configuração nova é achada sozinha. `Enter` abre a
+  primeira página, a seta para baixo entra na barra lateral, `Esc` limpa. Se a página aberta não tem nada, vai para a primeira que tem
+  (menos a partir de Snippets e Ações, para não perguntar sobre edições não salvas no meio da digitação). Snippets e Ações entram só por
+  palavras-chave fixas. A primeira versão (lista de sugestões) abria a página já na primeira seta, por isso foi trocada.
+  **Verificado** pela automação (barra lateral filtrada, contagens, página só com o bloco, limpar restaura). **Não verificado:** o teclado real
+  (seta e `Enter`) e a aparência. O filtro é por bloco: um cartão grande aparece inteiro mesmo que só um campo combine. As palavras achadas ficam **marcadas** (fundo âmbar) nos textos e nos cabeçalhos dos controles (`SettingsSearch.FindRanges` calcula as posições no texto original, ignorando acentos; marcas saem ao limpar a busca). Verificado numa captura; não verificado em tema claro.
 - **Falta:** redesenhar Snippets e Ações como lista + pré-visualização + `Ctrl+K`; página das Configurações do Windows (catálogo do
-  assistente) e links diretos de páginas para o assistente; busca dentro das configurações; categorias Privacidade, Atalhos de teclado
-  e Avançado.
+  assistente) e links diretos de páginas para o assistente; categorias Privacidade, Atalhos de teclado e Avançado.
 
 ### Página "Sobre" (25/11/2026)
 - Configurações → **Sobre** mostra a versão, a licença do Apparatus (0BSD) e o link do repositório, e a seção **Licenças de código aberto**
@@ -170,19 +183,6 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Tamanho: 177 MB instalado, 80 MB o instalador. `Microsoft.Windows.SDK.NET.dll` (24 MB) é o maior arquivo e não é reduzível sem
   cortes arriscados do WinUI.
 
-## 5. Segurança e privacidade, limites conhecidos
-- Extensões rodam com as suas permissões, sem isolamento; a proteção é a ativação explícita.
-- O backup `.apparatus` e a pasta de sincronização **não são criptografados** (podem conter ações e textos de snippets).
-- A gravação de macros não detecta campos de senha de navegadores.
-- O histórico da área de transferência é protegido contra outras contas e discos roubados, não contra um programa rodando como você.
-- Favoritos de arquivo não são validados (se o arquivo for movido, o `Enter` mostra um erro).
-
-## 6. Pequenos defeitos e ideias
-- Alguns ícones de atalhos `.url` (por exemplo os do PostgreSQL) não carregam: o caminho tem barras `/` que o Windows não abre.
-  Mostram o ícone padrão. Normalizar o caminho resolve.
-- Quando a lista de aplicativos termina de carregar com uma pesquisa já digitada no menu Iniciar, os resultados não são atualizados.
-- Ao abrir o menu pela primeira vez sem cache, os fixados iniciais dependem de a lista de aplicativos já ter carregado (há uma
-  nova tentativa a cada 0,5 s por até 20 s).
 ### Modelos de issue e de pull request (25/11/2026)
 - `.github/ISSUE_TEMPLATE/` (formulário de erro, formulário de sugestão e `config.yml` que desliga a issue em branco) e
   `.github/PULL_REQUEST_TEMPLATE.md`, todos bilíngues (campos em inglês e português, já que o projeto aceita os dois idiomas). O de erro pede área,
@@ -199,12 +199,25 @@ Pendências do módulo (atualizado em 25/11/2026):
   atualize os dois arquivos. Um `CODE_OF_CONDUCT.md` foi descartado. **Não verificado:** a aba Security do GitHub exibindo o arquivo (só depois do push
   na `master`).
 
+## 5. Segurança e privacidade, limites conhecidos
+- Extensões rodam com as suas permissões, sem isolamento; a proteção é a ativação explícita.
+- O backup `.apparatus` e a pasta de sincronização **não são criptografados** (podem conter ações e textos de snippets).
+- A gravação de macros não detecta campos de senha de navegadores.
+- O histórico da área de transferência é protegido contra outras contas e discos roubados, não contra um programa rodando como você.
+- Favoritos de arquivo não são validados (se o arquivo for movido, o `Enter` mostra um erro).
+
+## 6. Pequenos defeitos e ideias
+- Alguns ícones de atalhos `.url` (por exemplo os do PostgreSQL) não carregam: o caminho tem barras `/` que o Windows não abre.
+  Mostram o ícone padrão. Normalizar o caminho resolve.
+- Quando a lista de aplicativos termina de carregar com uma pesquisa já digitada no menu Iniciar, os resultados não são atualizados.
+- Ao abrir o menu pela primeira vez sem cache, os fixados iniciais dependem de a lista de aplicativos já ter carregado (há uma
+  nova tentativa a cada 0,5 s por até 20 s).
 - Arrastar de resultados de pesquisa ou da lista "Todos os aplicativos" direto para uma seção do menu (hoje: botão direito ou `Ctrl+P`).
 - Ajustes da barra de tarefas que versões recentes do Windows protegem (Widgets, tamanho): o cartão avisa quando o valor não é mantido.
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (770 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (778 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

@@ -4,8 +4,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Apparatus.App">
 
-    <ScrollViewer x:Name="Root" PreviewKeyDown="OnRootPreviewKeyDown">
-        <StackPanel Padding="32,24,32,32" Spacing="8" MaxWidth="760" HorizontalAlignment="Stretch">
+    <ScrollViewer x:Name="Root" PreviewKeyDown="OnRootPreviewKeyDown" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+        <!-- The page is a column of at most 760 px, centered. The two outer star columns share what is left, so every page starts at
+             the same distance from the side bar (a StackPanel with MaxWidth took the width of its content, and each page moved). -->
+        <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="100*" MaxWidth="760" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="1" Padding="32,24,32,32" Spacing="8">
 
             <TextBlock x:Name="PageTitle" Text="Configurações" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,8" />
 
@@ -904,5 +912,6 @@
             </StackPanel>
 
         </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

@@ -12,56 +12,74 @@
         </Grid.ColumnDefinitions>
 
         <!-- list of actions -->
-        <Grid Grid.Column="0" Padding="16,12,8,16" RowSpacing="8">
+        <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
+            <Button
+                x:Name="BackButton"
+                Style="{StaticResource SubtleButtonStyle}"
+                HorizontalAlignment="Left"
+                Margin="8,10,0,0"
+                Click="OnBackClick"
+                AutomationProperties.Name="Voltar às configurações">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE72B;" FontSize="14" />
+                    <TextBlock Text="Voltar" FontSize="13" />
+                </StackPanel>
+            </Button>
+            <Grid Grid.Row="1" Padding="16,12,8,16" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <TextBox x:Name="SearchBox" PlaceholderText="Buscar por nome ou categoria…" TextChanged="OnFilterChanged" />
-            <ComboBox x:Name="CategoryFilter" Grid.Row="1" HorizontalAlignment="Stretch" SelectionChanged="OnFilterChanged" />
+                <TextBox x:Name="SearchBox" PlaceholderText="Buscar por nome ou categoria…" TextChanged="OnFilterChanged" />
+                <ComboBox x:Name="CategoryFilter" Grid.Row="1" HorizontalAlignment="Stretch" SelectionChanged="OnFilterChanged" />
 
-            <ListView
-                x:Name="ActionList"
-                Grid.Row="2"
-                ItemsSource="{x:Bind Items}"
-                SelectionMode="Single"
-                SelectionChanged="OnSelectionChanged">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="local:ActionListItem">
-                        <Grid Height="56" ColumnSpacing="8" Opacity="{x:Bind Opacity}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{x:Bind Subtitle}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                            <FontIcon Grid.Column="1" Glyph="&#xE7BA;" FontSize="14" VerticalAlignment="Center"
-                                      Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                      Visibility="{x:Bind WarningVisibility}" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                <ListView
+                    x:Name="ActionList"
+                    Grid.Row="2"
+                    ItemsSource="{x:Bind Items}"
+                    SelectionMode="Single"
+                    SelectionChanged="OnSelectionChanged">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="local:ActionListItem">
+                            <Grid Height="56" ColumnSpacing="8" Opacity="{x:Bind Opacity}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Subtitle}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <FontIcon Grid.Column="1" Glyph="&#xE7BA;" FontSize="14" VerticalAlignment="Center"
+                                          Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                          Visibility="{x:Bind WarningVisibility}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
 
-            <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
-                <DropDownButton Content="Nova ação" Style="{StaticResource AccentButtonStyle}">
-                    <DropDownButton.Flyout>
-                        <MenuFlyout x:Name="NewFlyout" />
-                    </DropDownButton.Flyout>
-                </DropDownButton>
-                <Button Content="Duplicar" Click="OnDuplicate" />
-                <Button Content="Excluir" Click="OnDelete" />
-            </StackPanel>
-            <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8">
-                <Button Content="Importar…" Click="OnImport" />
-                <Button Content="Exportar…" Click="OnExport" />
-            </StackPanel>
+                <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
+                    <DropDownButton Content="Nova ação" Style="{StaticResource AccentButtonStyle}">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout x:Name="NewFlyout" />
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                    <Button Content="Duplicar" Click="OnDuplicate" />
+                    <Button Content="Excluir" Click="OnDelete" />
+                </StackPanel>
+                <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8">
+                    <Button Content="Importar…" Click="OnImport" />
+                    <Button Content="Exportar…" Click="OnExport" />
+                </StackPanel>
+            </Grid>
         </Grid>
 
         <!-- editor -->
