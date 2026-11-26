@@ -27,7 +27,8 @@ $psi.EnvironmentVariables["APPARATUS_PROFILE_DIR"] = $Profile
 $p = [System.Diagnostics.Process]::Start($psi)
 function ProcWindows() { $AE::RootElement.FindAll($TS::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $p.Id))) }
 $win = $null
-for ($i = 0; $i -lt 60 -and -not $win; $i++) { Start-Sleep -Milliseconds 500; foreach ($w in (ProcWindows)) { if (-not $w.Current.IsOffscreen) { $win = $w } } }
+# only the settings window will do: while starting, the launcher shows itself off-screen for a moment (pre-warm) and counts as visible
+for ($i = 0; $i -lt 60 -and -not $win; $i++) { Start-Sleep -Milliseconds 500; foreach ($w in (ProcWindows)) { if (-not $w.Current.IsOffscreen -and $w.Current.Name -like "Configura*") { $win = $w } } }
 if (-not $win) { L "no window"; try { $p.Kill() } catch {}; $log | Out-File $Out -Encoding utf8; exit 3 }
 Start-Sleep 2
 # the snippets and the actions are pages of the settings window: look only to the right of the side bar
@@ -36,7 +37,9 @@ $navShown = [bool]($win.FindFirst($TS::Descendants, (New-Object System.Windows.A
 function InPage($e) { (-not $navShown) -or ($e.Current.BoundingRectangle.X -gt ($win.Current.BoundingRectangle.X + $win.Current.BoundingRectangle.Width * 0.2)) }
 function Named($name) { $win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))) | Where-Object { InPage $_ } | Select-Object -First 1 }
 function PageItems() { @($win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) | Where-Object { InPage $_ }) }
-$items = PageItems
+$items = @()
+for ($i = 0; $i -lt 20 -and $items.Count -lt 4; $i++) { $items = PageItems; if ($items.Count -lt 4) { Start-Sleep -Milliseconds 500 } }
+if ($items.Count -lt 4) { L "the page shows $($items.Count) items; at least 4 are needed"; L "RESULT: FAIL (no list)"; try { $p.Kill() } catch {}; $log | Out-File $Out -Encoding utf8; exit 3 }
 $items[0].GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep 1
 $save = Named "Salvar"
 L ("Salvar enabled before edit: " + $(if ($save) { $save.Current.IsEnabled } else { "(button not found)" }))

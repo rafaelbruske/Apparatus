@@ -33,6 +33,17 @@ public static class SettingsSearch
     }
 
     /// <summary>
+    /// The page to move to while the user is typing, or null to stay where they are. <paramref name="blocks"/> says how many blocks of
+    /// each settings page have the words. Only a page with blocks is a destination, so typing never opens the snippets or the actions
+    /// pages (editors, never counted): they take the whole window and would hide the search box in the middle of a word.
+    /// </summary>
+    public static string? PageToJumpTo(string currentPage, IEnumerable<string> pagesInOrder, IReadOnlyDictionary<string, int> blocks)
+    {
+        if (blocks.GetValueOrDefault(currentPage) > 0) return null;
+        return pagesInOrder.FirstOrDefault(page => blocks.GetValueOrDefault(page) > 0);
+    }
+
+    /// <summary>
     /// Where the words of a query appear in <paramref name="text"/>, as (start, length) of the original text, in order and without overlaps.
     /// The comparison ignores case and accents, but the ranges point into the text as it is written, so the window can mark them.
     /// </summary>

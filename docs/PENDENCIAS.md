@@ -82,11 +82,26 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
   página mostra só os **blocos** (um título e o cartão abaixo dele) que as têm. A página tem de ter todas as palavras, no bloco ou no título da
   página (digitar o nome de uma página mantém a página inteira). Sem diferenciar maiúsculas nem acentos (`SettingsSearch`, testado em
   `SettingsSearchTests`); os blocos são lidos do XAML de `SettingsView`, então uma configuração nova é achada sozinha. `Enter` abre a
-  primeira página, a seta para baixo entra na barra lateral, `Esc` limpa. Se a página aberta não tem nada, vai para a primeira que tem
-  (menos a partir de Snippets e Ações, para não perguntar sobre edições não salvas no meio da digitação). Snippets e Ações entram só por
-  palavras-chave fixas. A primeira versão (lista de sugestões) abria a página já na primeira seta, por isso foi trocada.
+  primeira página, a seta para baixo entra na barra lateral, `Esc` limpa. Se a página aberta não tem nada, vai para a primeira **página de
+  configurações** que tem (menos a partir de Snippets e Ações, para não perguntar sobre edições não salvas no meio da digitação). Snippets e
+  Ações entram só por palavras-chave fixas. A primeira versão (lista de sugestões) abria a página já na primeira seta, por isso foi trocada.
   **Verificado** pela automação (barra lateral filtrada, contagens, página só com o bloco, limpar restaura). **Não verificado:** o teclado real
   (seta e `Enter`) e a aparência. O filtro é por bloco: um cartão grande aparece inteiro mesmo que só um campo combine. As palavras achadas ficam **marcadas** (fundo âmbar) nos textos e nos cabeçalhos dos controles (`SettingsSearch.FindRanges` calcula as posições no texto original, ignorando acentos; marcas saem ao limpar a busca). Verificado numa captura; não verificado em tema claro.
+- **Correções (26/11/2026):**
+  - **A digitação não abre mais Snippets nem Ações** (antes, "macro" ou "gatilho" tiravam o menu lateral e a caixa de busca no meio da palavra):
+    elas só abrem por `Enter` ou clique (`SettingsSearch.PageToJumpTo`, testado). Quando nenhuma configuração tem as palavras, a página mostra um
+    aviso, que diz qual das duas `Enter` abre.
+  - **Página vazia depois do "Voltar":** abrir Snippets ou Ações encerra a busca, e um pedido de fora para mostrar uma página (launcher, bandeja,
+    comandos) também.
+  - **Atalho do launcher durante a gravação de macro:** voltou a ser ignorado (a proteção sumiu na separação da janela, em 25/11). E se a gravação
+    falhar ao começar, a janela escondida agora volta.
+  - **`browse-without-edits.ps1`:** podia pegar a janela de pré-aquecimento do launcher; agora espera a janela de configurações e a lista.
+  - **Verificado** (build local, perfil isolado, automação de interface): "macro", "gatilho" e "zzzz" digitados letra a letra, o botão de busca da
+    caixa (mesmo evento do `Enter`), "Voltar", a engrenagem do launcher com um filtro ativo; o atalho ignorado durante a gravação e de volta
+    depois; o `browse-without-edits.ps1` 5 vezes em cada página, sem falha. **Não verificado:** a tecla `Enter` real, a bandeja, a falha ao iniciar
+    a gravação e o app instalado.
+  - Ao digitar, a página pode mudar a cada letra (os começos da palavra também combinam); o "Voltar" leva à última que ficou aberta, não à
+    de antes da busca.
 - **Falta:** redesenhar Snippets e Ações como lista + pré-visualização + `Ctrl+K`; página das Configurações do Windows (catálogo do
   assistente) e links diretos de páginas para o assistente; categorias Privacidade, Atalhos de teclado e Avançado.
 
@@ -251,7 +266,7 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (798 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (802 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

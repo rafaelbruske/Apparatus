@@ -91,6 +91,13 @@ public sealed partial class SettingsView : UserControl
 
     private readonly Dictionary<UIElement, Visibility> _visibilityBeforeFilter = new();
 
+    /// <summary>A line under the page title that explains an empty search result; null hides it.</summary>
+    public void ShowSearchNote(string? text)
+    {
+        SearchEmptyText.Text = text ?? "";
+        SearchEmptyText.Visibility = text is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     /// <summary>
     /// Shows only the blocks whose text has every word of <paramref name="query"/> (the title of the page counts as part of the
     /// text, so searching for a page name keeps the whole page). A blank query puts everything back. Returns, for each page, how

@@ -59,7 +59,11 @@ public partial class App : Application
         _host.TrayMenuProvider = BuildTrayMenu;
         _host.TrayClicked += () => _launcher.ShowLauncher();
         _host.TrayCommand += OnTrayCommand;
-        _host.HotkeyPressed += id => { if (id == MessageHost.LauncherHotkeyId) _launcher.ToggleLauncher(); };
+        _host.HotkeyPressed += id =>
+        {
+            // While a macro is being recorded the settings window is hidden on purpose, and the hotkey must not bring the launcher up.
+            if (id == MessageHost.LauncherHotkeyId && _settings?.IsRecordingMacro != true) _launcher.ToggleLauncher();
+        };
         _host.ShowTrayIcon(AppPaths.AssetPath("apparatus.ico"), "Apparatus");
 
         var registration = _services.RegisterConfiguredHotkey();
