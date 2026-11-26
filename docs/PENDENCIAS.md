@@ -193,8 +193,9 @@ Pendências do módulo (atualizado em 25/11/2026):
 - **Verificação dos pull requests (25/11/2026):** `.github/workflows/ci.yml` ("Verificar" / trabalho "Compilar e testar") compila o app e os projetos E2E, roda os
   testes unitários, confere a sintaxe dos scripts de `build\` e ensaia o instalador (`release.ps1` + `verify-release.ps1` com versão descartável) em cada pull
   request para a `master`. Guia em `docs/VERIFICACAO-PR.md`. **Verificado:** os passos do arquivo, extraídos e executados aqui na ordem, passam; o passo de
-  sintaxe falha num script quebrado. **Não verificado:** o workflow nunca rodou no GitHub (a primeira execução é a do pull request que o traz) e a regra de
-  proteção. **Depende de você:** marcar "Compilar e testar" como verificação obrigatória na proteção da `master`, depois da primeira execução (passo a passo no guia).
+  sintaxe falha num script quebrado; e **no GitHub** a execução completa deu verde em cerca de 3 min 15 s (798 testes, ensaio do instalador gerando o `Setup.exe` de 82 MB).
+  A primeira execução falhou num teste de extensões por tempo esgotado (limite de 3 s, agora 15 s). **Não verificado:** que o instalador gerado lá instala e abre, e a
+  regra de proteção. **Depende de você:** marcar "Compilar e testar" como verificação obrigatória na proteção da `master` (passo a passo no guia).
 - **Atualização pelo GitHub (25/11/2026):** o botão "Usar o GitHub" (Configurações → Atualizações e dados) preenche a fonte com o repositório oficial; o app usa o
   `GithubSource` do Velopack, que pergunta à API qual é a release mais recente e compara localmente, sem enviar a versão instalada. Continua desligado até o
   usuário clicar. **Verificado:** os testes (`UpdateSourcesTests`), a tela (o botão preenche o campo e grava a configuração, num perfil isolado) e o pedido

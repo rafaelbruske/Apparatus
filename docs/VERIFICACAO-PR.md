@@ -52,5 +52,11 @@ Se alguém renomear o trabalho no `ci.yml`, a regra deixa de achar a verificaç�
   15 s (os testes que são sobre o limite, como o "mute", continuam com o seu). Por isso os passos seguintes (sintaxe dos scripts e ensaio do instalador) **ainda
   não rodaram no GitHub**. A causa é uma inferência (o log mostra o tempo esgotado, não por que o PowerShell demorou); se o teste voltar a falhar com 15 s, o
   problema é outro.
-- **Não verificado:** o ensaio do instalador no GitHub (o `vpk` no `PATH`, a restauração do pacote do Windows App SDK, o tempo total) e a regra de proteção.
-  O ensaio é a mesma parte que o workflow de release usa, então a primeira execução completa também antecipa os riscos da primeira tag.
+- **Segunda execução no GitHub (26/11/2026): tudo verde, em cerca de 3 min 15 s.** Compilação do app e dos E2E (1 min 14 s a do app), **798 de 798 testes**, sintaxe dos
+  scripts e o ensaio do instalador: o `vpk` 1.2.161 foi instalado e achado no `PATH`, o `release.ps1` não acusou licença faltando, gerou o `Setup.exe` de 82 MB e o
+  `verify-release.ps1` deu OK ("installer, portable, full package, feed, version and licenses"). Os únicos avisos foram o de assinatura (esperado, o instalador não é
+  assinado) e o do GitHub de que `actions/checkout@v4` e `actions/setup-dotnet@v4` ainda usam Node.js 20 (rodam forçados no 24); o aviso some ao subir esses dois para a
+  versão seguinte, o que não foi feito nem testado.
+- **Não verificado:** que o instalador gerado no GitHub instala e abre (só foi conferido o que o `verify-release.ps1` confere, não a execução) e a regra de proteção.
+  O ensaio é a mesma parte que o workflow de release usa, então ficou provado no GitHub: restauração, compilação, `setup-dotnet`, `vpk`, `release.ps1` e conferência. Faltam, só na
+  primeira tag, a checagem da tag, a permissão de escrita do `GITHUB_TOKEN` e a criação da release.
