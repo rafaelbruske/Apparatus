@@ -160,7 +160,9 @@ public class ExtensionHostTests : IDisposable
     }
 
     /// <summary>Writes a PowerShell extension whose body is <paramref name="script"/> and returns its manifest folder.</summary>
-    private string MakeExtension(string id, string script, string mode = "persistent", int timeoutMs = 3000, string keyword = "t")
+    // The default limit is generous on purpose: every test starts a real powershell.exe, which on a busy machine (the GitHub runner runs the
+    // tests in parallel) can take longer than 3 s to answer the first time. A test that is about the limit itself sets its own (see "mute").
+    private string MakeExtension(string id, string script, string mode = "persistent", int timeoutMs = 15000, string keyword = "t")
     {
         string folder = Path.Combine(_dir.Path, id);
         Directory.CreateDirectory(folder);

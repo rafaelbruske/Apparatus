@@ -45,6 +45,12 @@ Se alguém renomear o trabalho no `ci.yml`, a regra deixa de achar a verificaç�
 - **Verificado nesta máquina:** o YAML lê sem erro; os quatro passos de `run` foram extraídos do próprio arquivo e executados em ordem (compilação do app e dos E2E,
   798 testes, sintaxe dos scripts, ensaio do instalador com a conferência dando OK); o passo de sintaxe falha, com anotação de arquivo e linha, num script
   quebrado.
-- **Não verificado:** o workflow **nunca rodou no GitHub**. A primeira execução, no próprio pull request que o traz, mostra: se o runner restaura e compila
-  sem a máquina do mantenedor, se o `setup-dotnet` acha o SDK do `global.json`, o tempo total e se o `vpk` fica no `PATH`. O ensaio do instalador é a mesma
-  parte que o workflow de release usa, então a primeira execução também antecipa os riscos da primeira tag. Também não foi testada a regra de proteção.
+- **Primeira execução no GitHub (26/11/2026, pelo log do job):** o `setup-dotnet` achou o SDK do `global.json` (10.0.404), o restore e a compilação do app e dos
+  quatro projetos E2E passaram num runner limpo (0 erros, os mesmos 10 avisos de sempre) e o teste unitário rodou. Falhou **1 de 798**:
+  `ExtensionHostTests.Noise_OnStdout_IsIgnored_AndRepliesWithoutAnIdStillArrive` ("noisy não respondeu em 3000 ms"). Os testes de extensões sobem um
+  `powershell.exe` de verdade, e o limite padrão do auxiliar de teste era 3 s; no runner, com os testes em paralelo, não bastou. O limite padrão passou a
+  15 s (os testes que são sobre o limite, como o "mute", continuam com o seu). Por isso os passos seguintes (sintaxe dos scripts e ensaio do instalador) **ainda
+  não rodaram no GitHub**. A causa é uma inferência (o log mostra o tempo esgotado, não por que o PowerShell demorou); se o teste voltar a falhar com 15 s, o
+  problema é outro.
+- **Não verificado:** o ensaio do instalador no GitHub (o `vpk` no `PATH`, a restauração do pacote do Windows App SDK, o tempo total) e a regra de proteção.
+  O ensaio é a mesma parte que o workflow de release usa, então a primeira execução completa também antecipa os riscos da primeira tag.
