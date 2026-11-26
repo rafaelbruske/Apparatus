@@ -58,10 +58,12 @@ Roda num Windows do GitHub (`windows-latest`). Cada passo que falha encerra tudo
   conferência dá OK; a conferência falha, com a mensagem certa, para versão errada e para licença faltando; o `release.ps1` aborta, antes de empacotar,
   quando uma licença não é encontrada; o YAML e a sintaxe PowerShell de cada passo leem sem erro; a regra do nome da tag aceita `v0.9.16` e `v1.0.0` e recusa
   `v1.2.3-teste`, `va.b.c` e `v1.2`.
-- **Não verificado:** o workflow **nunca rodou** no GitHub. Só a primeira tag mostra: se o runner restaura e compila o app sem a máquina do mantenedor,
-  se o `setup-dotnet` acha o SDK do `global.json`, se o `vpk` fica no `PATH`, se o `GITHUB_TOKEN` pode escrever (Settings → Actions → General →
-  Workflow permissions), se as notas saem agrupadas e se o `Setup.exe` instala e abre. Espere ajustes na primeira tentativa; uma tag que falha antes
-  do passo 8 não deixa nada publicado.
+- **Já visto no GitHub** (26/11/2026, pela verificação dos pull requests, que repete os passos 3 a 7 com uma versão descartável; `docs/VERIFICACAO-PR.md`): o
+  runner restaura e compila o app sem a máquina do mantenedor, o `setup-dotnet` acha o SDK do `global.json`, o `vpk` fica no `PATH`, o `release.ps1` gera o
+  `Setup.exe` (82 MB) sem faltar licença e a conferência dá OK.
+- **Não verificado:** o workflow de release **nunca rodou**. Só a primeira tag mostra: a checagem do nome da tag e da presença na `master`, se o `GITHUB_TOKEN`
+  pode escrever (Settings → Actions → General → Workflow permissions), a criação da release, se as notas saem agrupadas e se o `Setup.exe` gerado lá instala e
+  abre. Espere ajustes na primeira tentativa; uma tag que falha antes do passo 8 não deixa nada publicado.
 
 ## Atualização automática pelo GitHub (25/11/2026)
 
