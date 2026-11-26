@@ -31,7 +31,9 @@ for ($i = 0; $i -lt 60 -and -not $win; $i++) { Start-Sleep -Milliseconds 500; fo
 if (-not $win) { L "no window"; try { $p.Kill() } catch {}; $log | Out-File $Out -Encoding utf8; exit 3 }
 Start-Sleep 2
 # the snippets and the actions are pages of the settings window: look only to the right of the side bar
-function InPage($e) { $e.Current.BoundingRectangle.X -gt ($win.Current.BoundingRectangle.X + $win.Current.BoundingRectangle.Width * 0.2) }
+# the snippets and actions pages hide the side bar of the settings; when it is there, ignore what is to its left
+$navShown = [bool]($win.FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Geral"))))
+function InPage($e) { (-not $navShown) -or ($e.Current.BoundingRectangle.X -gt ($win.Current.BoundingRectangle.X + $win.Current.BoundingRectangle.Width * 0.2)) }
 function Named($name) { $win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))) | Where-Object { InPage $_ } | Select-Object -First 1 }
 function PageItems() { @($win.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) | Where-Object { InPage $_ }) }
 $items = PageItems

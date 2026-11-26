@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Apparatus.Core.Indexing;
 using Apparatus.Core.Search.Providers;
+using Apparatus.Core.Settings;
 using Apparatus.Core.Input;
 using Apparatus.Native;
 using Microsoft.UI.Input;
@@ -73,6 +74,179 @@ public sealed partial class SettingsView : UserControl
         ["aboutapp"] = "Sobre", ["snippets"] = "Snippets", ["clipboard"] = "Área de transferência", ["capture"] = "Captura de tela", ["extensions"] = "Extensões", ["start"] = "Menu Iniciar do Apparatus",
         ["assistant"] = "Assistente de IA", ["windows"] = "Windows",
     };
+
+    // -------------------------------------------------------------- search
+
+    /// <summary>A part of a page that stays or goes as a whole: a heading and the card under it.</summary>
+    private sealed class SearchBlock
+    {
+        public SearchBlock(string pageId) => PageId = pageId;
+
+        public string PageId { get; }
+
+        public List<UIElement> Elements { get; } = new();
+
+        public System.Text.StringBuilder Text { get; } = new();
+    }
+
+    private readonly Dictionary<UIElement, Visibility> _visibilityBeforeFilter = new();
+
+    /// <summary>
+    /// Shows only the blocks whose text has every word of <paramref name="query"/> (the title of the page counts as part of the
+    /// text, so searching for a page name keeps the whole page). A blank query puts everything back. Returns, for each page, how
+    /// many blocks match; pages that are not in the result have none.
+    /// </summary>
+    public IReadOnlyDictionary<string, int> ApplyFilter(string? query)
+    {
+        var words = SettingsSearch.Words(query);
+        var counts = new Dictionary<string, int>();
+        ClearHighlights();
+
+        foreach (var block in BuildSearchBlocks())
+        {
+            bool visible = words.Count == 0 || SettingsSearch.Matches(PageTitles[block.PageId] + " " + block.Text, words);
+            foreach (var element in block.Elements)
+            {
+                if (!_visibilityBeforeFilter.ContainsKey(element)) _visibilityBeforeFilter[element] = element.Visibility;
+                element.Visibility = visible ? _visibilityBeforeFilter[element] : Visibility.Collapsed;
+            }
+            if (!visible || words.Count == 0) continue;
+            counts[block.PageId] = counts.GetValueOrDefault(block.PageId) + 1;
+            foreach (var element in block.Elements) Highlight(element, words);
+        }
+
+        if (words.Count == 0) _visibilityBeforeFilter.Clear();
+        return counts;
+    }
+
+    /// <summary>
+    /// The blocks of every page, as written in the XAML: a heading starts a block, and the elements that follow it (the card) belong to
+    /// it. A new setting is found without being listed anywhere.
+    /// </summary>
+    private IEnumerable<SearchBlock> BuildSearchBlocks()
+    {
+        foreach (var id in PageIds)
+        {
+            if (FindName("Page_" + id) is not Panel page) continue;
+
+            SearchBlock? current = null;
+            bool currentHasBody = false;
+            foreach (UIElement child in page.Children)
+            {
+                bool heading = child is TextBlock;
+                // A heading starts a block unless the block so far is only headings.
+                if (current is null || (heading && currentHasBody))
+                {
+                    if (current is not null) yield return current;
+                    current = new SearchBlock(id);
+                    currentHasBody = false;
+                }
+                if (!heading) currentHasBody = true;
+                current.Elements.Add(child);
+                CollectSearchText(child, current.Text);
+            }
+            if (current is not null) yield return current;
+        }
+    }
+
+    private static void CollectSearchText(UIElement element, System.Text.StringBuilder into)
+    {
+        void Add(object? text)
+        {
+            if (text is TextBlock inner) text = inner.Text;
+            if (text is string s && s.Trim().Length > 0) into.Append(s.Trim()).Append(' ');
+        }
+
+        switch (element)
+        {
+            case TextBlock block: Add(block.Text); break;
+            case CheckBox check: Add(check.Content); break;
+            case Button button when button.Content is string: Add(button.Content); break;
+            case InfoBar bar: Add(bar.Title); Add(bar.Message); break;
+            default: Add(HeaderOf(element)); break;
+        }
+        foreach (var child in ChildrenOf(element)) CollectSearchText(child, into);
+    }
+
+    /// <summary>The elements inside a panel, a card or a control that holds one.</summary>
+    private static IEnumerable<UIElement> ChildrenOf(UIElement element) => element switch
+    {
+        Panel panel => panel.Children,
+        Border { Child: { } child } => new[] { child },
+        ContentControl { Content: UIElement content } => new[] { content },
+        _ => Array.Empty<UIElement>(),
+    };
+
+    private static object? HeaderOf(UIElement element) => element switch
+    {
+        ToggleSwitch t => t.Header,
+        ComboBox c => c.Header,
+        TextBox b => b.Header,
+        PasswordBox p => p.Header,
+        NumberBox n => n.Header,
+        RadioButtons r => r.Header,
+        _ => null,
+    };
+
+    private static void SetHeader(UIElement element, object? header)
+    {
+        switch (element)
+        {
+            case ToggleSwitch t: t.Header = header; break;
+            case ComboBox c: c.Header = header; break;
+            case TextBox b: b.Header = header; break;
+            case PasswordBox p: p.Header = header; break;
+            case NumberBox n: n.Header = header; break;
+            case RadioButtons r: r.Header = header; break;
+        }
+    }
+
+    // ------------------------------------------------- marking what was found
+
+    private readonly List<TextBlock> _marked = new();
+    private readonly Dictionary<UIElement, object?> _plainHeaders = new();
+
+    /// <summary>Marks the words searched for in the texts and in the headers of the controls, so the setting is easy to spot.</summary>
+    private void Highlight(UIElement element, IReadOnlyList<string> words)
+    {
+        if (element is TextBlock block)
+        {
+            Mark(block, words);
+        }
+        else if (HeaderOf(element) is string header && SettingsSearch.FindRanges(header, words).Count > 0)
+        {
+            // A header given as plain text cannot be marked: show it through a text block of its own, and put the text back afterwards.
+            var text = new TextBlock { Text = header, TextWrapping = TextWrapping.Wrap };
+            Mark(text, words);
+            _plainHeaders[element] = header;
+            SetHeader(element, text);
+        }
+        foreach (var child in ChildrenOf(element)) Highlight(child, words);
+    }
+
+    private void Mark(TextBlock block, IReadOnlyList<string> words)
+    {
+        var ranges = SettingsSearch.FindRanges(block.Text, words);
+        if (ranges.Count == 0) return;
+
+        // A warm highlighter with dark text: readable on the dark and on the light theme alike.
+        var highlighter = new Microsoft.UI.Xaml.Documents.TextHighlighter
+        {
+            Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(235, 255, 200, 40)),
+            Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 20, 20, 20)),
+        };
+        foreach (var (start, length) in ranges) highlighter.Ranges.Add(new Microsoft.UI.Xaml.Documents.TextRange { StartIndex = start, Length = length });
+        block.TextHighlighters.Add(highlighter);
+        _marked.Add(block);
+    }
+
+    private void ClearHighlights()
+    {
+        foreach (var block in _marked) block.TextHighlighters.Clear();
+        _marked.Clear();
+        foreach (var (element, header) in _plainHeaders) SetHeader(element, header);
+        _plainHeaders.Clear();
+    }
 
     /// <summary>Shows one page and hides the others.</summary>
     public void ShowPage(string id)

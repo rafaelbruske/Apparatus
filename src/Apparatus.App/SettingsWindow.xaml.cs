@@ -1,4 +1,6 @@
+using Apparatus.Core;
 using Apparatus.Core.Actions;
+using Apparatus.Core.Settings;
 using Apparatus.Core.Snippets;
 using Apparatus.Native;
 using Microsoft.UI.Windowing;
@@ -39,28 +41,28 @@ public sealed partial class SettingsWindow : Window
     private static readonly NavEntry[] Navigation =
     {
         new("Apparatus", null, null),
-        new("Geral", "", "general"),
-        new("Pesquisa", "", "search"),
-        new("Backup e sincronização", "", "backup"),
-        new("Atualizações e dados", "", "about"),
-        new("Sobre", "", "aboutapp"),
+        new("Geral", "\uE713", "general"),
+        new("Pesquisa", "\uE721", "search"),
+        new("Backup e sincronização", "\uE895", "backup"),
+        new("Atualizações e dados", "\uE777", "about"),
+        new("Sobre", "\uE946", "aboutapp"),
 
         new("Módulos", null, null),
-        new("Snippets", "", SnippetsPage),
-        new("Ações e atalhos", "", ActionsPage),
-        new("Ajustes dos snippets", "", "snippets"),
-        new("Área de transferência", "", "clipboard"),
-        new("Captura de tela", "", "capture"),
-        new("Extensões", "", "extensions"),
+        new("Snippets", "\uE8A5", SnippetsPage),
+        new("Ações e atalhos", "\uE768", ActionsPage),
+        new("Ajustes dos snippets", "\uE70F", "snippets"),
+        new("Área de transferência", "\uE8C8", "clipboard"),
+        new("Captura de tela", "\uE722", "capture"),
+        new("Extensões", "\uE7B8", "extensions"),
 
         new("Menu Iniciar", null, null),
-        new("Menu Iniciar do Apparatus", "", "start"),
+        new("Menu Iniciar do Apparatus", "\uE80F", "start"),
 
         new("Assistente de IA", null, null),
-        new("Conexão e comportamento", "", "assistant"),
+        new("Conexão e comportamento", "\uE8BD", "assistant"),
 
         new("Windows", null, null),
-        new("Barra de tarefas e Iniciar", "", "windows"),
+        new("Barra de tarefas e Iniciar", "\uE7F4", "windows"),
     };
 
     public SettingsWindow(AppServices services)
@@ -70,6 +72,10 @@ public sealed partial class SettingsWindow : Window
         _hwnd = WindowNative.GetWindowHandle(this);
         AppWindow.SetIcon(AppPaths.AssetPath("apparatus.ico"));
         PlaceOnActiveMonitor();
+        UseModernTitleBar();
+        var find = new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = Windows.System.VirtualKey.F, Modifiers = Windows.System.VirtualKeyModifiers.Control };
+        find.Invoked += (_, e) => { SearchBox.Focus(FocusState.Keyboard); e.Handled = true; };
+        Root.KeyboardAccelerators.Add(find);
 
         _settingsView = new SettingsView(services, _hwnd);
         BuildNavigation();
@@ -82,6 +88,123 @@ public sealed partial class SettingsWindow : Window
             _snippetsView?.Close();
             _actionsView?.Close();
         };
+    }
+
+    // -------------------------------------------------------------- search
+
+    /// <summary>Words that find the snippets and actions pages, which are editors and not cards of settings.</summary>
+    private const string SnippetsKeywords = "snippets texto gatilho categoria novo importar exportar variaveis",
+        ActionsKeywords = "acoes atalhos atalho teclado passos macro gravar novo importar exportar";
+
+    private readonly Dictionary<string, TextBlock> _navCounts = new();
+    private string _query = "";
+
+    /// <summary>
+    /// The search box filters the side bar to the pages that have a setting with the words typed (with how many), and each of those
+    /// pages then shows only the blocks that have them. Enter opens the first page, Down moves into the side bar, Esc clears.
+    /// </summary>
+    private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput) ApplySearch(sender.Text);
+    }
+
+    private void OnSearchQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        if (FirstVisiblePage() is { } page) SelectPage(page);
+    }
+
+    private void OnSearchKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Windows.System.VirtualKey.Down:
+                // Into the side bar, on the page being shown.
+                if (PanelNav.SelectedItem is ListViewItem selected && selected.Visibility == Visibility.Visible) selected.Focus(FocusState.Keyboard);
+                else if (FirstVisibleItem() is { } first) first.Focus(FocusState.Keyboard);
+                e.Handled = true;
+                break;
+            case Windows.System.VirtualKey.Escape when SearchBox.Text.Length > 0:
+                SearchBox.Text = "";
+                ApplySearch("");
+                e.Handled = true;
+                break;
+        }
+    }
+
+    private void ApplySearch(string text)
+    {
+        _query = text.Trim();
+        var counts = _settingsView.ApplyFilter(_query);
+        var words = SettingsSearch.Words(_query);
+
+        bool anyInGroup = false;
+        ListViewItem? heading = null;
+        foreach (var item in PanelNav.Items.OfType<ListViewItem>())
+        {
+            if (item.Tag is not NavEntry entry) continue;
+            if (entry.Page is null)
+            {
+                if (heading is not null) heading.Visibility = words.Count == 0 || anyInGroup ? Visibility.Visible : Visibility.Collapsed;
+                heading = item;
+                anyInGroup = false;
+                continue;
+            }
+
+            bool match;
+            int count = 0;
+            if (words.Count == 0) match = true;
+            else if (entry.Page == SnippetsPage) match = SettingsSearch.Matches(entry.Label + " " + SnippetsKeywords, words);
+            else if (entry.Page == ActionsPage) match = SettingsSearch.Matches(entry.Label + " " + ActionsKeywords, words);
+            else match = (count = counts.GetValueOrDefault(entry.Page)) > 0;
+
+            item.Visibility = match ? Visibility.Visible : Visibility.Collapsed;
+            anyInGroup |= match;
+            if (_navCounts.TryGetValue(entry.Page, out var badge)) badge.Text = words.Count > 0 && count > 0 ? count.ToString() : "";
+        }
+        if (heading is not null) heading.Visibility = words.Count == 0 || anyInGroup ? Visibility.Visible : Visibility.Collapsed;
+
+        // The page on the screen has nothing to show: move to the first page that has. (Not from the snippets and actions pages:
+        // leaving them can ask about unsaved edits, which would be rude in the middle of typing.)
+        if (words.Count > 0 && _page != SnippetsPage && _page != ActionsPage && counts.GetValueOrDefault(_page) == 0
+            && FirstVisiblePage() is { } target)
+        {
+            SelectPage(target);
+        }
+    }
+
+    private ListViewItem? FirstVisibleItem() =>
+        PanelNav.Items.OfType<ListViewItem>().FirstOrDefault(i => i.Visibility == Visibility.Visible && i.Tag is NavEntry { Page: not null });
+
+    private string? FirstVisiblePage() => (FirstVisibleItem()?.Tag as NavEntry)?.Page;
+
+    // ---------------------------------------------------------- title bar
+
+    /// <summary>
+    /// The Fluent look: the title bar is part of the window (same Mica background), with the icon and the title on the left and
+    /// the system buttons on the right without a colour of their own.
+    /// </summary>
+    private void UseModernTitleBar()
+    {
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+
+        var bar = AppWindow.TitleBar;
+        var clear = Windows.UI.Color.FromArgb(0, 0, 0, 0);
+        bar.ButtonBackgroundColor = clear;
+        bar.ButtonInactiveBackgroundColor = clear;
+
+        try { TitleIcon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(AppPaths.AssetPath("apparatus.ico"))); }
+        catch (Exception ex) { AppLog.Warn($"The title bar icon could not be loaded: {ex.Message}"); }
+
+        // The system buttons sit on the right: leave their width free of the draggable area's content.
+        AppTitleBar.Loaded += (_, _) => UpdateTitleBarInsets();
+        AppTitleBar.SizeChanged += (_, _) => UpdateTitleBarInsets();
+    }
+
+    private void UpdateTitleBarInsets()
+    {
+        double scale = WindowHelpers.GetScale(_hwnd);
+        TitleBarRightInset.Width = new GridLength(AppWindow.TitleBar.RightInset / scale);
     }
 
     // ------------------------------------------------------------ showing
@@ -185,6 +308,10 @@ public sealed partial class SettingsWindow : Window
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
             row.Children.Add(new FontIcon { Glyph = entry.Glyph ?? "", FontSize = 15, Opacity = 0.85 });
             row.Children.Add(new TextBlock { Text = entry.Label, FontSize = 13, VerticalAlignment = VerticalAlignment.Center });
+            // How many blocks of the page have the words being searched for (empty when nothing is being searched).
+            var badge = new TextBlock { FontSize = 11, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center };
+            row.Children.Add(badge);
+            _navCounts[entry.Page] = badge;
             var item = new ListViewItem { Content = row, Tag = entry, MinHeight = 38 };
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(item, entry.Label);
             PanelNav.Items.Add(item);
@@ -235,15 +362,17 @@ public sealed partial class SettingsWindow : Window
     private void ShowPanelPage(string page)
     {
         _page = page;
+        UpdateNavigationVisibility(page);
         switch (page)
         {
             case SnippetsPage:
-                _snippetsView ??= new SnippetsView(_services, _hwnd);
+                _snippetsView ??= new SnippetsView(_services, _hwnd) { BackRequested = GoBackToSettings };
                 PanelContent.Content = _snippetsView;
                 break;
             case ActionsPage:
                 _actionsView ??= new ActionsView(_services, _hwnd)
                 {
+                    BackRequested = GoBackToSettings,
                     RecordingStarted = () => { _macroHidden = true; AppWindow.Hide(); },
                     RecordingFinished = () =>
                     {
@@ -262,6 +391,22 @@ public sealed partial class SettingsWindow : Window
         }
         RunAfterPageShown();
     }
+
+    /// <summary>
+    /// Snippets and actions take the whole window: the side bar of the settings goes away and the list of the page has a "Voltar"
+    /// button at the top. The settings pages bring the side bar back.
+    /// </summary>
+    private void UpdateNavigationVisibility(string page)
+    {
+        bool manager = page == SnippetsPage || page == ActionsPage;
+        if (!manager) _lastSettingsPage = page;
+        NavPanel.Visibility = manager ? Visibility.Collapsed : Visibility.Visible;
+        NavColumn.Width = manager ? new GridLength(0) : new GridLength(244);
+    }
+
+    private string _lastSettingsPage = "general";
+
+    private void GoBackToSettings() => SelectPage(_lastSettingsPage);
 
     private void RunAfterPageShown()
     {
