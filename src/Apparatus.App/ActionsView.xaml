@@ -3,16 +3,25 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Apparatus.App"
-    xmlns:actions="using:Apparatus.Core.Actions"
     >
 
     <UserControl.Resources>
-        <!-- an installed application offered while its name is typed: the name, and what will be written when it is picked -->
-        <DataTemplate x:Key="AppChoiceTemplate" x:DataType="actions:AppChoice">
-            <StackPanel Padding="0,6">
-                <TextBlock Text="{x:Bind Name}" />
-                <TextBlock Text="{x:Bind Target}" FontSize="11" Opacity="0.55" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
+        <!-- an installed application offered while its name is typed: its icon, the name, and what will be written when it is picked -->
+        <DataTemplate x:Key="AppChoiceTemplate" x:DataType="local:AppChoiceItem">
+            <Grid Padding="0,6" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid Width="24" Height="24" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE71D;" FontSize="18" Opacity="0.8" Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
+                    <Image Source="{x:Bind Icon, Mode=OneWay}" Width="24" Height="24" />
+                </Grid>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{x:Bind Name}" />
+                    <TextBlock Text="{x:Bind Target}" FontSize="11" Opacity="0.55" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Grid>
         </DataTemplate>
     </UserControl.Resources>
 
@@ -182,7 +191,11 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Bind Number, Mode=OneWay}" Opacity="0.5" VerticalAlignment="Center" Width="18" />
-                                    <FontIcon Grid.Column="1" Glyph="{x:Bind Glyph}" FontSize="18" VerticalAlignment="Center" />
+                                    <!-- the icon of the application the step opens, when there is one; otherwise the glyph of the step -->
+                                    <Grid Grid.Column="1" Width="24" Height="24" VerticalAlignment="Center">
+                                        <FontIcon Glyph="{x:Bind Glyph}" FontSize="18" Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
+                                        <Image Source="{x:Bind Icon, Mode=OneWay}" Width="24" Height="24" />
+                                    </Grid>
                                     <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                         <TextBlock Text="{x:Bind Title}" FontSize="12" Opacity="0.6" />
                                         <TextBlock Text="{x:Bind Summary, Mode=OneWay}" TextTrimming="CharacterEllipsis" />

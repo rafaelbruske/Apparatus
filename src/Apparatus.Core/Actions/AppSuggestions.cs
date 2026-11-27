@@ -6,7 +6,8 @@ namespace Apparatus.Core.Actions;
 /// <summary>One installed application offered while the target of an "open application" step is typed.</summary>
 /// <param name="Name">The name Windows shows in its Start menu.</param>
 /// <param name="Target">What the step stores and Windows opens: a program's path or "shell:AppsFolder\…".</param>
-public sealed record AppChoice(string Name, string Target)
+/// <param name="IconKey">The key of its icon (see <see cref="AppEntry.IconKey"/>), or null when there is none to be had.</param>
+public sealed record AppChoice(string Name, string Target, string? IconKey = null)
 {
     public override string ToString() => Name;
 }
@@ -31,7 +32,7 @@ public static class AppSuggestions
             .OrderByDescending(x => x.Score)
             .ThenBy(x => x.App.Name, StringComparer.CurrentCultureIgnoreCase)
             .Take(max)
-            .Select(x => new AppChoice(x.App.Name, x.App.ParsingName))
+            .Select(x => new AppChoice(x.App.Name, x.App.ParsingName, x.App.IconKey))
             .ToList();
     }
 

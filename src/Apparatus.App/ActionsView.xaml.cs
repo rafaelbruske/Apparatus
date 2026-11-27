@@ -11,6 +11,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.Graphics;
 using Windows.Storage.Pickers;
 using Windows.System;
@@ -53,6 +54,26 @@ public sealed class StepListItem : INotifyPropertyChanged
     public string Glyph { get; }
     public string Summary => StepCatalog.Summarize(Step);
 
+    private ImageSource? _icon;
+
+    /// <summary>The icon of the application the step opens; null shows <see cref="Glyph"/>.</summary>
+    public ImageSource? Icon
+    {
+        get => _icon;
+        set
+        {
+            if (ReferenceEquals(_icon, value)) return;
+            _icon = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GlyphVisibility)));
+        }
+    }
+
+    public Visibility GlyphVisibility => _icon is null ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>The target whose icon was last asked for.</summary>
+    public string? IconTarget { get; set; }
+
     public string Number
     {
         get => _number.ToString();
@@ -78,6 +99,7 @@ public sealed partial class ActionsView : UserControl
     private long _menuGuardUntil;
     private readonly KeyMenuSuppressor _keyMenu;
     private StepListItem? _editingStep;
+    private readonly IconCache _icons;
 
     public ObservableCollection<ActionListItem> Items { get; } = new();
     public ObservableCollection<StepListItem> Steps { get; } = new();
@@ -87,6 +109,11 @@ public sealed partial class ActionsView : UserControl
         _services = services;
         _hwnd = hwnd;
         InitializeComponent();
+        _icons = new IconCache(DispatcherQueue);
+        Steps.CollectionChanged += (_, e) =>
+        {
+            foreach (StepListItem item in e.NewItems?.OfType<StepListItem>() ?? Enumerable.Empty<StepListItem>()) _ = UpdateStepIconAsync(item);
+        };
 
         // Recording a hotkey that uses Alt+Space must not also open this window's system menu.
         _keyMenu = new KeyMenuSuppressor(_hwnd, () => _recording || Environment.TickCount64 < _menuGuardUntil);
@@ -646,8 +673,34 @@ public sealed partial class ActionsView : UserControl
     private void StepChanged()
     {
         _editingStep?.Refresh();
+        if (_editingStep is { } item) _ = UpdateStepIconAsync(item);
         OnEdited(this, EventArgs.Empty);
     }
+
+    /// <summary>Shows on the step the icon of the application it opens. Only the picture changes, never the step.</summary>
+    private async Task UpdateStepIconAsync(StepListItem item)
+    {
+        if (item.Step.Kind != StepKind.OpenApp) return;
+        string target = item.Step.Get("target");
+        if (target == item.IconTarget) return;
+        item.IconTarget = target;
+        try
+        {
+            var apps = _services.Apps.All;
+            string? key = await Task.Run(() => StepIcons.KeyFor(apps, target, File.Exists, ProgramFolders()));
+            var image = key is null ? null : await _icons.GetAsync(key);
+            if (item.IconTarget == target) item.Icon = image;   // if the target changed meanwhile, the later reading wins
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Icon of the step failed for {target}: {ex.Message}");
+        }
+    }
+
+    /// <summary>Where Windows looks for a program written by its name alone.</summary>
+    private static IEnumerable<string> ProgramFolders() =>
+        new[] { Environment.SystemDirectory, Environment.GetFolderPath(Environment.SpecialFolder.Windows) }
+            .Concat((Environment.GetEnvironmentVariable("PATH") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 
     private FrameworkElement BuildField(StepField field, ActionStep step)
     {
@@ -763,15 +816,36 @@ public sealed partial class ActionsView : UserControl
                 StepChanged();
             }
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-                sender.ItemsSource = AppSuggestions.Find(_services.Apps.All, sender.Text);
+                sender.ItemsSource = SuggestApps(sender.Text);
         };
         box.QuerySubmitted += (sender, args) =>
         {
-            if (args.ChosenSuggestion is not AppChoice chosen) return;
+            if (args.ChosenSuggestion is not AppChoiceItem chosen) return;
             sender.ItemsSource = null;
             sender.Text = chosen.Target;
         };
         return box;
+    }
+
+    /// <summary>The suggestions for what was typed. The list shows at once; each icon appears as soon as it is read.</summary>
+    private List<AppChoiceItem> SuggestApps(string typed)
+    {
+        var items = AppSuggestions.Find(_services.Apps.All, typed).Select(choice => new AppChoiceItem(choice)).ToList();
+        foreach (var item in items) _ = LoadIconAsync(item);
+        return items;
+    }
+
+    private async Task LoadIconAsync(AppChoiceItem item)
+    {
+        if (item.Choice.IconKey is not { } key) return;
+        try
+        {
+            if (await _icons.GetAsync(key) is { } image) item.Icon = image;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Icon load failed for {key}: {ex.Message}");
+        }
     }
 
     /// <summary>

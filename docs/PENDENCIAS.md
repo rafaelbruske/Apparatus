@@ -289,6 +289,12 @@ Pendências do módulo (atualizado em 25/11/2026):
   como está, e navegar entre ações sem editar não pede para salvar (`browse-without-edits.ps1 -Switch --actions`). **Não verificado:** escolher com o teclado e o
   mouse de verdade (a automação selecionou o item), abrir de fato um app escolhido, "Executar como administrador" num app `shell:AppsFolder` (pode não valer
   para apps da Store) e o tema claro.
+- **Ícones na lista de aplicativos sugeridos (27/11/2026, pedido do dono):** cada sugestão mostra o ícone do app, lido depois que a lista aparece, pelo mesmo
+  `IconCache` do launcher; sem ícone, um genérico. **Verificado** (build local e pacote 0.9.22 em cópia portátil, perfil isolado, pela automação da tela, tema
+  escuro): ao digitar "a", as 8 sugestões mostraram ícone (programas, apps da Store e um atalho `.url`) e escolher uma escreveu o alvo. **Não verificado:** o
+  app instalado, o tema claro, o ícone genérico na tela e escala acima de 100 %.
+- **Ícone do aplicativo no item do passo (27/11/2026, pedido do dono):** o passo "Abrir aplicativo" mostra o ícone do que abre, ou o desenho padrão quando não
+  há (`docs/FASE3.md`). **Verificado:** testes e compilação. **Não verificado:** nada na tela; o dono vai testar o 0.9.23.
 - **Falso "Alterações não salvas" em ação de abrir aplicativo (27/11/2026, achado na revisão do 0.9.18; corrigido):** só mostrar o passo gravava o `name` nele (ou o
   removia, se o app não estivesse na lista), então uma ação salva sem o nome aparecia como alterada. O `browse-without-edits.ps1` não pegava porque as ações de
   exemplo não apontam para um app da lista. Agora o nome só é gravado quando o alvo é alterado; uma ação salva sem ele continua mostrando o caminho até isso.
@@ -319,7 +325,7 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (857 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (875 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

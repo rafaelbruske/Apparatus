@@ -42,6 +42,21 @@ public class AppSuggestionsTests
         Assert.Equal("Relógio", choice.ToString());
     }
 
+    [Fact]
+    public void Find_SaysWhereTheIconOfEachChoiceComesFrom()
+    {
+        var apps = new[]
+        {
+            new AppEntry("plain", "Jogo comum", @"shell:AppsFolder\plain"),
+            new AppEntry("steam://rungameid/1", "Jogo da Steam", @"shell:AppsFolder\steam://rungameid/1", @"path:C:\Jogos\jogo.exe"),
+            new AppEntry("epic://x", "Jogo sem ícone", @"shell:AppsFolder\epic://x", ""),
+        };
+        var icons = AppSuggestions.Find(apps, "jogo").ToDictionary(c => c.Name, c => c.IconKey);
+        Assert.Equal(@"shell:shell:AppsFolder\plain", icons["Jogo comum"]);   // the usual one: the shell icon of what is opened
+        Assert.Equal(@"path:C:\Jogos\jogo.exe", icons["Jogo da Steam"]);
+        Assert.Null(icons["Jogo sem ícone"]);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
