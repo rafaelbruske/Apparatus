@@ -144,6 +144,12 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
 Implementada (ver `docs/CAPTURA.md`): seleção com anotações e modo de texto, captura automática (Shift+Print Screen), PNG/JPEG com qualidade,
 ajuste do Print Screen do Windows com desfazer exato. Verificada à mão em 2 monitores de 100 %; o que não foi verificado está listado no próprio documento.
 
+- **Cruz invisível sobre branco (27/11/2026, achada pelo dono num dos PCs; corrigido):** com a "Seleção de precisão" padrão, que inverte as cores,
+  a cruz sobre o branco escurecido saía em 128 sobre 127. A captura passou a ter cruz própria, branca com contorno preto (`docs/CAPTURA.md`).
+  **Verificado** (build local e pacote 0.9.20 em cópia portátil, perfil isolado, mouse automatizado, monitor a 100 %): em duas capturas seguidas, o
+  Windows mostra a cruz nova sem seleção, fora dela e desenhando com o lápis; mover e redimensionar seguem com os ponteiros do Windows. **Não
+  verificado:** o app instalado, escala acima de 100 %, ponteiro ampliado nas opções de acessibilidade e o outro PC do dono.
+
 Pendências do módulo (atualizado em 25/11/2026):
 
 *Assistente de IA*
@@ -283,6 +289,12 @@ Pendências do módulo (atualizado em 25/11/2026):
   como está, e navegar entre ações sem editar não pede para salvar (`browse-without-edits.ps1 -Switch --actions`). **Não verificado:** escolher com o teclado e o
   mouse de verdade (a automação selecionou o item), abrir de fato um app escolhido, "Executar como administrador" num app `shell:AppsFolder` (pode não valer
   para apps da Store) e o tema claro.
+- **Falso "Alterações não salvas" em ação de abrir aplicativo (27/11/2026, achado na revisão do 0.9.18; corrigido):** só mostrar o passo gravava o `name` nele (ou o
+  removia, se o app não estivesse na lista), então uma ação salva sem o nome aparecia como alterada. O `browse-without-edits.ps1` não pegava porque as ações de
+  exemplo não apontam para um app da lista. Agora o nome só é gravado quando o alvo é alterado; uma ação salva sem ele continua mostrando o caminho até isso.
+  **Verificado** (build local, perfil isolado com duas ações apontando para apps instalados sem `name`, pela automação da tela): antes, "Salvar" ficava ativo e o
+  aviso aparecia ao trocar de ação; depois, não; trocar o alvo ainda mostra o nome do app, e um caminho aparece como caminho; `browse-without-edits.ps1` passou em
+  Ações e Snippets. **Não verificado:** o app instalado.
 - **Atalhos com o teclado numérico (26/11/2026, achado ao avaliar um script do AutoHotkey do dono; corrigido):** gravar `Ctrl+Win+Num4` guardava
   `Ctrl+Win+0x64`, que o app não sabia ler, e o editor dizia "Atalho inválido"; o mesmo valia para o atalho do launcher e os da captura. `HotkeySpec` passou a
   conhecer `Num0` a `Num9`, `NumAdd`, `NumSubtract`, `NumMultiply`, `NumDivide` e `NumDecimal` (e aceita os nomes do AutoHotkey, como `Numpad4`, na leitura);
@@ -307,7 +319,7 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (840 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (857 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

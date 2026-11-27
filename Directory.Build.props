@@ -6,6 +6,6 @@
     <Deterministic>true</Deterministic>
     <!-- The version of Apparatus, written here and nowhere else. The program shows it, build\release.ps1 packs it, and a release is
          tagged vX.Y.Z with this same number (docs/LANCAMENTO.md). Raise it in a pull request before tagging. -->
-    <Version>0.9.18</Version>
+    <Version>0.9.20</Version>
   </PropertyGroup>
 </Project>

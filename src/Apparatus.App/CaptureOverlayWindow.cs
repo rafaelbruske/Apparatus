@@ -29,11 +29,14 @@ internal sealed class CursorGrid : Grid
 {
     private InputSystemCursorShape? _shape;
 
+    /// <summary>Shown instead of the Windows crosshair (see <see cref="CaptureCursor"/>); the Windows one when null.</summary>
+    public InputCursor? Crosshair { get; set; }
+
     public void SetCursor(InputSystemCursorShape shape)
     {
         if (_shape == shape) return;
         _shape = shape;
-        ProtectedCursor = InputSystemCursor.Create(shape);
+        ProtectedCursor = shape == InputSystemCursorShape.Cross && Crosshair is not null ? Crosshair : InputSystemCursor.Create(shape);
     }
 }
 
@@ -121,6 +124,7 @@ public sealed class CaptureOverlayWindow : Window
         _pixelHeight = frame.Height;
         _bounds = new RectD(0, 0, frame.Width / _scale, frame.Height / _scale);
         _color = ParseColor(colorHex);
+        _root.Crosshair = CaptureCursor.TryCreate(_scale);
 
         BuildContent(frame);
         Content = _root;

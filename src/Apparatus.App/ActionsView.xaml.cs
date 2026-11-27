@@ -753,7 +753,6 @@ public sealed partial class ActionsView : UserControl
             UpdateTextOnSelect = false,   // moving through the list with the arrows must not replace what was typed
             ItemTemplate = (DataTemplate)Resources["AppChoiceTemplate"],
         };
-        RememberAppName(step, current);
         box.TextChanged += (sender, args) =>
         {
             // The box reports its first text after it is shown: only a real change counts as an edit.
@@ -775,11 +774,13 @@ public sealed partial class ActionsView : UserControl
         return box;
     }
 
-    /// <summary>Keeps the name of the installed application next to its target, so the list of steps reads "Abrir Discord".</summary>
+    /// <summary>
+    /// Keeps the name of the installed application next to its target, so the list of steps reads "Abrir Discord". Only for a target
+    /// that was just changed: writing it when a step is merely shown would make a saved action look edited. A target with no known
+    /// name (also while the applications are still loading) drops the old one, which belonged to the previous target.
+    /// </summary>
     private void RememberAppName(ActionStep step, string target)
     {
-        // Before the list of applications is loaded nothing can be said: keep what the step already knows.
-        if (_services.Apps.Count == 0) return;
         if (AppSuggestions.NameOf(_services.Apps.All, target) is { } name) step.Args["name"] = name;
         else step.Args.Remove("name");
     }

@@ -7,7 +7,8 @@ planejado (veja o fim deste arquivo).
 ## Como funciona para o usuário
 
 1. O atalho (padrão **Print Screen**) congela cada monitor e escurece a imagem.
-2. Arrastar escolhe a área. Arrastar pelas bordas e cantos ajusta; arrastar por dentro move.
+2. Arrastar escolhe a área. Arrastar pelas bordas e cantos ajusta; arrastar por dentro move. Para escolher e para desenhar, o ponteiro é uma
+   **cruz própria**, branca com contorno preto, que se destaca em qualquer fundo; mover, redimensionar e digitar usam os ponteiros do Windows.
 3. Uma única barra ao lado da área reúne tudo: lápis, linha, seta, retângulo, marca-texto, texto, cor | imprimir, copiar, salvar,
    desfazer, fechar. Cada botão tem uma dica com o nome e o atalho (aparece 250 ms depois de o mouse parar sobre ele).
 4. Teclas: `Ctrl+C` copia, `Ctrl+S` salva, `Ctrl+P` imprime, `Ctrl+Z` desfaz, `Esc` fecha.
@@ -71,6 +72,7 @@ Por isso, **ativar a captura do Apparatus desliga a opção do Windows** “Usar
 | Parte | Onde | Papel |
 |---|---|---|
 | Modelo e geometria | `Apparatus.Core/Capture/CaptureModel.cs` | `RectD` (com `Union`), `CaptureTarget` (`RegionTarget`, `MonitorTarget`, `WindowTarget`), `CapturedFrame`, `IFrameSource`, `SelectionGeometry` (acerto de alças, mover/redimensionar, posição da barra), `ArrowGeometry`, `CaptureImageFormats`, `CaptureNaming`, `KnownCaptureTools`. Tudo puro e testado (`CaptureTests`). |
+| Ponteiro | `Apparatus.Core/Capture/Crosshair.cs`, `Apparatus.Native/Pointers.cs`, `Apparatus.App/CaptureCursor.cs` | O desenho e o tamanho da cruz (testados, `CrosshairTests`), o cursor do Windows criado a partir dele e a entrega ao WinUI. |
 | Flash | `Apparatus.Native/ScreenFlash.cs` | `FlashWindow`: janela branca em camadas (WS_EX_LAYERED, sem foco, transparente ao mouse) cuja opacidade o `CaptureService` reduz a cada 16 ms. |
 | Leitura da tela | `Apparatus.Native/ScreenCapture.cs` | `GdiFrameSource`: um `BitBlt` do retângulo da área virtual (pixels físicos, DPI por monitor) e `ForegroundWindowCenter` (qual monitor tem o foco). |
 | Codificação | `Apparatus.App/CaptureImage.cs` | BGRA → PNG ou JPEG (com qualidade) pelo `BitmapEncoder`. |
@@ -91,6 +93,10 @@ Decisões de implementação:
 - **Resultado**: `RenderTargetBitmap` do palco (imagem + anotações, sem a barra e as alças) na resolução física do monitor, recortado na
   seleção. A cópia usa `DataPackage.SetBitmap`; imprimir salva um PNG temporário e usa o verbo `print` do Windows.
 - **Dicas próprias**: a dica padrão do XAML leva cerca de 1 s para aparecer e parecia que não existia; a barra usa uma dica própria de 250 ms.
+- **Cruz própria**: a "Seleção de precisão" padrão do Windows inverte as cores sob ela; sobre o branco escurecido pela captura (cinza 127) sai
+  em 128 e some. O tamanho é o do ponteiro escolhido no Windows (`CursorBaseSize`) vezes a escala do monitor. O WinUI só cria sozinho os
+  ponteiros do sistema, então o `HCURSOR` entra por `IInputCursorStaticsInterop` (Windows App SDK); se algo falhar, fica a cruz do Windows e o
+  motivo vai para o registro.
 - **Foco do mouse**: o `PointerReleased` aplica a última posição antes de encerrar, porque movimentos rápidos podem não gerar eventos intermediários.
 - Anotações são elementos XAML recortados pela seleção; desfazer remove o último.
 
