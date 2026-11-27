@@ -24,7 +24,8 @@ jobs:
         with:
           fetch-depth: 0   # the whole history, to check the branch and to write the notes
 
-      # v0.9.16 and v1.0.0 only: a name such as v1.2.3-teste matches the trigger but is not a version of the sequence.
+      # v0.9.16 and v1.0.0 only: a name such as v1.2.3-teste matches the trigger but is not a version of the sequence. The number
+      # must be the one written in the code (Directory.Build.props), so the release and the program never disagree.
       - name: Conferir o nome da tag
         env:
           TAG: ${{ github.ref_name }}
@@ -32,7 +33,12 @@ jobs:
           if ($env:TAG -notmatch '^v(\d+\.\d+\.\d+)$') {
             throw "A tag '$env:TAG' não é uma versão no formato vX.Y.Z."
           }
-          "VERSION=$($Matches[1])" >> $env:GITHUB_ENV
+          $tagVersion = $Matches[1]
+          $codeVersion = .\build\get-version.ps1
+          if ($tagVersion -ne $codeVersion) {
+            throw "A tag '$env:TAG' não bate com a versão do código ($codeVersion, em Directory.Build.props). Suba a versão por pull request ou corrija a tag."
+          }
+          "VERSION=$tagVersion" >> $env:GITHUB_ENV
 
       # A release must come from code that went through the pull request into master.
       - name: Conferir que a tag está na master

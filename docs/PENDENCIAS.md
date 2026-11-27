@@ -203,6 +203,10 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Depois de uma instalação **silenciosa** o programa não é iniciado sozinho (a instalação comum o inicia).
 - Para atualizações é preciso **hospedar** a pasta de release (uma pasta de rede/nuvem sincronizada ou um endereço web); o app só
   consulta a fonte escolhida em Configurações → Atualizações.
+- **Versão em um só lugar (26/11/2026):** `<Version>` do `Directory.Build.props` (começou em 0.9.16). O `release.ps1` e o `verify-release.ps1` a usam quando não
+  recebem `-Version` (`build\get-version.ps1`), o workflow de release recusa uma tag com outro número e o teste `AppVersionTests` reprova um `.csproj` com
+  versão própria. **Verificado:** nesta máquina (testes, instalador 0.9.16 gerado e conferido). **Não verificado:** a conferência da tag no GitHub, que só
+  roda na primeira tag, e o instalador instalado.
 - **Release automática no GitHub (25/11/2026):** `.github/workflows/release.yml` roda num Windows do GitHub quando uma tag `vX.Y.Z` é enviada: confere a tag
   (formato e presença na `master`), roda os testes, gera o instalador com o `release.ps1` (que **falha se faltar licença**), confere o resultado com o
   `build/verify-release.ps1` e só então **publica** a release (sem rascunho), com notas dos pull requests e todos os arquivos de `artifacts\releases`.
@@ -268,7 +272,7 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (803 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (804 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

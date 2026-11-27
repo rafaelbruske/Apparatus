@@ -31,15 +31,16 @@ atalhos globais passam pelo `MessageHost` (cada recurso tem seus ids: launcher `
 ```powershell
 dotnet build src/Apparatus.App/Apparatus.App.csproj --no-restore -p:Platform=x64
 dotnet test tests/Apparatus.Core.Tests --no-restore
-.\build\release.ps1 -Version 0.9.7        # gera o instalador em artifacts\releases (ignorada pelo git)
+.\build\release.ps1                       # gera o instalador em artifacts\releases (ignorada pelo git), na versão do código
 ```
 
 - Use `--no-restore`: o restore da solução falha numa fonte NuGet privada desta máquina; os pacotes já estão no cache.
 - O build com `-p:Platform=x64` escreve em `src\Apparatus.App\bin\x64\Debug\...`. A pasta `bin\Debug` é **antiga**: não execute dela.
 - Erros de XAML em cascata (`Cannot resolve DataType`, `Unknown type`) quase sempre vêm de **um erro de C#**: corrija o C# primeiro.
 - O `Apparatus.exe` fica bloqueado enquanto roda: encerre o processo de teste antes de recompilar (veja a seção de testes seguros).
-- Versão do instalador: siga a sequência (0.9.x). O `release.ps1` cria o delta sobre a versão anterior e copia `LICENSE`,
-  `THIRD-PARTY-NOTICES.md` e `licenses\` para o pacote. Sem assinatura de código, o SmartScreen avisa na primeira execução.
+- **A versão fica em um só lugar:** `<Version>` do `Directory.Build.props` (nenhum `.csproj` define a sua; o teste `AppVersionTests` confere). Antes de
+  gerar uma versão nova, suba esse número, seguindo a sequência (0.9.x), num pull request; a tag da release tem de ser `v` + esse número. `-Version` só serve para
+  um build descartável. O `release.ps1` cria o delta sobre a versão anterior e copia `LICENSE`, `THIRD-PARTY-NOTICES.md` e `licenses\` para o pacote. Sem assinatura de código, o SmartScreen avisa na primeira execução.
 - A `master` só aceita pull request, e cada um passa por uma verificação no GitHub (compila, testes, ensaio do instalador; `docs/VERIFICACAO-PR.md`).
   Rode os testes e o `verify-release.ps1` antes de abrir o PR, para não descobrir no GitHub. Para lançar, crie a tag `vX.Y.Z` **na `master`** e envie (`git push origin vX.Y.Z`): o workflow
   `.github/workflows/release.yml` roda os testes, gera o instalador, confere com `build\verify-release.ps1` e **publica** a release no GitHub.

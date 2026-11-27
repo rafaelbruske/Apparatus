@@ -12,11 +12,13 @@
   Optional code signing (without it Windows SmartScreen warns on first run): pass -SignParams with the arguments for signtool,
   for example  -SignParams '/fd sha256 /tr http://timestamp.digicert.com /td sha256 /f cert.pfx /p secret'.
 
+  The version is the <Version> of Directory.Build.props; -Version replaces it for a throw-away build (the pull request check does).
+
 .EXAMPLE
-  .\build\release.ps1 -Version 0.7.1
+  .\build\release.ps1
 #>
 param(
-    [Parameter(Mandatory)] [string] $Version,
+    [string] $Version = "",
     [string] $Output = "artifacts\releases",
     [string] $SignParams = "",
     # By default a missing license file stops the build: an installer without the licenses of what it carries must not be released.
@@ -26,6 +28,8 @@ param(
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
+if (-not $Version) { $Version = & (Join-Path $PSScriptRoot "get-version.ps1") }
+Write-Host "Building Apparatus $Version"
 
 # The id decides the install folder (%LOCALAPPDATA%\ApparatusApp). It must differ from the data folder
 # (%LOCALAPPDATA%\Apparatus): uninstalling removes the whole install folder and must never take the user's data with it.

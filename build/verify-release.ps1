@@ -9,17 +9,20 @@
     - Apparatus.exe carries this version;
     - the license files are in the published folder AND inside the package that the installer and the updates deliver.
 
+  Without -Version it checks the version written in Directory.Build.props.
+
 .EXAMPLE
-  .\build\verify-release.ps1 -Version 0.9.16
+  .\build\verify-release.ps1
 #>
 param(
-    [Parameter(Mandatory)] [string] $Version,
+    [string] $Version = "",
     [string] $Output = "artifacts\releases",
     [string] $Publish = "artifacts\publish"
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
+if (-not $Version) { $Version = & (Join-Path $PSScriptRoot "get-version.ps1") }
 function Resolve-Folder([string] $path) { if ([System.IO.Path]::IsPathRooted($path)) { $path } else { Join-Path $root $path } }
 $out = Resolve-Folder $Output
 $pub = Resolve-Folder $Publish

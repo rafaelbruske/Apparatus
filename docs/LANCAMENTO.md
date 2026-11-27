@@ -5,8 +5,10 @@ verificação falhar, o workflow para **antes** de criar a release: nada incompl
 
 ## Passo a passo
 
-1. Deixe tudo mesclado na `master` (ela só aceita mudanças por pull request) e atualize o clone: `git switch master` e `git pull`.
-2. Crie a tag **em cima da `master`**, no formato `vX.Y.Z` (a sequência é 0.9.x), e envie: `git tag v0.9.16` e `git push origin v0.9.16`.
+1. Suba a versão no `<Version>` do [`Directory.Build.props`](../Directory.Build.props) (a sequência é 0.9.x), no próprio pull request da mudança ou num só para
+   isso. Deixe tudo mesclado na `master` (ela só aceita mudanças por pull request) e atualize o clone: `git switch master` e `git pull`.
+2. Crie a tag **em cima da `master`**, `v` + a versão do código, e envie. Com a versão 0.9.16: `git tag v0.9.16` e `git push origin v0.9.16`. O comando
+   `.\build\get-version.ps1` mostra o número.
 3. Acompanhe na aba **Actions** do repositório (workflow "Criar release"). Leva alguns minutos.
 4. Quando termina, a release "Apparatus v0.9.16" já está **publicada**, com as notas geradas a partir dos pull requests mesclados desde a
    release anterior e com o instalador, o zip portátil e os arquivos de atualização anexados.
@@ -19,7 +21,8 @@ O `build\release.ps1` continua servindo para gerar um instalador **local**, para
 
 Roda num Windows do GitHub (`windows-latest`). Cada passo que falha encerra tudo:
 
-1. **Nome da tag:** só aceita `vX.Y.Z`. Uma tag como `v1.2.3-teste` casa com o gatilho do GitHub, mas é recusada aqui.
+1. **Nome da tag:** só aceita `vX.Y.Z`, com o mesmo número do `Directory.Build.props`. Uma tag como `v1.2.3-teste` casa com o gatilho do GitHub, mas é
+   recusada aqui, assim como uma tag que diga outra versão.
 2. **Tag na `master`:** recusa uma tag que aponte para um commit que não foi mesclado.
 3. **.NET:** instala o SDK da versão do `global.json`.
 4. **Testes:** `dotnet test tests/Apparatus.Core.Tests` (tem de ficar verde).
@@ -45,8 +48,10 @@ Roda num Windows do GitHub (`windows-latest`). Cada passo que falha encerra tudo
 
 - **Publicação direta, sem rascunho.** Decisão do dono do projeto. Como não há como conferir o instalador antes de ele ficar público, as
   verificações do workflow são rigorosas: é por isso que ele compara o feed com o arquivo e olha dentro do pacote.
-- **A versão vem da tag.** A `<Version>` do `Apparatus.App.csproj` (0.7.0) não é usada: o `release.ps1` passa `-p:Version`, e o workflow tira o `v`
-  da tag. Assim a release e o programa não divergem.
+- **A versão fica no código, em um só lugar** (`<Version>` do `Directory.Build.props`, desde 26/11/2026). Antes ela vinha só da tag ou do `-Version`, e o
+  projeto guardava um `0.7.0` esquecido, que era o que a build local mostrava. Agora a build local, o instalador local e a release dizem o mesmo número; o
+  `build\get-version.ps1` é quem o lê, o workflow recusa uma tag diferente e o teste `AppVersionTests` reprova um `.csproj` que defina a própria versão. A
+  verificação dos pull requests continua usando `-Version 0.0.1`, de propósito, para o ensaio nunca se confundir com uma versão de verdade.
 - **As notas agrupam por rótulo** (`.github/release.yml`): `enhancement` em Novidades, `bug` em Correções, `documentation` em Documentação e o
   resto em Outras mudanças. Um pull request com o rótulo `ignore-for-release` não aparece. O título do pull request é o texto da nota: escreva-o
   como uma frase para o usuário.

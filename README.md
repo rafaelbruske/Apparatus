@@ -19,8 +19,10 @@ Nothing is injected into Explorer or other programs: Apparatus only uses public 
 
 ```powershell
 dotnet tool install -g vpk --version 1.2.161
-.\build\release.ps1 -Version 0.7.0
+.\build\release.ps1
 ```
+
+The version comes from `<Version>` in [`Directory.Build.props`](Directory.Build.props), the only place where it is written.
 
 **Install by double-clicking `Setup.exe` in File Explorer.** Do not run it from a terminal or from tools inside the Claude app: whatever runs there ends up in a private copy that Windows cannot see (see `docs/PENDENCIAS.md`). The installer is produced at `artifacts\releases\ApparatusApp-win-Setup.exe` (about 80 MB). It installs to `%LOCALAPPDATA%\ApparatusApp` and does not need administrator rights. Your settings and data live in `%APPDATA%\Apparatus` and `%LOCALAPPDATA%\Apparatus`, **outside** the install folder: uninstalling or updating does not delete them.
 
