@@ -8,6 +8,8 @@ public enum FieldType
     MultiLine,
     /// <summary>An executable or any file (a browse button is shown).</summary>
     File,
+    /// <summary>An application: installed ones are suggested while a name is typed; a path works too (with a browse button).</summary>
+    App,
     Folder,
     FileOrFolder,
     Number,
@@ -64,7 +66,7 @@ public static class StepCatalog
     {
         new(StepKind.OpenApp, "Abrir aplicativo", "Abre um programa, com argumentos se quiser.", "", new StepField[]
         {
-            new("target", "Aplicativo ou arquivo", FieldType.File, Required: true),
+            new("target", "Aplicativo ou arquivo", FieldType.App, Hint: "Digite o nome do aplicativo ou informe o caminho", Required: true),
             new("args", "Argumentos (opcional)", FieldType.Text),
             new("admin", "Executar como administrador", FieldType.Bool, "false"),
         }),
@@ -151,7 +153,8 @@ public static class StepCatalog
     {
         string text = step.Kind switch
         {
-            StepKind.OpenApp => "Abrir " + Shorten(step.Get("target")) + (step.Get("args").Length > 0 ? " " + step.Get("args") : ""),
+            // "name" is kept by the editor when the target is an installed application: it reads better than "shell:AppsFolder\…".
+            StepKind.OpenApp => "Abrir " + (step.Get("name").Length > 0 ? step.Get("name") : Shorten(step.Get("target"))) + (step.Get("args").Length > 0 ? " " + step.Get("args") : ""),
             StepKind.OpenUrl => "Abrir " + step.Get("url"),
             StepKind.OpenPath => "Abrir " + Shorten(step.Get("path")),
             StepKind.RunCommand => "Comando: " + FirstLine(step.Get("command")),

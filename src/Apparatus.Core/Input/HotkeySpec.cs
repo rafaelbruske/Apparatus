@@ -24,6 +24,19 @@ public readonly record struct HotkeySpec(HotkeyModifiers Modifiers, uint Virtual
         ("PrintScreen", 0x2C), ("Up", 0x26), ("Down", 0x28), ("Left", 0x25), ("Right", 0x27), ("Pause", 0x13),
         (";", 0xBA), ("=", 0xBB), (",", 0xBC), ("-", 0xBD), (".", 0xBE), ("/", 0xBF),
         ("`", 0xC0), ("[", 0xDB), ("\\", 0xDC), ("]", 0xDD), ("'", 0xDE),
+        // The numeric keypad (with Num Lock on; with it off the same keys are Home, Up, Left...). "+" separates the keys of a
+        // combination, so the operators are written out.
+        ("Num0", 0x60), ("Num1", 0x61), ("Num2", 0x62), ("Num3", 0x63), ("Num4", 0x64),
+        ("Num5", 0x65), ("Num6", 0x66), ("Num7", 0x67), ("Num8", 0x68), ("Num9", 0x69),
+        ("NumMultiply", 0x6A), ("NumAdd", 0x6B), ("NumSubtract", 0x6D), ("NumDecimal", 0x6E), ("NumDivide", 0x6F),
+    };
+
+    /// <summary>Other spellings that are accepted when read (the AutoHotkey ones), never written.</summary>
+    private static readonly (string Name, uint Vk)[] KeyAliases =
+    {
+        ("Numpad0", 0x60), ("Numpad1", 0x61), ("Numpad2", 0x62), ("Numpad3", 0x63), ("Numpad4", 0x64),
+        ("Numpad5", 0x65), ("Numpad6", 0x66), ("Numpad7", 0x67), ("Numpad8", 0x68), ("Numpad9", 0x69),
+        ("NumpadMult", 0x6A), ("NumpadAdd", 0x6B), ("NumpadSub", 0x6D), ("NumpadDot", 0x6E), ("NumpadDiv", 0x6F),
     };
 
     /// <summary>A hotkey needs a modifier, except for function keys and Print Screen.</summary>
@@ -74,7 +87,7 @@ public readonly record struct HotkeySpec(HotkeyModifiers Modifiers, uint Virtual
             vk = (uint)(0x70 + f - 1);
             return true;
         }
-        foreach (var (n, v) in NamedKeys)
+        foreach (var (n, v) in NamedKeys.Concat(KeyAliases))
         {
             if (string.Equals(n, name, StringComparison.OrdinalIgnoreCase)) { vk = v; return true; }
         }

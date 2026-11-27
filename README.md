@@ -6,7 +6,7 @@ A Windows 11 utility that brings together, in a single program living in the tra
 
 - **Launcher** (Raycast style): `Alt+Space` (configurable) opens a box that searches apps, files, Windows settings, clipboard history, snippets, actions and extensions, and does math and unit conversions.
 - **Snippets** (TextExpander style): `;email` turns into your e-mail address in any program, with variables (`{date}`, `{clipboard}`, `{cursor}`) and fill-in fields.
-- **Actions and macros** (AutoHotkey style): global or per-program hotkeys that open things, send keys, manage windows, and control volume and brightness. Macros can be **recorded** from the keyboard.
+- **Actions and macros** (AutoHotkey style): global or per-program hotkeys (the numeric keypad included) that open things, send keys, manage windows, and control volume and brightness. To open a program, type its name and pick it from the installed applications, or give a path. Macros can be **recorded** from the keyboard.
 - **Its own Start menu** (StartAllBack style): pinned items in sections, all apps, search, shortcuts and power, opened with the Windows key or the Start button. The taskbar stays the Windows one.
 - **Screen capture** (Lightshot style): `Print Screen` freezes the screen, you drag the area and annotate it (pen, line, arrow, rectangle, highlighter, text) with one toolbar, then copy, save or print. Optional; turning it on switches off the Windows option that opens the Snipping Tool on `Print Screen`, and turning it off puts it back. See [docs/CAPTURA.md](docs/CAPTURA.md).
 - **Windows 11 taskbar tweaks** through your own user's registry, each one with an exact undo.

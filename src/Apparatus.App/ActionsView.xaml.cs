@@ -702,21 +702,19 @@ public sealed partial class ActionsView : UserControl
                 combo.SelectionChanged += (_, _) => { if (combo.SelectedItem is string s) { step.Args[field.Key] = s; StepChanged(); } };
                 return combo;
             }
+            case FieldType.App:
+            {
+                var box = BuildAppBox(field, step, current);
+                return WithPickers(box, MakePicker("Arquivo…", async () => await PickFileAsync(), path => box.Text = path));
+            }
             case FieldType.File or FieldType.Folder or FieldType.FileOrFolder:
             {
                 var text = new TextBox { Header = field.Label, Text = current, PlaceholderText = field.Hint ?? "" };
                 text.TextChanged += (_, _) => { step.Args[field.Key] = text.Text; StepChanged(); };
-                var grid = new Grid { ColumnSpacing = 8 };
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                grid.Children.Add(text);
-
-                var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Bottom };
-                if (field.Type != FieldType.Folder) buttons.Children.Add(MakePicker("Arquivo…", async () => await PickFileAsync(), text));
-                if (field.Type != FieldType.File) buttons.Children.Add(MakePicker("Pasta…", async () => await PickFolderAsync(), text));
-                Grid.SetColumn(buttons, 1);
-                grid.Children.Add(buttons);
-                return grid;
+                var buttons = new List<Button>();
+                if (field.Type != FieldType.Folder) buttons.Add(MakePicker("Arquivo…", async () => await PickFileAsync(), path => text.Text = path));
+                if (field.Type != FieldType.File) buttons.Add(MakePicker("Pasta…", async () => await PickFolderAsync(), path => text.Text = path));
+                return WithPickers(text, buttons.ToArray());
             }
             default:
             {
@@ -743,13 +741,71 @@ public sealed partial class ActionsView : UserControl
         return panel;
     }
 
-    private static Button MakePicker(string label, Func<Task<string?>> pick, TextBox target)
+    /// <summary>
+    /// The box of the application to open: installed applications are suggested while a name is typed, and picking one writes what
+    /// Windows needs to open it. A path (or anything else Windows understands) can be written as it is.
+    /// </summary>
+    private AutoSuggestBox BuildAppBox(StepField field, ActionStep step, string current)
+    {
+        var box = new AutoSuggestBox
+        {
+            Header = field.Label, Text = current, PlaceholderText = field.Hint ?? "",
+            UpdateTextOnSelect = false,   // moving through the list with the arrows must not replace what was typed
+            ItemTemplate = (DataTemplate)Resources["AppChoiceTemplate"],
+        };
+        RememberAppName(step, current);
+        box.TextChanged += (sender, args) =>
+        {
+            // The box reports its first text after it is shown: only a real change counts as an edit.
+            if (sender.Text != step.Get(field.Key))
+            {
+                step.Args[field.Key] = sender.Text;
+                RememberAppName(step, sender.Text);
+                StepChanged();
+            }
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+                sender.ItemsSource = AppSuggestions.Find(_services.Apps.All, sender.Text);
+        };
+        box.QuerySubmitted += (sender, args) =>
+        {
+            if (args.ChosenSuggestion is not AppChoice chosen) return;
+            sender.ItemsSource = null;
+            sender.Text = chosen.Target;
+        };
+        return box;
+    }
+
+    /// <summary>Keeps the name of the installed application next to its target, so the list of steps reads "Abrir Discord".</summary>
+    private void RememberAppName(ActionStep step, string target)
+    {
+        // Before the list of applications is loaded nothing can be said: keep what the step already knows.
+        if (_services.Apps.Count == 0) return;
+        if (AppSuggestions.NameOf(_services.Apps.All, target) is { } name) step.Args["name"] = name;
+        else step.Args.Remove("name");
+    }
+
+    /// <summary>A field with its "browse" buttons to the right.</summary>
+    private static Grid WithPickers(FrameworkElement input, params Button[] pickers)
+    {
+        var grid = new Grid { ColumnSpacing = 8 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.Children.Add(input);
+
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Bottom };
+        foreach (var button in pickers) buttons.Children.Add(button);
+        Grid.SetColumn(buttons, 1);
+        grid.Children.Add(buttons);
+        return grid;
+    }
+
+    private static Button MakePicker(string label, Func<Task<string?>> pick, Action<string> apply)
     {
         var button = new Button { Content = label };
         button.Click += async (_, _) =>
         {
             string? path = await pick();
-            if (path is not null) target.Text = path;
+            if (path is not null) apply(path);
         };
         return button;
     }

@@ -7,10 +7,11 @@ sonda dos controles nativos (volume, brilho e janelas) na máquina de desenvolvi
 
 - **Criar uma ação sem escrever script.** Bandeja → "Ações e atalhos…" (ou "Gerenciar ações e atalhos" / "Nova ação"
   no launcher). "Nova ação" oferece modelos (abrir aplicativo, abrir site, gerenciar janela, PowerShell, enviar teclas)
-  ou uma macro vazia. Para "Abrir Photoshop": escolher *Abrir um aplicativo*, procurar o `.exe`, dar o nome, gravar o
-  atalho e salvar.
+  ou uma macro vazia. Para "Abrir Photoshop": escolher *Abrir um aplicativo*, digitar "photo" e escolher o programa na lista (ou usar **Arquivo…** para
+  apontar o `.exe`), dar o nome, gravar o atalho e salvar.
 - **Atalhos globais** gravados pressionando as teclas. O app avisa na hora se o atalho é inválido, se já é de outra
-  ação ou se é o do launcher, e depois de salvo mostra se o Windows aceitou.
+  ação ou se é o do launcher, e depois de salvo mostra se o Windows aceitou. O **teclado numérico** vale (desde 26/11/2026), com o Num Lock ligado, e
+  aparece como `Ctrl+Win+Num4`, `NumAdd`, `NumSubtract`, `NumMultiply`, `NumDivide` e `NumDecimal`; os mesmos nomes servem no passo "Enviar teclas".
 - **Atalhos por aplicativo.** "Em qualquer aplicativo", "Somente nestes aplicativos" ou "Em todos, exceto nestes".
   As mesmas teclas podem fazer coisas diferentes em programas diferentes, e fora do escopo a tecla passa intacta
   para o programa. Há um menu "Adicionar app aberto" para não precisar saber o nome do processo.
@@ -33,6 +34,11 @@ sonda dos controles nativos (volume, brilho e janelas) na máquina de desenvolvi
   | Controle de mídia | tocar/pausar, próxima, anterior, parar |
   | Comando do sistema | bloquear, suspender, desligar o monitor, mostrar a área de trabalho, esvaziar a lixeira, proteção de tela |
 
+- **Escolher o aplicativo** (desde 26/11/2026): na caixa "Aplicativo ou arquivo" do passo "Abrir aplicativo", digitar um nome sugere os aplicativos instalados (a
+  mesma lista do launcher, até 8, os mais parecidos primeiro; quando a lista abre para cima, o Windows põe o melhor junto da caixa). Escolher um escreve o que o
+  Windows usa para abri-lo (o caminho do programa ou `shell:AppsFolder\…`) e o passo aparece como "Abrir Relógio" (o nome é guardado no passo, em `name`). A
+  caixa continua aceitando um caminho, um nome que o Windows resolve (`calc.exe`) ou qualquer outro alvo, sem sugestões, e o botão **Arquivo…** funciona como
+  antes. A lógica está em `AppSuggestions` (Core, com testes).
 - **No launcher**, as ações aparecem por nome ou categoria; `Enter` executa no aplicativo que tinha o foco antes.
 - **Testar** (em 3 s) roda o que está no editor, mesmo sem salvar, depois de uma contagem para você trocar para o
   aplicativo onde a ação deve agir.

@@ -277,6 +277,26 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Favoritos de arquivo não são validados (se o arquivo for movido, o `Enter` mostra um erro).
 
 ## 6. Pequenos defeitos e ideias
+- **Escolher o aplicativo digitando o nome (26/11/2026, pedido do dono):** o passo "Abrir aplicativo" exigia o caminho do `.exe` ou o identificador
+  `shell:AppsFolder`. Agora a caixa sugere os aplicativos instalados enquanto se digita (`docs/FASE3.md`). **Verificado:** testes; num perfil isolado, pela automação
+  da tela: digitar "relog" ofereceu "Relógio", escolhê-lo escreveu `shell:AppsFolder\…WindowsAlarms…` e o passo passou a "Abrir Relógio", um caminho digitado ficou
+  como está, e navegar entre ações sem editar não pede para salvar (`browse-without-edits.ps1 -Switch --actions`). **Não verificado:** escolher com o teclado e o
+  mouse de verdade (a automação selecionou o item), abrir de fato um app escolhido, "Executar como administrador" num app `shell:AppsFolder` (pode não valer
+  para apps da Store) e o tema claro.
+- **Atalhos com o teclado numérico (26/11/2026, achado ao avaliar um script do AutoHotkey do dono; corrigido):** gravar `Ctrl+Win+Num4` guardava
+  `Ctrl+Win+0x64`, que o app não sabia ler, e o editor dizia "Atalho inválido"; o mesmo valia para o atalho do launcher e os da captura. `HotkeySpec` passou a
+  conhecer `Num0` a `Num9`, `NumAdd`, `NumSubtract`, `NumMultiply`, `NumDivide` e `NumDecimal` (e aceita os nomes do AutoHotkey, como `Numpad4`, na leitura);
+  servem também no passo "Enviar teclas". Como no AutoHotkey, valem com o Num Lock ligado (desligado, as mesmas teclas são Home, Seta etc.). **Verificado:**
+  testes, e num perfil isolado o app registrou no Windows 12 ações com esses atalhos (o Windows passou a recusá-los a outro programa enquanto o app estava
+  aberto). O dono gravou `Ctrl+Win+Num7` no editor com o teclado de verdade, e o campo mostrou "Atalho livre" (captura enviada por ele). **Não verificado:**
+  disparar a ação apertando as teclas, o `Shift` com o teclado numérico (o Windows troca a tecla por Home, Seta etc.) e um teclado ABNT2.
+- Outras teclas sem nome em `HotkeySpec` (as extras do ABNT2 como `/?` e o `.` do teclado numérico, teclas de mídia, Scroll Lock) **ainda não podem ser atalho**: o
+  editor mostra "Atalho inválido". Dar nome a elas resolve; aceitar qualquer código não serve, porque o gravador de macros conta com as teclas sem nome serem
+  descartadas.
+- **Importador de scripts do AutoHotkey 1.1 (ideia, sem decisão, 26/11/2026):** converteria atalhos de uma linha (`Run`, `Send` de mídia, volume e combinações),
+  `Sleep`, blocos simples, textos automáticos (`::abc::`, como snippets) e `#IfWinActive` (escopo da ação), com prévia antes de criar, sem executar nada e
+  avisando caminhos inexistentes e textos que pareçam senha. Funções, variáveis, laços, `DllCall` e `RegWrite` ficariam numa lista "fazer à mão". A base já
+  existe: `ActionStore.ImportJson`.
 - Alguns ícones de atalhos `.url` (por exemplo os do PostgreSQL) não carregam: o caminho tem barras `/` que o Windows não abre.
   Mostram o ícone padrão. Normalizar o caminho resolve.
 - Quando a lista de aplicativos termina de carregar com uma pesquisa já digitada no menu Iniciar, os resultados não são atualizados.
@@ -287,7 +307,7 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (804 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (840 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

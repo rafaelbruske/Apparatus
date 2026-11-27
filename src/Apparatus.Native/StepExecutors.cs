@@ -72,8 +72,8 @@ public static unsafe class KeySender
         input.Anonymous.ki.wScan = (ushort)PInvoke.MapVirtualKey(vk, MAP_VIRTUAL_KEY_TYPE.MAPVK_VK_TO_VSC);
         input.Anonymous.ki.dwExtraInfo = KeyboardHook.OwnMarker;
         var flags = up ? KEYBD_EVENT_FLAGS.KEYEVENTF_KEYUP : 0;
-        // Navigation keys and the right-hand variants are "extended" keys.
-        if (vk is >= 0x21 and <= 0x28 or 0x2D or 0x2E or 0x5B or 0x5C or >= 0xA6 and <= 0xB7) flags |= KEYBD_EVENT_FLAGS.KEYEVENTF_EXTENDEDKEY;
+        // Navigation keys, the keypad's "/" and the right-hand variants are "extended" keys.
+        if (vk is >= 0x21 and <= 0x28 or 0x2D or 0x2E or 0x5B or 0x5C or 0x6F or >= 0xA6 and <= 0xB7) flags |= KEYBD_EVENT_FLAGS.KEYEVENTF_EXTENDEDKEY;
         input.Anonymous.ki.dwFlags = flags;
         return input;
     }
