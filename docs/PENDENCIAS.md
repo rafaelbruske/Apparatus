@@ -110,6 +110,21 @@ abria com o Windows. Nada foi desinstalado pelo Windows.
   app instalado rodava de uma pasta de build, porque a detecção passava pelo `UpdateManager`, que só existe com uma fonte. Agora a versão instalada vem do
   localizador do Velopack. **Verificado** no pacote 0.9.10, numa cópia do `Portable.zip` (mesma disposição de uma instalação) com perfil isolado e sem fonte:
   as duas páginas mostram a versão instalada; a build local continua dizendo "pasta de build". **Não verificado:** no app instalado pelo `Setup.exe`.
+- **Corretor ortográfico desligado no app inteiro (26/11/2026, pedido do dono):** o sublinhado vermelho marcava nomes e termos que o dicionário não conhece
+  ("Flutter"). Em `App.xaml.cs`, toda `TextBox` que recebe o foco tem `IsSpellCheckEnabled = false` (o corretor só atua enquanto se digita). Escolhido o foco, e não
+  um estilo em `App.xaml`, porque assim alcança também as caixas que vivem dentro de outros controles (a lista editável "Categoria" e a busca das configurações) e as
+  criadas no código. **Verificado** (build local, perfil isolado, registro temporário depois removido): Nome, Tags, Categoria, busca e conteúdo dos snippets, busca e
+  fonte de atualizações das configurações, launcher e menu Iniciar passaram de ligado para desligado ao receber o foco (o conteúdo já estava desligado).
+  **Não verificado:** a ausência do sublinhado digitando de verdade (preencher por automação não o faz aparecer, nem antes da mudança), a tela de Ações e as
+  janelas de diálogo, que usam o mesmo mecanismo.
+- **Cursor invisível no tema claro (26/11/2026, achado pelo dono):** no launcher (busca e conversa) o cursor de texto saía branco sobre fundo claro. Causa, medida: o
+  WinUI desenha o cursor como o inverso do que está sob a caixa, levando em conta a opacidade; as caixas do launcher e do menu Iniciar são transparentes sobre o acrílico.
+  A correção é uma superfície quase opaca só no tema claro (`LauncherSearchSurfaceBrush` e `StartSearchSurfaceBrush` em `App.xaml`: branco a 90%; no escuro nada
+  muda; no alto contraste, a cor de janela do sistema). A linha de busca do launcher fica um pouco menos translúcida no tema claro. **Verificado** (build local, perfil
+  isolado, tema forçado por um código temporário depois removido, brilho do cursor medido na tela, 0 = preto): launcher claro de 255 sobre 240 para 47 sobre 252; menu
+  Iniciar claro de 142 sobre 245 para 47 sobre 252; escuro igual ao de antes nas duas janelas. **Não verificado:** o app instalado, o tema do Windows realmente em claro,
+  o menu Iniciar com o tema próprio diferente do do sistema, o alto contraste e DPI alto. A caixa de texto das anotações da captura de tela também é translúcida
+  (fundo preto a 25%) e pode ter o cursor pouco visível sobre imagem clara: não testada.
 - **Falta:** redesenhar Snippets e Ações como lista + pré-visualização + `Ctrl+K`; página das Configurações do Windows (catálogo do
   assistente) e links diretos de páginas para o assistente; categorias Privacidade, Atalhos de teclado e Avançado.
 

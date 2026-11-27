@@ -160,7 +160,8 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid x:Name="SearchRow" Grid.Row="0" Padding="22,0,18,0" ColumnSpacing="14">
+        <!-- the background of this row decides the color of the text cursor: see App.xaml -->
+        <Grid x:Name="SearchRow" Grid.Row="0" Padding="22,0,18,0" ColumnSpacing="14" Background="{ThemeResource LauncherSearchSurfaceBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />

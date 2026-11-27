@@ -7,6 +7,24 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- What lies under a search box with no background of its own (launcher, Start menu). WinUI draws the text cursor as
+                 the inverse of those pixels, taking their opacity into account: over a transparent area it comes out white, which
+                 cannot be seen in the light theme. So the light theme needs a nearly opaque surface there (90%: a dark cursor, still
+                 a little of the acrylic); the dark theme is already right with none. -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="LauncherSearchSurfaceBrush" Color="Transparent" />
+                    <StaticResource x:Key="StartSearchSurfaceBrush" ResourceKey="ControlFillColorDefaultBrush" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="LauncherSearchSurfaceBrush" Color="#E6FFFFFF" />
+                    <SolidColorBrush x:Key="StartSearchSurfaceBrush" Color="#E6FFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="LauncherSearchSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="StartSearchSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

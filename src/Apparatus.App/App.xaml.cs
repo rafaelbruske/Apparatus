@@ -36,6 +36,14 @@ public partial class App : Application
     {
         _ui = DispatcherQueue.GetForCurrentThread();
 
+        // No spelling marks in any text box: what is typed here is mostly names, triggers, paths and commands, which the dictionary does
+        // not know. Done when a box gets the focus (spelling is only checked while typing) because that also reaches the boxes that live
+        // inside other controls (editable ComboBox, AutoSuggestBox), which a style in App.xaml would not.
+        Microsoft.UI.Xaml.Input.FocusManager.GotFocus += (_, e) =>
+        {
+            if (e.NewFocusedElement is Microsoft.UI.Xaml.Controls.TextBox box) box.IsSpellCheckEnabled = false;
+        };
+
         _host = new MessageHost();
         _services = new AppServices(_host);
         _services.Expander = new SnippetService(_services, _ui);
