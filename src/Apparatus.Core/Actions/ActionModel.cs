@@ -136,13 +136,14 @@ public sealed class ActionDefinition
     }
 
     /// <summary>One line describing what the action does, for lists and the launcher.</summary>
-    public string Describe(int max = 90)
+    /// <param name="appName">Passed to <see cref="StepCatalog.Summarize"/>.</param>
+    public string Describe(int max = 90, Func<string, string?>? appName = null)
     {
         string text = Steps.Count switch
         {
             0 => "(sem passos)",
-            1 => StepCatalog.Summarize(Steps[0]),
-            _ => $"Macro de {Steps.Count} passos: " + string.Join(" → ", Steps.Take(3).Select(StepCatalog.Summarize)) + (Steps.Count > 3 ? " …" : ""),
+            1 => StepCatalog.Summarize(Steps[0], appName),
+            _ => $"Macro de {Steps.Count} passos: " + string.Join(" → ", Steps.Take(3).Select(s => StepCatalog.Summarize(s, appName))) + (Steps.Count > 3 ? " …" : ""),
         };
         return text.Length <= max ? text : text[..(max - 1)] + "…";
     }

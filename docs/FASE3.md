@@ -36,12 +36,13 @@ sonda dos controles nativos (volume, brilho e janelas) na máquina de desenvolvi
 
 - **Escolher o aplicativo** (desde 26/11/2026): na caixa "Aplicativo ou arquivo" do passo "Abrir aplicativo", digitar um nome sugere os aplicativos instalados (a
   mesma lista do launcher, até 8, os mais parecidos primeiro, cada um com o seu ícone, ou um genérico quando não há; quando a lista abre para cima, o Windows põe o melhor junto da caixa). Escolher um escreve o que o
-  Windows usa para abri-lo (o caminho do programa ou `shell:AppsFolder\…`) e o passo aparece como "Abrir Relógio" (o nome é guardado no passo, em `name`). A
+  Windows usa para abri-lo (o caminho do programa ou `shell:AppsFolder\…`) e o passo aparece como "Abrir Relógio" (o nome é guardado no passo, em `name`; num
+  passo salvo sem ele, o nome é descoberto só para exibir, sem alterar a ação). A
   caixa continua aceitando um caminho, um nome que o Windows resolve (`calc.exe`) ou qualquer outro alvo, sem sugestões, e o botão **Arquivo…** funciona como
   antes. A lógica está em `AppSuggestions` (Core, com testes).
 - **Ícone no passo:** o item "Abrir aplicativo" da lista de passos mostra o ícone do que vai abrir (app instalado, arquivo informado pelo caminho completo ou
-  programa escrito só pelo nome, como `notepad.exe`, achado nas pastas do Windows e do `PATH`); sem ícone, fica o desenho padrão do passo. Quem decide é
-  `StepIcons` (Core, com testes).
+  programa escrito só pelo nome, como `notepad.exe`, achado nas pastas do Windows e do `PATH`); sem ícone, fica o desenho padrão do passo. Enquanto se digita, a
+  busca espera uma pausa de 0,4 s. Quem decide é `StepIcons` (Core, com testes).
 - **No launcher**, as ações aparecem por nome ou categoria; `Enter` executa no aplicativo que tinha o foco antes.
 - **Testar** (em 3 s) roda o que está no editor, mesmo sem salvar, depois de uma contagem para você trocar para o
   aplicativo onde a ação deve agir.

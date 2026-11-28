@@ -149,12 +149,17 @@ public static class StepCatalog
 
     // ----------------------------------------------------------- summaries
 
-    public static string Summarize(ActionStep step)
+    public static string Summarize(ActionStep step) => Summarize(step, appName: null);
+
+    /// <param name="appName">
+    /// The name of the installed application a target opens, when the caller can tell (see <see cref="AppSuggestions.NameOf"/>). Used
+    /// to read a step that was saved without it; nothing is written to the step.
+    /// </param>
+    public static string Summarize(ActionStep step, Func<string, string?>? appName)
     {
         string text = step.Kind switch
         {
-            // "name" is kept by the editor when the target is an installed application: it reads better than "shell:AppsFolder\…".
-            StepKind.OpenApp => "Abrir " + (step.Get("name").Length > 0 ? step.Get("name") : Shorten(step.Get("target"))) + (step.Get("args").Length > 0 ? " " + step.Get("args") : ""),
+            StepKind.OpenApp => "Abrir " + AppLabel(step, appName) + (step.Get("args").Length > 0 ? " " + step.Get("args") : ""),
             StepKind.OpenUrl => "Abrir " + step.Get("url"),
             StepKind.OpenPath => "Abrir " + Shorten(step.Get("path")),
             StepKind.RunCommand => "Comando: " + FirstLine(step.Get("command")),
@@ -205,6 +210,14 @@ public static class StepCatalog
         var field = Get(kind).Fields.FirstOrDefault(f => f.Key == fieldKey);
         var choice = field?.Choices?.FirstOrDefault(c => c.Value == value);
         return choice is { Label: { } label } ? label : value;
+    }
+
+    // "name" is kept by the editor when the target is an installed application: it reads better than "shell:AppsFolder\…".
+    private static string AppLabel(ActionStep step, Func<string, string?>? appName)
+    {
+        if (step.Get("name").Length > 0) return step.Get("name");
+        string target = step.Get("target");
+        return appName?.Invoke(target) is { Length: > 0 } known ? known : Shorten(target);
     }
 
     private static string FirstLine(string text)

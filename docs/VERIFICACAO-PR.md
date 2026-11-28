@@ -79,6 +79,7 @@ O que fazer quando um chega:
   `pull_request_target` com fork, que não usamos) e os campos que usamos (`global-json-file`, `fetch-depth`, `files`, `fail_on_unmatched_files`, `generate_release_notes`, `body`,
   `name`, `draft`) continuam existindo. **Falta ver rodar:** o `ci.yml` roda no próprio pull request que traz a mudança; o `release.yml` (principalmente o
   `action-gh-release`, no mesmo dia fixado pelo SHA da `v3.0.4`, que era o commit da `v3`: `docs/LANCAMENTO.md`) só roda na primeira tag.
-- **Não verificado:** que o instalador gerado no GitHub instala e abre (só foi conferido o que o `verify-release.ps1` confere, não a execução) e a regra de proteção.
+- **Não verificado:** que o instalador gerado no GitHub instala e abre (só foi conferido o que o `verify-release.ps1` confere, não a execução) e a regra de proteção
+  barrando um pull request vermelho (o dono marcou "Compilar e testar" como obrigatória em 26/11/2026).
   O ensaio é a mesma parte que o workflow de release usa, então ficou provado no GitHub: restauração, compilação, `setup-dotnet`, `vpk`, `release.ps1` e conferência. Faltam, só na
   primeira tag, a checagem da tag, a permissão de escrita do `GITHUB_TOKEN` e a criação da release.

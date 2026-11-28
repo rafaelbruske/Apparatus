@@ -234,17 +234,17 @@ Pendências do módulo (atualizado em 25/11/2026):
   Guia, ordem dos passos e o que fazer quando falha em `docs/LANCAMENTO.md`.
   **Verificado nesta máquina:** os testes com o mesmo comando, o `release.ps1` numa pasta de teste, a conferência (OK, e falhando para versão errada e para
   licença faltando), o aborto do script quando falta licença, o YAML, a sintaxe PowerShell de cada passo e a regra do nome da tag.
-  **Não verificado:** o workflow nunca rodou no GitHub (restore e build no runner, SDK do `global.json`, `vpk` no `PATH`, permissão do `GITHUB_TOKEN`,
-  anexos, notas) nem o instalador que ele gera. Confira na primeira tag. Com publicação direta, uma falha no último passo deixa uma release pela metade:
-  apague a release e a tag e refaça.
+  **Já visto no GitHub** (pela verificação dos pull requests, abaixo, que repete os mesmos passos com uma versão descartável): restore e build no runner, o
+  SDK do `global.json`, o `vpk` no `PATH`, o `release.ps1` e a conferência. **Não verificado:** o workflow de release em si nunca rodou (nenhuma tag foi
+  enviada): a conferência da tag, a permissão do `GITHUB_TOKEN`, a criação da release, os anexos, as notas e se o instalador gerado lá instala e abre.
+  Confira na primeira tag. Com publicação direta, uma falha no último passo deixa uma release pela metade: apague a release e a tag e refaça.
   **Ideia (sem decisão):** pacote delta com `vpk download github`.
 - **Verificação dos pull requests (25/11/2026):** `.github/workflows/ci.yml` ("Verificar" / trabalho "Compilar e testar") compila o app e os projetos E2E, roda os
   testes unitários, confere a sintaxe dos scripts de `build\` e ensaia o instalador (`release.ps1` + `verify-release.ps1` com versão descartável) em cada pull
   request para a `master`. Guia em `docs/VERIFICACAO-PR.md`. **Verificado:** os passos do arquivo, extraídos e executados aqui na ordem, passam; o passo de
   sintaxe falha num script quebrado; e **no GitHub** a execução completa deu verde em cerca de 3 min 15 s (798 testes, ensaio do instalador gerando o `Setup.exe` de 82 MB).
-  A primeira execução falhou num teste de extensões por tempo esgotado (limite de 3 s, agora 15 s). **Não verificado:** que o instalador gerado lá instala e abre, e a
-  regra de proteção. **Depende de você:** marcar "Compilar e testar" como verificação obrigatória na proteção da `master` (passo a passo no guia).
-  *(Em 26/11/2026 o dono marcou a verificação como obrigatória.)*
+  A primeira execução falhou num teste de extensões por tempo esgotado (limite de 3 s, agora 15 s). Em 26/11/2026 o dono marcou "Compilar e testar" como
+  verificação obrigatória na proteção da `master`. **Não verificado:** que o instalador gerado lá instala e abre, e ver a regra barrar um pull request vermelho.
 - **Dependabot (26/11/2026):** `.github/dependabot.yml` pede as atualizações das ações dos workflows uma vez por mês e, nos pacotes NuGet, só as correções de
   segurança (`open-pull-requests-limit: 0`); os alertas e os "security updates" já estavam ligados pelo dono no GitHub. Os dois pontos que faltavam foram
   tratados: o teste `VpkVersionTests` reprova quando a versão do `vpk` (workflows, `release.ps1` e READMEs) difere do pacote `Velopack`; a atualização das
@@ -294,10 +294,19 @@ Pendências do módulo (atualizado em 25/11/2026):
   escuro): ao digitar "a", as 8 sugestões mostraram ícone (programas, apps da Store e um atalho `.url`) e escolher uma escreveu o alvo. **Não verificado:** o
   app instalado, o tema claro, o ícone genérico na tela e escala acima de 100 %.
 - **Ícone do aplicativo no item do passo (27/11/2026, pedido do dono):** o passo "Abrir aplicativo" mostra o ícone do que abre, ou o desenho padrão quando não
-  há (`docs/FASE3.md`). **Verificado:** testes e compilação. **Não verificado:** nada na tela; o dono vai testar o 0.9.23.
+  há (`docs/FASE3.md`). **Verificado:** testes, compilação e na tela (build local, perfil isolado, tema escuro, automação): `calc.exe`, `notepad`, um app da
+  Store e o caminho de um programa mostraram o ícone; um caminho que não existe e o passo "Aguardar" ficaram com o desenho padrão. **Não verificado:** o app
+  instalado, o tema claro e escala acima de 100 %.
+- **Dois ajustes na revisão do 0.9.23 (27/11/2026):** (1) uma ação salva sem o nome do app mostrava o endereço `shell:AppsFolder\…`; o nome agora é descoberto na
+  hora de exibir (lista de ações, passos e launcher) sem ser gravado na ação, então não volta o falso aviso de alterações; (2) o ícone do que está sendo
+  digitado só é procurado depois de uma pausa de 0,4 s, para um caminho de rede digitado pela metade não disparar uma busca por tecla. **Verificado:** testes; na
+  tela, uma ação sem o nome mostrou "Abrir Relógio" na lista e no passo, navegar não pediu para salvar, e depois de digitar "notepad" depressa o passo ficou com
+  o ícone do Bloco de Notas. **Não verificado:** o launcher na tela, um caminho de rede de verdade e a lista de aplicativos ainda carregando (a tela não se
+  atualiza sozinha quando ela termina).
 - **Falso "Alterações não salvas" em ação de abrir aplicativo (27/11/2026, achado na revisão do 0.9.18; corrigido):** só mostrar o passo gravava o `name` nele (ou o
   removia, se o app não estivesse na lista), então uma ação salva sem o nome aparecia como alterada. O `browse-without-edits.ps1` não pegava porque as ações de
-  exemplo não apontam para um app da lista. Agora o nome só é gravado quando o alvo é alterado; uma ação salva sem ele continua mostrando o caminho até isso.
+  exemplo não apontam para um app da lista. Agora o nome só é gravado quando o alvo é alterado; uma ação salva sem ele passou a mostrar o caminho (depois
+  resolvido só na exibição: veja "Dois ajustes na revisão do 0.9.23").
   **Verificado** (build local, perfil isolado com duas ações apontando para apps instalados sem `name`, pela automação da tela): antes, "Salvar" ficava ativo e o
   aviso aparecia ao trocar de ação; depois, não; trocar o alvo ainda mostra o nome do app, e um caminho aparece como caminho; `browse-without-edits.ps1` passou em
   Ações e Snippets. **Não verificado:** o app instalado.
@@ -325,7 +334,7 @@ Pendências do módulo (atualizado em 25/11/2026):
 - Os avisos de compilação `PInvoke004` do CsWin32 e `CA1416` (`GetDpiForWindow`) em `Apparatus.Native` são antigos e inofensivos.
 
 ## 7. Como retomar
-- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (875 testes).
+- Compilar e testar: `dotnet build Apparatus.sln`; `dotnet test tests/Apparatus.Core.Tests` (877 testes).
 - Verificação segura: `dotnet run --project tests/Apparatus.E2E.Start`.
 - Verificação com entrada real (mouse/teclado): `--inject-failsafe`, `--inject-win`, `--sync`, `--record` do mesmo projeto. **Nunca
   mande Esc para a área de trabalho**: ele interrompe a sessão do Claude Code. Rodar em segundo plano, com o PC parado.

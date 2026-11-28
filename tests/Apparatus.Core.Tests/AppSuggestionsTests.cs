@@ -89,6 +89,33 @@ public class AppSuggestionsTests
     }
 
     [Fact]
+    public void AStepSavedWithoutTheName_ReadsWithItWhenTheAppIsKnown_AndStaysAsSaved()
+    {
+        const string target = @"shell:AppsFolder\com.squirrel.Discord.Discord";
+        var step = ActionStep.Create(StepKind.OpenApp, ("target", target), ("args", "--minimized"));
+        string? NameOf(string t) => AppSuggestions.NameOf(Apps, t);
+
+        Assert.Equal("Abrir Discord --minimized", StepCatalog.Summarize(step, NameOf));
+        Assert.False(step.Args.ContainsKey("name"));   // reading never edits the action
+
+        var action = new ActionDefinition { Name = "x", Steps = { step } };
+        Assert.Equal("Abrir Discord --minimized", action.Describe(90, NameOf));
+        Assert.Contains("Abrir Discord", ActionsProvider.ToResult(action, 0, NameOf).Subtitle);
+        action.Steps.Add(ActionStep.Create(StepKind.Wait, ("ms", "10")));
+        Assert.Contains("Abrir Discord --minimized → Aguardar", action.Describe(90, NameOf));
+    }
+
+    [Fact]
+    public void TheStoredName_AndAnUnknownTarget_AreReadAsBefore()
+    {
+        string? NameOf(string t) => AppSuggestions.NameOf(Apps, t);
+        var named = ActionStep.Create(StepKind.OpenApp, ("target", "calc.exe"), ("name", "Minha calculadora"));
+        Assert.Equal("Abrir Minha calculadora", StepCatalog.Summarize(named, NameOf));
+        var unknown = ActionStep.Create(StepKind.OpenApp, ("target", "calc.exe"));
+        Assert.Equal("Abrir calc.exe", StepCatalog.Summarize(unknown, NameOf));
+    }
+
+    [Fact]
     public void TheStepReadsWithTheNameOfTheApp_AndStillValidates()
     {
         var step = ActionStep.Create(StepKind.OpenApp, ("target", @"shell:AppsFolder\com.squirrel.Discord.Discord"), ("name", "Discord"));

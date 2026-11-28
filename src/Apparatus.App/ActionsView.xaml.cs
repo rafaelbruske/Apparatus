@@ -21,11 +21,11 @@ namespace Apparatus.App;
 
 public sealed class ActionListItem
 {
-    public ActionListItem(ActionDefinition action, HotkeyStatus status)
+    public ActionListItem(ActionDefinition action, HotkeyStatus status, Func<string, string?> appName)
     {
         Action = action;
         Name = action.Name;
-        Subtitle = action.Hotkey.Length > 0 ? $"{action.Hotkey}  ·  {action.Describe(46)}" : action.Describe(56);
+        Subtitle = action.Hotkey.Length > 0 ? $"{action.Hotkey}  ·  {action.Describe(46, appName)}" : action.Describe(56, appName);
         Opacity = action.Enabled ? 1.0 : 0.5;
         WarningVisibility = status.State == HotkeyState.Failed ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -41,9 +41,12 @@ public sealed class StepListItem : INotifyPropertyChanged
 {
     private int _number;
 
-    public StepListItem(ActionStep step)
+    private readonly Func<string, string?> _appName;
+
+    public StepListItem(ActionStep step, Func<string, string?> appName)
     {
         Step = step;
+        _appName = appName;
         var d = StepCatalog.Get(step.Kind);
         Title = d.Title;
         Glyph = d.Glyph;
@@ -52,7 +55,7 @@ public sealed class StepListItem : INotifyPropertyChanged
     public ActionStep Step { get; }
     public string Title { get; }
     public string Glyph { get; }
-    public string Summary => StepCatalog.Summarize(Step);
+    public string Summary => StepCatalog.Summarize(Step, _appName);
 
     private ImageSource? _icon;
 
@@ -240,7 +243,7 @@ public sealed partial class ActionsView : UserControl
 
         _loading = true;
         Items.Clear();
-        foreach (var a in shown) Items.Add(new ActionListItem(a, _services.ActionHost?.StatusOf(a.Id) ?? new HotkeyStatus(HotkeyState.None, "")));
+        foreach (var a in shown) Items.Add(new ActionListItem(a, _services.ActionHost?.StatusOf(a.Id) ?? new HotkeyStatus(HotkeyState.None, ""), NameOfApp));
         if (selectId is { } id) ActionList.SelectedItem = Items.FirstOrDefault(i => i.Action.Id == id);
         _loading = false;
     }
@@ -275,7 +278,7 @@ public sealed partial class ActionsView : UserControl
         OnErrorBox.SelectedIndex = (int)action.OnError;
 
         Steps.Clear();
-        foreach (var s in action.Steps) Steps.Add(new StepListItem(s));
+        foreach (var s in action.Steps) Steps.Add(new StepListItem(s, NameOfApp));
         RenumberSteps();
         _editingStep = null;
         StepEditor.Visibility = Visibility.Collapsed;
@@ -570,7 +573,7 @@ public sealed partial class ActionsView : UserControl
             BeginNew(null);
             NameBox.Text = "Macro gravada";
         }
-        foreach (var step in steps) Steps.Add(new StepListItem(step));
+        foreach (var step in steps) Steps.Add(new StepListItem(step, NameOfApp));
         RenumberSteps();
         StepsList.SelectedIndex = Steps.Count - steps.Count;
         OnEdited(this, EventArgs.Empty);
@@ -599,7 +602,7 @@ public sealed partial class ActionsView : UserControl
 
     private void AddStep(StepKind kind)
     {
-        var item = new StepListItem(StepCatalog.NewStep(kind));
+        var item = new StepListItem(StepCatalog.NewStep(kind), NameOfApp);
         Steps.Add(item);
         RenumberSteps();
         StepsList.SelectedItem = item;
@@ -630,7 +633,7 @@ public sealed partial class ActionsView : UserControl
     private void OnStepDuplicate(object sender, RoutedEventArgs e)
     {
         if (StepsList.SelectedItem is not StepListItem item) return;
-        var copy = new StepListItem(item.Step.Clone());
+        var copy = new StepListItem(item.Step.Clone(), NameOfApp);
         Steps.Insert(Steps.IndexOf(item) + 1, copy);
         RenumberSteps();
         StepsList.SelectedItem = copy;
@@ -673,12 +676,22 @@ public sealed partial class ActionsView : UserControl
     private void StepChanged()
     {
         _editingStep?.Refresh();
-        if (_editingStep is { } item) _ = UpdateStepIconAsync(item);
+        if (_editingStep is { } item) _ = UpdateStepIconAsync(item, whileTyping: true);
         OnEdited(this, EventArgs.Empty);
     }
 
+    /// <summary>The name of the installed application a target opens, to read the steps saved without it.</summary>
+    private string? NameOfApp(string target) => AppSuggestions.NameOf(_services.Apps.All, target);
+
+    /// <summary>How long the typing has to stop before the icon of what was typed is looked for.</summary>
+    private static readonly TimeSpan IconAfterTyping = TimeSpan.FromMilliseconds(400);
+
     /// <summary>Shows on the step the icon of the application it opens. Only the picture changes, never the step.</summary>
-    private async Task UpdateStepIconAsync(StepListItem item)
+    /// <param name="whileTyping">
+    /// Wait for a pause first: looking for the file reads the disk, and a half typed network path ("\serv") can take seconds to
+    /// be answered, so one search per key would pile them up.
+    /// </param>
+    private async Task UpdateStepIconAsync(StepListItem item, bool whileTyping = false)
     {
         if (item.Step.Kind != StepKind.OpenApp) return;
         string target = item.Step.Get("target");
@@ -686,6 +699,11 @@ public sealed partial class ActionsView : UserControl
         item.IconTarget = target;
         try
         {
+            if (whileTyping)
+            {
+                await Task.Delay(IconAfterTyping);
+                if (item.IconTarget != target) return;   // typing went on: the later call looks for the newer text
+            }
             var apps = _services.Apps.All;
             string? key = await Task.Run(() => StepIcons.KeyFor(apps, target, File.Exists, ProgramFolders()));
             var image = key is null ? null : await _icons.GetAsync(key);

@@ -55,7 +55,7 @@ public sealed class AppServices : IDisposable
         {
             Apps,
             new SnippetsProvider(Snippets),
-            new ActionsProvider(Actions),
+            new ActionsProvider(Actions, target => AppSuggestions.NameOf(Apps.All, target)),
             new ClipboardProvider(ClipboardStore, () => Settings.Current),
             new ExtensionsProvider(Extensions),
             new FilesProvider(Index, () => Settings.Current),
